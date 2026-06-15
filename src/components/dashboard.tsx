@@ -269,7 +269,7 @@ export function Dashboard() {
   return (
     <div className="min-h-screen">
       {/* ヘッダー(白) */}
-      <header className="sticky top-0 z-30 border-b bg-card">
+      <header className="sticky top-0 z-30 border-b bg-card pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5">
           <span className="text-[15px] font-semibold tracking-wide text-primary">
             {now.getMonth() + 1}/{now.getDate()}{" "}

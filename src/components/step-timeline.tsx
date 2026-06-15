@@ -184,8 +184,8 @@ export function StepTimeline({ app }: { app: Application }) {
                         placeholder="補足名(任意) 例: 一次(オンライン)"
                         className="h-9"
                       />
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
+                      <div className="grid grid-cols-[1.6fr_1fr] gap-2.5">
+                        <div className="min-w-0">
                           <label className="mb-1 block text-[11px] text-muted-foreground">
                             締切 / 実施日
                           </label>
@@ -197,10 +197,10 @@ export function StepTimeline({ app }: { app: Application }) {
                                 dueAt: joinDue(e.target.value, time),
                               })
                             }
-                            className="h-9 w-full"
+                            className="h-9 w-full min-w-0 px-2.5 text-[16px] sm:text-sm"
                           />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <label className="mb-1 block text-[11px] text-muted-foreground">
                             時刻（任意）
                           </label>
@@ -213,7 +213,7 @@ export function StepTimeline({ app }: { app: Application }) {
                                 dueAt: joinDue(date, e.target.value),
                               })
                             }
-                            className="h-9 w-full"
+                            className="h-9 w-full min-w-0 px-2.5 text-[16px] sm:text-sm"
                           />
                         </div>
                       </div>
