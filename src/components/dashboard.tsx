@@ -17,7 +17,7 @@ import {
   SearchX,
   Upload,
 } from "lucide-react";
-import type { Application, Filters, Priority, SortKey } from "@/lib/types";
+import type { Application, Filters, Priority, SortDir, SortKey } from "@/lib/types";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import {
@@ -65,6 +65,7 @@ export function Dashboard() {
   const { applications, loaded, replaceAll } = store;
 
   const [sort, setSort] = useState<SortKey>("deadline");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -113,20 +114,23 @@ export function Dashboard() {
       return true;
     });
     const decorated = list.map((a) => ({ a, na: getNextAction(a) }));
+    const dirMul = sortDir === "asc" ? 1 : -1;
     decorated.sort((x, y) => {
+      let r: number;
       if (sort === "priority")
-        return (
+        r =
           PRIORITY_RANK[x.a.priority] - PRIORITY_RANK[y.a.priority] ||
-          x.na.sortKey - y.na.sortKey
-        );
-      if (sort === "name") return x.a.company.localeCompare(y.a.company, "ja");
-      return (
-        x.na.sortKey - y.na.sortKey ||
-        x.a.company.localeCompare(y.a.company, "ja")
-      );
+          x.na.sortKey - y.na.sortKey;
+      else if (sort === "name")
+        r = x.a.company.localeCompare(y.a.company, "ja");
+      else
+        r =
+          x.na.sortKey - y.na.sortKey ||
+          x.a.company.localeCompare(y.a.company, "ja");
+      return r * dirMul;
     });
     return decorated.map((d) => d.a);
-  }, [applications, filters, sort]);
+  }, [applications, filters, sort, sortDir]);
 
   const tourSteps = useMemo<TourStep[]>(() => {
     const steps: TourStep[] = [
@@ -143,6 +147,11 @@ export function Dashboard() {
           tour: "banner",
           title: "直近の予定",
           body: "一番近い予定をここに固定表示。毎朝ここを見ればOK。",
+        },
+        {
+          tour: "sort",
+          title: "並べ替え",
+          body: "カードの並び順を変更。締切順・優先度順・企業名順から選べて、右の矢印（↑↓）で昇順／降順を切り替えられる（締切順なら近い順⇄遠い順）。",
         },
         {
           tour: "filter",
@@ -315,6 +324,8 @@ export function Dashboard() {
               <ControlsBar
                 sort={sort}
                 onSortChange={setSort}
+                dir={sortDir}
+                onDirChange={setSortDir}
                 filters={filters}
                 onFiltersChange={setFilters}
               />
@@ -365,6 +376,7 @@ export function Dashboard() {
 
       <ApplicationDetail
         appId={selectedId}
+        tourActive={tourIndex >= 0}
         onOpenChange={(o) => !o && setSelectedId(null)}
         onDeleted={(name) => {
           setSelectedId(null);

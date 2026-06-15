@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowDownUp, RotateCcw, SlidersHorizontal } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowDownUp,
+  ArrowUp,
+  RotateCcw,
+  SlidersHorizontal,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -21,10 +27,10 @@ import {
   SITUATION_LABEL,
   SITUATION_OPTIONS,
 } from "@/lib/constants";
-import type { Filters, Priority, Situation, SortKey } from "@/lib/types";
+import type { Filters, Priority, Situation, SortDir, SortKey } from "@/lib/types";
 
 const SORT_LABEL: Record<SortKey, string> = {
-  deadline: "締切が近い順",
+  deadline: "締切順",
   priority: "優先度順",
   name: "企業名順",
 };
@@ -57,11 +63,15 @@ function Chip({
 export function ControlsBar({
   sort,
   onSortChange,
+  dir,
+  onDirChange,
   filters,
   onFiltersChange,
 }: {
   sort: SortKey;
   onSortChange: (s: SortKey) => void;
+  dir: SortDir;
+  onDirChange: (d: SortDir) => void;
   filters: Filters;
   onFiltersChange: (f: Filters) => void;
 }) {
@@ -89,23 +99,45 @@ export function ControlsBar({
 
   return (
     <div className="flex items-center gap-2">
-      <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
-        <SelectTrigger className="h-9 flex-1 bg-card text-sm">
-          <ArrowDownUp className="mr-1 h-4 w-4 text-muted-foreground" />
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
-            <SelectItem key={k} value={k}>
-              {SORT_LABEL[k]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div data-tour="sort" className="flex min-w-0 flex-1 items-center gap-2">
+        <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
+          <SelectTrigger className="h-9 min-w-0 flex-1 bg-card text-sm">
+            <ArrowDownUp className="mr-1 h-4 w-4 shrink-0 text-muted-foreground" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
+              <SelectItem key={k} value={k}>
+                {SORT_LABEL[k]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-9 w-9 shrink-0 bg-card"
+          aria-label={dir === "asc" ? "昇順（タップで降順に）" : "降順（タップで昇順に）"}
+          title={
+            dir === "asc"
+              ? "昇順 — 締切順なら近い順 / 優先度なら高い順"
+              : "降順 — 締切順なら遠い順 / 優先度なら低い順"
+          }
+          onClick={() => onDirChange(dir === "asc" ? "desc" : "asc")}
+        >
+          {dir === "asc" ? (
+            <ArrowUp className="h-4 w-4" />
+          ) : (
+            <ArrowDown className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
 
       <Button
         type="button"
         variant="outline"
+        data-tour="filter"
         className="h-9 shrink-0 bg-card"
         onClick={() => setOpen(true)}
       >

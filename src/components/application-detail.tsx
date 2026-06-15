@@ -59,10 +59,12 @@ export function ApplicationDetail({
   appId,
   onOpenChange,
   onDeleted,
+  tourActive = false,
 }: {
   appId: string | null;
   onOpenChange: (open: boolean) => void;
   onDeleted: (name: string) => void;
+  tourActive?: boolean;
 }) {
   const { applications } = useStore();
   const app = applications.find((a) => a.id === appId) ?? null;
@@ -84,6 +86,13 @@ export function ApplicationDetail({
     <Sheet open={!!appId} onOpenChange={(o) => !o && onOpenChange(false)}>
       <SheetContent
         side="right"
+        onInteractOutside={(e) => {
+          // チュートリアル中はツールチップ操作で閉じないようにする
+          if (tourActive) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (tourActive) e.preventDefault();
+        }}
         onTouchStart={(e) => {
           start.current = {
             x: e.touches[0].clientX,

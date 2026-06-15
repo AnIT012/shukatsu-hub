@@ -3,11 +3,11 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
-  title: "就活ダッシュボード",
+  title: "就活Hub",
   description: "次に何をすべきか・次の締切が一目でわかる、就活インターン進捗管理ツール",
   appleWebApp: {
     capable: true,
-    title: "就活ダッシュ",
+    title: "就活Hub",
     statusBarStyle: "default",
   },
 };

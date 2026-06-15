@@ -42,7 +42,7 @@ export function LoginScreen() {
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
             <GraduationCap className="h-6 w-6" />
           </div>
-          <h1 className="mt-3 text-xl font-bold">就活ダッシュボード</h1>
+          <h1 className="mt-3 text-xl font-bold">就活Hub</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "login" ? "ログインして続ける" : "アカウントを作成"}
           </p>

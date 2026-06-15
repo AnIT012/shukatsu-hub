@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "就活ダッシュボード",
-    short_name: "就活ダッシュ",
+    name: "就活Hub",
+    short_name: "就活Hub",
     description:
       "次に何をすべきか・次の締切が一目でわかる、就活インターン進捗管理ツール",
     start_url: "/",

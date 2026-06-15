@@ -101,7 +101,7 @@ export function Tutorial({
       )}
 
       <div
-        className="fixed z-[61] w-[300px] animate-fade-in rounded-2xl bg-card p-4 shadow-2xl"
+        className="pointer-events-auto fixed z-[61] w-[300px] animate-fade-in rounded-2xl bg-card p-4 shadow-2xl"
         style={tipStyle}
       >
         <div className="text-[11px] font-medium text-muted-foreground">
