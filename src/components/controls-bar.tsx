@@ -1,8 +1,7 @@
 "use client";
 
-import { ArrowDownUp, CalendarRange, Search, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { ArrowDownUp, RotateCcw, SlidersHorizontal } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -10,16 +9,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { PRIORITY_OPTIONS, RESULT_OPTIONS } from "@/lib/constants";
-import type { Filters, Priority, ResultStatus, SortKey } from "@/lib/types";
-
-interface Props {
-  sort: SortKey;
-  onSortChange: (s: SortKey) => void;
-  filters: Filters;
-  onFiltersChange: (f: Filters) => void;
-}
+import {
+  PRIORITY_OPTIONS,
+  SITUATION_LABEL,
+  SITUATION_OPTIONS,
+} from "@/lib/constants";
+import type { Filters, Priority, Situation, SortKey } from "@/lib/types";
 
 const SORT_LABEL: Record<SortKey, string> = {
   deadline: "締切が近い順",
@@ -27,40 +29,68 @@ const SORT_LABEL: Record<SortKey, string> = {
   name: "企業名順",
 };
 
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-full px-3.5 py-1.5 text-sm transition-colors",
+        active
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted text-foreground/80 hover:bg-secondary",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function ControlsBar({
   sort,
   onSortChange,
   filters,
   onFiltersChange,
-}: Props) {
-  const set = (patch: Partial<Filters>) =>
-    onFiltersChange({ ...filters, ...patch });
+}: {
+  sort: SortKey;
+  onSortChange: (s: SortKey) => void;
+  filters: Filters;
+  onFiltersChange: (f: Filters) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const activeCount =
+    filters.situations.length +
+    filters.priorities.length +
+    (filters.onlyThisWeek ? 1 : 0);
+
+  const toggleSit = (s: Situation) =>
+    onFiltersChange({
+      ...filters,
+      situations: filters.situations.includes(s)
+        ? filters.situations.filter((x) => x !== s)
+        : [...filters.situations, s],
+    });
+
+  const togglePri = (p: Priority) =>
+    onFiltersChange({
+      ...filters,
+      priorities: filters.priorities.includes(p)
+        ? filters.priorities.filter((x) => x !== p)
+        : [...filters.priorities, p],
+    });
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* 検索 */}
-      <div className="relative min-w-[180px] flex-1">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={filters.query}
-          onChange={(e) => set({ query: e.target.value })}
-          placeholder="企業名・職種で検索"
-          className="pl-9"
-        />
-        {filters.query && (
-          <button
-            onClick={() => set({ query: "" })}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
-            aria-label="検索クリア"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-
-      {/* ソート */}
+    <div className="flex items-center gap-2">
       <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
-        <SelectTrigger className="w-[150px]">
+        <SelectTrigger className="h-9 flex-1 bg-card text-sm">
           <ArrowDownUp className="mr-1 h-4 w-4 text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
@@ -73,55 +103,107 @@ export function ControlsBar({
         </SelectContent>
       </Select>
 
-      {/* 結果フィルター */}
-      <Select
-        value={filters.result}
-        onValueChange={(v) => set({ result: v as ResultStatus | "all" })}
-      >
-        <SelectTrigger className="w-[130px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">結果: すべて</SelectItem>
-          {RESULT_OPTIONS.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      {/* 優先度フィルター */}
-      <Select
-        value={filters.priority}
-        onValueChange={(v) => set({ priority: v as Priority | "all" })}
-      >
-        <SelectTrigger className="w-[120px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">優先度: 全</SelectItem>
-          {PRIORITY_OPTIONS.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
-              優先度 {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      {/* 今週やること トグル */}
       <Button
         type="button"
-        variant={filters.onlyThisWeek ? "default" : "outline"}
-        onClick={() => set({ onlyThisWeek: !filters.onlyThisWeek })}
-        className={cn(
-          filters.onlyThisWeek &&
-            "bg-rose-600 text-white hover:bg-rose-600/90",
-        )}
+        variant="outline"
+        className="h-9 shrink-0 bg-card"
+        onClick={() => setOpen(true)}
       >
-        <CalendarRange className="h-4 w-4" />
-        今週やること
+        <SlidersHorizontal className="h-4 w-4" />
+        絞り込み
+        {activeCount > 0 && (
+          <span className="ml-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-medium text-primary-foreground">
+            {activeCount}
+          </span>
+        )}
       </Button>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="bottom"
+          className="rounded-t-2xl px-5 pb-7 pt-4"
+        >
+          <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
+          <SheetTitle className="mb-4 text-base">絞り込み</SheetTitle>
+
+          <div className="space-y-4">
+            <div>
+              <div className="mb-2 text-xs text-muted-foreground">
+                状況（複数選択OK）
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {SITUATION_OPTIONS.map((s) => (
+                  <Chip
+                    key={s}
+                    active={filters.situations.includes(s)}
+                    onClick={() => toggleSit(s)}
+                  >
+                    {SITUATION_LABEL[s]}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-2 text-xs text-muted-foreground">優先度</div>
+              <div className="flex flex-wrap gap-2">
+                {PRIORITY_OPTIONS.map((p) => (
+                  <Chip
+                    key={p.value}
+                    active={filters.priorities.includes(p.value)}
+                    onClick={() => togglePri(p.value)}
+                  >
+                    {p.label}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                onFiltersChange({ ...filters, onlyThisWeek: !filters.onlyThisWeek })
+              }
+              className="flex w-full items-center justify-between rounded-xl bg-muted px-4 py-3 text-sm"
+            >
+              <span>今週やることだけ表示</span>
+              <span
+                className={cn(
+                  "relative h-6 w-10 rounded-full transition-colors",
+                  filters.onlyThisWeek ? "bg-primary" : "bg-border",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition-all",
+                    filters.onlyThisWeek ? "left-[18px]" : "left-0.5",
+                  )}
+                />
+              </span>
+            </button>
+          </div>
+
+          <div className="mt-5 flex gap-2">
+            <Button
+              variant="ghost"
+              className="flex-1"
+              onClick={() =>
+                onFiltersChange({
+                  situations: [],
+                  priorities: [],
+                  onlyThisWeek: false,
+                })
+              }
+            >
+              <RotateCcw className="h-4 w-4" />
+              リセット
+            </Button>
+            <Button className="flex-1" onClick={() => setOpen(false)}>
+              閉じる
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

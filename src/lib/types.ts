@@ -15,23 +15,42 @@ export type StepKind =
   | "other"; // その他
 
 /** ステップの進捗状態 */
-export type StepStatus = "not_started" | "in_progress" | "done"; // 未着手 / 進行中 / 完了
+export type StepStatus = "not_started" | "in_progress" | "waiting" | "done"; // 未着手 / 進行中 / 結果待ち / 完了
 
 /** 企業ごとの優先度 */
 export type Priority = "high" | "medium" | "low"; // 高 / 中 / 低
 
-/** 選考の最終的な結果ステータス("今どの段階か"はステップで管理し、ここは結果だけ) */
+/** 選考の最終的な結果ステータス */
 export type ResultStatus =
   | "in_progress" // 進行中
-  | "passed" // 通過・合格
+  | "passed" // 通過・合格(表示は選考種別で内定/内々定/参加確定に変化)
   | "rejected" // 不合格
   | "declined"; // 辞退
+
+/** 選考種別。合格後の表示が変わる */
+export type SelectionType =
+  | "long_intern" // 長期インターン → 参加確定
+  | "short_intern" // 短期インターン → 参加確定
+  | "early" // 早期選考 → 内々定
+  | "main"; // 本選考 → 内定
+
+/** インターンの開催形式 */
+export type VenueMode = "" | "online" | "onsite"; // 未設定 / オンライン / 対面
 
 /** 関連リンク(ラベル付きURL) */
 export interface RelatedLink {
   id: string;
   label: string;
   url: string;
+}
+
+/** ES(エントリーシート)の設問と回答。企業ごとに保存して使い回せる */
+export interface ESEntry {
+  id: string;
+  question: string;
+  answer: string;
+  /** 文字数制限。無ければ null(その場合は文字数のみ表示) */
+  charLimit: number | null;
 }
 
 /** 選考ステップ(中核。1社が複数持つ) */
@@ -43,6 +62,8 @@ export interface SelectionStep {
   /** 締切 or 実施日。"YYYY-MM-DD" もしくは "YYYY-MM-DDTHH:mm"。未設定は null */
   dueAt: string | null;
   status: StepStatus;
+  /** 場所(住所/会場名 or "オンライン" 等。自由記述) */
+  location: string;
   /** そのステップ個別のメモ */
   memo: string;
 }
@@ -54,13 +75,23 @@ export interface Application {
   role: string;
   priority: Priority;
   result: ResultStatus;
+  selectionType: SelectionType;
+  /** インターン時の開催形式 */
+  venueMode: VenueMode;
+  /** インターン開催地(対面時の場所) */
+  venuePlace: string;
   links: RelatedLink[];
+  /** ES設問・回答(企業ごとに保存・使い回し用) */
+  esEntries: ESEntry[];
   /** 全体メモ(長文OK・改行保持) */
   memo: string;
   steps: SelectionStep[];
   createdAt: string;
   updatedAt: string;
 }
+
+/** 配色テーマ */
+export type Theme = "indigo" | "aiNezu" | "sumi" | "navy" | "greige";
 
 /** localStorage 保存形式 兼 エクスポート/インポート形式 */
 export interface BackupFile {
@@ -73,9 +104,18 @@ export interface BackupFile {
 
 export type SortKey = "deadline" | "priority" | "name";
 
+/** 一覧での「状況」分類(フィルタ用・自動算出) */
+export type Situation =
+  | "in_progress"
+  | "waiting"
+  | "passed"
+  | "rejected"
+  | "declined";
+
 export interface Filters {
-  result: ResultStatus | "all";
-  priority: Priority | "all";
+  /** 表示する状況(空 = すべて) */
+  situations: Situation[];
+  /** 表示する優先度(空 = すべて) */
+  priorities: Priority[];
   onlyThisWeek: boolean;
-  query: string;
 }

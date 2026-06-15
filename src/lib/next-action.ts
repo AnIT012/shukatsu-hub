@@ -1,45 +1,38 @@
-import type { Application, SelectionStep } from "./types";
+import type { Application, SelectionStep, Situation } from "./types";
 import { dueInstant, isDueThisWeekOrOverdue } from "./date";
 
-const NO_DUE_KEY = Number.MAX_SAFE_INTEGER; // 締切なしの未完了ステップ
-const TERMINAL_KEY = Number.POSITIVE_INFINITY; // 結果待ち / 決着済み / ステップ無し
+const NO_DUE_KEY = Number.MAX_SAFE_INTEGER;
+const TERMINAL_KEY = Number.POSITIVE_INFINITY;
 
 export type NextActionType = "step" | "waiting" | "empty" | "result";
 
 export interface NextAction {
   type: NextActionType;
-  /** type === "step" のときの対象ステップ */
   step: SelectionStep | null;
-  /** 一覧ソート用キー(昇順で締切が近い順) */
   sortKey: number;
 }
 
-/** 未完了(未着手 or 進行中)のステップ一覧 */
+/** 未完了(完了以外)のステップ一覧 */
 export function incompleteSteps(app: Application): SelectionStep[] {
   return app.steps.filter((s) => s.status !== "done");
 }
 
-/**
- * 未完了の中から「最も締切が近い」ステップを返す。
- * 締切ありを優先(昇順)、無ければ並び順で最初の未完了ステップ。
- */
+/** 未完了の中から「最も締切が近い」ステップ。締切ありを優先、無ければ並び順で最初。 */
 export function getNextActionStep(app: Application): SelectionStep | null {
   const incomplete = incompleteSteps(app);
   if (incomplete.length === 0) return null;
-
   const withDue = incomplete
     .filter((s) => s.dueAt)
     .sort((a, b) => (dueInstant(a.dueAt) ?? 0) - (dueInstant(b.dueAt) ?? 0));
-
   if (withDue.length > 0) return withDue[0];
   return incomplete[0];
 }
 
 /**
  * 一覧で主役になる「次のアクション」。
- * - 結果が出ている(合格/不合格/辞退) → "result"
- * - 進行中 & 未完了ステップあり → "step"
- * - 進行中 & 全ステップ完了 → "waiting"(結果待ち)
+ * - 結果が出ている → "result"
+ * - 進行中 & 次が結果待ちステップ / 全完了 → "waiting"
+ * - 進行中 & 次にやるステップあり → "step"
  * - 進行中 & ステップ未登録 → "empty"
  */
 export function getNextAction(app: Application): NextAction {
@@ -54,10 +47,73 @@ export function getNextAction(app: Application): NextAction {
     return { type: "waiting", step: null, sortKey: TERMINAL_KEY };
   }
   const sortKey = step.dueAt ? (dueInstant(step.dueAt) ?? NO_DUE_KEY) : NO_DUE_KEY;
+  if (step.status === "waiting") {
+    return { type: "waiting", step, sortKey };
+  }
   return { type: "step", step, sortKey };
 }
 
-/** その企業が抱える「今週やるべき(今週締切 or 期限切れ)未完了ステップ」数 */
+/** 状況分類(フィルタ・バッジ用) */
+export function situationOf(app: Application): Situation {
+  if (app.result === "passed") return "passed";
+  if (app.result === "rejected") return "rejected";
+  if (app.result === "declined") return "declined";
+  const step = getNextActionStep(app);
+  if (!step) return "waiting"; // 全ステップ完了で結果待ち
+  if (step.status === "waiting") return "waiting";
+  return "in_progress";
+}
+
+// ---- 進捗トラック(ダッシュボードのゲージ) ----
+
+export type SegState =
+  | "done" // 通過(フル・色)
+  | "current" // 進行中(半分)
+  | "next" // 着手前の現在地(空に近い)
+  | "waiting" // 結果待ち(フル・灰)
+  | "empty" // 未到達
+  | "failed" // 不合格で落ちた/通ってきた段(フル・赤)
+  | "declined"; // 辞退(フル・灰)
+
+export interface Segment {
+  step: SelectionStep;
+  state: SegState;
+}
+
+export function trackSegments(app: Application): Segment[] {
+  const currentId = getNextActionStep(app)?.id ?? null;
+  return app.steps.map((s) => {
+    if (app.result === "rejected") {
+      if (s.status === "done" || s.id === currentId)
+        return { step: s, state: "failed" as SegState };
+      return { step: s, state: "empty" as SegState };
+    }
+    if (app.result === "declined") {
+      if (s.status === "done" || s.id === currentId)
+        return { step: s, state: "declined" as SegState };
+      return { step: s, state: "empty" as SegState };
+    }
+    // in_progress / passed
+    if (s.status === "done") return { step: s, state: "done" as SegState };
+    if (s.status === "waiting") return { step: s, state: "waiting" as SegState };
+    if (s.id === currentId)
+      return {
+        step: s,
+        state: (s.status === "in_progress" ? "current" : "next") as SegState,
+      };
+    return { step: s, state: "empty" as SegState };
+  });
+}
+
+/** 完了ステップ数 / 全ステップ数 */
+export function stepProgress(app: Application): { done: number; total: number } {
+  return {
+    done: app.steps.filter((s) => s.status === "done").length,
+    total: app.steps.length,
+  };
+}
+
+/** 今週やるべき(今週締切 or 期限切れ)未完了ステップ数 */
 export function thisWeekTaskCount(app: Application): number {
   if (app.result !== "in_progress") return 0;
   return app.steps.filter(

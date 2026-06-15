@@ -11,14 +11,18 @@ import React, {
 import { toast } from "sonner";
 import type {
   Application,
+  ESEntry,
   Priority,
   RelatedLink,
   ResultStatus,
   SelectionStep,
+  SelectionType,
+  Theme,
 } from "./types";
-import { LS_KEY } from "./constants";
+import { LS_KEY, LS_THEME_KEY } from "./constants";
 import { newId } from "./utils";
 import { DATA_TABLE, supabase } from "./supabase";
+import { normalizeApps } from "./io";
 import { useAuth } from "./auth";
 
 export type SaveState = "idle" | "saving" | "saved";
@@ -27,23 +31,36 @@ interface NewApplicationInput {
   company: string;
   role: string;
   priority: Priority;
+  selectionType: SelectionType;
   result?: ResultStatus;
 }
+
+type AppPatch = Partial<
+  Pick<
+    Application,
+    | "company"
+    | "role"
+    | "priority"
+    | "result"
+    | "selectionType"
+    | "venueMode"
+    | "venuePlace"
+    | "memo"
+  >
+>;
 
 interface StoreValue {
   loaded: boolean;
   applications: Application[];
   saveState: SaveState;
   lastSavedAt: number | null;
+  theme: Theme;
+  setTheme: (t: Theme) => void;
   addApplication: (input: NewApplicationInput) => string;
-  updateApplication: (
-    id: string,
-    patch: Partial<
-      Pick<Application, "company" | "role" | "priority" | "result" | "memo">
-    >,
-  ) => void;
+  updateApplication: (id: string, patch: AppPatch) => void;
   deleteApplication: (id: string) => void;
-  addStep: (appId: string) => string | undefined;
+  addStep: (appId: string, kind?: SelectionStep["kind"]) => string | undefined;
+  addStepsBulk: (appId: string, kinds: SelectionStep["kind"][]) => void;
   updateStep: (
     appId: string,
     stepId: string,
@@ -51,6 +68,7 @@ interface StoreValue {
   ) => void;
   deleteStep: (appId: string, stepId: string) => void;
   moveStep: (appId: string, stepId: string, dir: -1 | 1) => void;
+  setStepOrder: (appId: string, orderedIds: string[]) => void;
   addLink: (appId: string) => string | undefined;
   updateLink: (
     appId: string,
@@ -58,6 +76,13 @@ interface StoreValue {
     patch: Partial<Omit<RelatedLink, "id">>,
   ) => void;
   deleteLink: (appId: string, linkId: string) => void;
+  addEsEntry: (appId: string) => string | undefined;
+  updateEsEntry: (
+    appId: string,
+    entryId: string,
+    patch: Partial<Omit<ESEntry, "id">>,
+  ) => void;
+  deleteEsEntry: (appId: string, entryId: string) => void;
   replaceAll: (apps: Application[]) => void;
 }
 
@@ -65,13 +90,14 @@ const StoreContext = createContext<StoreValue | null>(null);
 
 const nowISO = () => new Date().toISOString();
 
-function makeStep(): SelectionStep {
+function makeStep(kind: SelectionStep["kind"] = "es"): SelectionStep {
   return {
     id: newId(),
-    kind: "es",
+    kind,
     name: "",
     dueAt: null,
     status: "not_started",
+    location: "",
     memo: "",
   };
 }
@@ -82,7 +108,7 @@ function readLocal(key: string): Application[] | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     const apps = Array.isArray(parsed) ? parsed : parsed?.applications;
-    return Array.isArray(apps) ? (apps as Application[]) : null;
+    return Array.isArray(apps) ? normalizeApps(apps) : null;
   } catch {
     return null;
   }
@@ -94,11 +120,34 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [theme, setThemeState] = useState<Theme>("indigo");
   const hydratedRef = useRef(false);
   const dirtyRef = useRef(false);
 
-  const cacheKey =
-    mode === "cloud" && user ? `${LS_KEY}:${user.id}` : LS_KEY;
+  const cacheKey = mode === "cloud" && user ? `${LS_KEY}:${user.id}` : LS_KEY;
+
+  // ---- テーマ: 読み込み & 適用 & 保存 ----
+  useEffect(() => {
+    try {
+      const t = localStorage.getItem(LS_THEME_KEY) as Theme | null;
+      if (t) setThemeState(t);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
+
+  const setTheme = useCallback((t: Theme) => {
+    setThemeState(t);
+    try {
+      localStorage.setItem(LS_THEME_KEY, t);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   // ---- 初回ロード(モード別) ----
   useEffect(() => {
@@ -125,9 +174,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error;
 
         if (data && Array.isArray(data.data)) {
-          setApplications(data.data as Application[]);
+          setApplications(normalizeApps(data.data));
         } else {
-          // クラウドに未保存: 旧ローカルデータがあれば引き継いで移行
           const legacy = cached ?? readLocal(LS_KEY);
           if (legacy && legacy.length > 0) {
             setApplications(legacy);
@@ -153,7 +201,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, user?.id]);
 
-  // ---- 変更を 600ms デバウンスで保存(ローカルキャッシュ + クラウド) ----
+  // ---- 変更を 600ms デバウンスで保存 ----
   useEffect(() => {
     if (!loaded) return;
     if (!hydratedRef.current) {
@@ -188,7 +236,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applications, loaded, mode, user?.id]);
 
-  // ---- 他端末の更新を取り込む(クラウドのみ・未保存編集中は上書きしない) ----
+  // ---- 他端末の更新を取り込む ----
   useEffect(() => {
     if (mode !== "cloud" || !supabase || !user) return;
     const pull = async () => {
@@ -200,8 +248,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         .eq("user_id", user.id)
         .maybeSingle();
       if (error || !data || !Array.isArray(data.data)) return;
-      hydratedRef.current = false; // 外部由来の反映は保存ループにしない
-      setApplications(data.data as Application[]);
+      hydratedRef.current = false;
+      setApplications(normalizeApps(data.data));
     };
     document.addEventListener("visibilitychange", pull);
     window.addEventListener("focus", pull);
@@ -212,7 +260,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, user?.id]);
 
-  // ---- 1社単位の不変更新ヘルパ ----
   const mutateApp = useCallback(
     (id: string, fn: (app: Application) => Application) => {
       setApplications((prev) =>
@@ -231,7 +278,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       role: input.role.trim(),
       priority: input.priority,
       result: input.result ?? "in_progress",
+      selectionType: input.selectionType,
+      venueMode: "",
+      venuePlace: "",
       links: [],
+      esEntries: [],
       memo: "",
       steps: [],
       createdAt: ts,
@@ -251,11 +302,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addStep = useCallback<StoreValue["addStep"]>(
-    (appId) => {
-      const step = makeStep();
+    (appId, kind = "es") => {
+      const step = makeStep(kind);
       mutateApp(appId, (a) => ({ ...a, steps: [...a.steps, step] }));
       return step.id;
     },
+    [mutateApp],
+  );
+
+  const addStepsBulk = useCallback<StoreValue["addStepsBulk"]>(
+    (appId, kinds) =>
+      mutateApp(appId, (a) => ({
+        ...a,
+        steps: [...a.steps, ...kinds.map((k) => makeStep(k))],
+      })),
     [mutateApp],
   );
 
@@ -290,6 +350,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [mutateApp],
   );
 
+  const setStepOrder = useCallback<StoreValue["setStepOrder"]>(
+    (appId, orderedIds) =>
+      mutateApp(appId, (a) => {
+        const byId = new Map(a.steps.map((s) => [s.id, s]));
+        const steps = orderedIds
+          .map((id) => byId.get(id))
+          .filter((s): s is SelectionStep => !!s);
+        // 取りこぼし防止
+        for (const s of a.steps) if (!orderedIds.includes(s.id)) steps.push(s);
+        return { ...a, steps };
+      }),
+    [mutateApp],
+  );
+
   const addLink = useCallback<StoreValue["addLink"]>(
     (appId) => {
       const link: RelatedLink = { id: newId(), label: "", url: "" };
@@ -317,6 +391,40 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [mutateApp],
   );
 
+  const addEsEntry = useCallback<StoreValue["addEsEntry"]>(
+    (appId) => {
+      const entry: ESEntry = {
+        id: newId(),
+        question: "",
+        answer: "",
+        charLimit: null,
+      };
+      mutateApp(appId, (a) => ({ ...a, esEntries: [...a.esEntries, entry] }));
+      return entry.id;
+    },
+    [mutateApp],
+  );
+
+  const updateEsEntry = useCallback<StoreValue["updateEsEntry"]>(
+    (appId, entryId, patch) =>
+      mutateApp(appId, (a) => ({
+        ...a,
+        esEntries: a.esEntries.map((e) =>
+          e.id === entryId ? { ...e, ...patch } : e,
+        ),
+      })),
+    [mutateApp],
+  );
+
+  const deleteEsEntry = useCallback<StoreValue["deleteEsEntry"]>(
+    (appId, entryId) =>
+      mutateApp(appId, (a) => ({
+        ...a,
+        esEntries: a.esEntries.filter((e) => e.id !== entryId),
+      })),
+    [mutateApp],
+  );
+
   const replaceAll = useCallback((apps: Application[]) => {
     setApplications(apps);
   }, []);
@@ -326,16 +434,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     applications,
     saveState,
     lastSavedAt,
+    theme,
+    setTheme,
     addApplication,
     updateApplication,
     deleteApplication,
     addStep,
+    addStepsBulk,
     updateStep,
     deleteStep,
     moveStep,
+    setStepOrder,
     addLink,
     updateLink,
     deleteLink,
+    addEsEntry,
+    updateEsEntry,
+    deleteEsEntry,
     replaceAll,
   };
 

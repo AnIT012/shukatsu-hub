@@ -1,17 +1,27 @@
 import type {
   Application,
   BackupFile,
+  ESEntry,
   Priority,
   RelatedLink,
   ResultStatus,
   SelectionStep,
+  SelectionType,
   StepKind,
   StepStatus,
+  VenueMode,
 } from "./types";
 import { newId } from "./utils";
 
 const PRIORITIES: Priority[] = ["high", "medium", "low"];
 const RESULTS: ResultStatus[] = ["in_progress", "passed", "rejected", "declined"];
+const SELECTION_TYPES: SelectionType[] = [
+  "long_intern",
+  "short_intern",
+  "early",
+  "main",
+];
+const VENUE_MODES: VenueMode[] = ["", "online", "onsite"];
 const STEP_KINDS: StepKind[] = [
   "entry",
   "es",
@@ -23,7 +33,12 @@ const STEP_KINDS: StepKind[] = [
   "internship",
   "other",
 ];
-const STEP_STATUSES: StepStatus[] = ["not_started", "in_progress", "done"];
+const STEP_STATUSES: StepStatus[] = [
+  "not_started",
+  "in_progress",
+  "waiting",
+  "done",
+];
 
 function pick<T extends string>(value: unknown, allowed: T[], fallback: T): T {
   return typeof value === "string" && (allowed as string[]).includes(value)
@@ -43,6 +58,7 @@ function sanitizeStep(raw: any): SelectionStep {
     dueAt:
       typeof raw?.dueAt === "string" && raw.dueAt.length > 0 ? raw.dueAt : null,
     status: pick<StepStatus>(raw?.status, STEP_STATUSES, "not_started"),
+    location: str(raw?.location),
     memo: str(raw?.memo),
   };
 }
@@ -55,6 +71,18 @@ function sanitizeLink(raw: any): RelatedLink {
   };
 }
 
+function sanitizeEsEntry(raw: any): ESEntry {
+  return {
+    id: str(raw?.id) || newId(),
+    question: str(raw?.question),
+    answer: str(raw?.answer),
+    charLimit:
+      typeof raw?.charLimit === "number" && raw.charLimit > 0
+        ? Math.floor(raw.charLimit)
+        : null,
+  };
+}
+
 function sanitizeApp(raw: any): Application {
   const ts = new Date().toISOString();
   return {
@@ -63,12 +91,28 @@ function sanitizeApp(raw: any): Application {
     role: str(raw?.role),
     priority: pick<Priority>(raw?.priority, PRIORITIES, "medium"),
     result: pick<ResultStatus>(raw?.result, RESULTS, "in_progress"),
+    selectionType: pick<SelectionType>(
+      raw?.selectionType,
+      SELECTION_TYPES,
+      "main",
+    ),
+    venueMode: pick<VenueMode>(raw?.venueMode, VENUE_MODES, ""),
+    venuePlace: str(raw?.venuePlace),
     links: Array.isArray(raw?.links) ? raw.links.map(sanitizeLink) : [],
+    esEntries: Array.isArray(raw?.esEntries)
+      ? raw.esEntries.map(sanitizeEsEntry)
+      : [],
     memo: str(raw?.memo),
     steps: Array.isArray(raw?.steps) ? raw.steps.map(sanitizeStep) : [],
     createdAt: str(raw?.createdAt) || ts,
     updatedAt: str(raw?.updatedAt) || ts,
   };
+}
+
+/** 任意の配列(旧形式含む)を最新の Application[] に正規化(欠損フィールドを補完) */
+export function normalizeApps(arr: unknown): Application[] {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(sanitizeApp);
 }
 
 /** インポート JSON を Application[] に正規化(不正なら例外) */

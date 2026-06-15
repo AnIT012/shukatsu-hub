@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Priority } from "@/lib/types";
+import type { Priority, SelectionType } from "@/lib/types";
 import { useStore } from "@/lib/store";
 import {
   Dialog,
@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PRIORITY_OPTIONS } from "@/lib/constants";
+import { PRIORITY_OPTIONS, SELECTION_TYPE_OPTIONS } from "@/lib/constants";
 
 export function AddApplicationDialog({
   open,
@@ -36,6 +36,7 @@ export function AddApplicationDialog({
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
+  const [selectionType, setSelectionType] = useState<SelectionType>("main");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export function AddApplicationDialog({
       setCompany("");
       setRole("");
       setPriority("medium");
+      setSelectionType("main");
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
@@ -51,7 +53,7 @@ export function AddApplicationDialog({
     e.preventDefault();
     const name = company.trim();
     if (!name) return;
-    const id = addApplication({ company: name, role, priority });
+    const id = addApplication({ company: name, role, priority, selectionType });
     onOpenChange(false);
     onCreated(id, name);
   };
@@ -68,7 +70,7 @@ export function AddApplicationDialog({
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="add-company">
-              企業名 <span className="text-rose-500">*</span>
+              企業名 <span className="text-danger">*</span>
             </Label>
             <Input
               id="add-company"
@@ -87,30 +89,46 @@ export function AddApplicationDialog({
               placeholder="例: 総合職サマーインターン"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label>優先度</Label>
-            <Select
-              value={priority}
-              onValueChange={(v) => setPriority(v as Priority)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PRIORITY_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    優先度 {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex gap-2">
+            <div className="flex-1 space-y-1.5">
+              <Label>選考種別</Label>
+              <Select
+                value={selectionType}
+                onValueChange={(v) => setSelectionType(v as SelectionType)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SELECTION_TYPE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <Label>優先度</Label>
+              <Select
+                value={priority}
+                onValueChange={(v) => setPriority(v as Priority)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITY_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               キャンセル
             </Button>
             <Button type="submit" disabled={!company.trim()}>

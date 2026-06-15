@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
@@ -9,10 +8,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#eef1fb" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b1020" },
-  ],
+  themeColor: "#eef3fb",
 };
 
 export default function RootLayout({
@@ -21,15 +17,8 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        {children}
+        <Toaster />
       </body>
     </html>
   );

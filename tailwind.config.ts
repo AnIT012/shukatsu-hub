@@ -12,15 +12,13 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: [
+          "Hiragino Kaku Gothic ProN",
+          "Hiragino Sans",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
           "Segoe UI",
           "Roboto",
-          "Helvetica Neue",
-          "Arial",
-          "Hiragino Sans",
-          "Hiragino Kaku Gothic ProN",
           "Yu Gothic",
           "YuGothic",
           "Meiryo",
@@ -43,9 +41,14 @@ const config: Config = {
           foreground: "hsl(var(--secondary-foreground))",
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: "hsl(var(--danger))",
+          foreground: "hsl(var(--danger-foreground))",
         },
+        danger: {
+          DEFAULT: "hsl(var(--danger))",
+          foreground: "hsl(var(--danger-foreground))",
+        },
+        success: "hsl(var(--success))",
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",

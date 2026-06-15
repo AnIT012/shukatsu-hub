@@ -1,28 +1,34 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { useTheme } from "next-themes";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
+  ArrowRight,
+  Bell,
   Check,
   Download,
-  GraduationCap,
   Inbox,
   Loader2,
   LogOut,
   MoreVertical,
-  Moon,
+  Palette,
   Plus,
   SearchX,
-  Sun,
   Upload,
 } from "lucide-react";
-import type { Filters, Priority, SortKey } from "@/lib/types";
+import type { Application, Filters, Priority, SortKey } from "@/lib/types";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
-import { getNextAction, hasThisWeekTask, thisWeekTaskCount } from "@/lib/next-action";
-import { todayLabel, todayShortLabel } from "@/lib/date";
+import {
+  getNextAction,
+  hasThisWeekTask,
+  situationOf,
+  thisWeekTaskCount,
+} from "@/lib/next-action";
+import { dueInstant, dueToDate, relativeLabel, urgencyOf } from "@/lib/date";
 import { exportApplications, parseBackup, readFile } from "@/lib/io";
+import { LS_ONBOARDED_KEY, STEP_KIND_LABEL, THEME_OPTIONS } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,20 +37,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SummaryBar } from "@/components/summary-bar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ControlsBar } from "@/components/controls-bar";
 import { ApplicationCard } from "@/components/application-card";
 import { ApplicationDetail } from "@/components/application-detail";
 import { AddApplicationDialog } from "@/components/add-application-dialog";
 
 const DEFAULT_FILTERS: Filters = {
-  result: "all",
-  priority: "all",
+  situations: [],
+  priorities: [],
   onlyThisWeek: false,
-  query: "",
 };
 
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
+
+const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function Dashboard() {
   const store = useStore();
@@ -54,45 +66,57 @@ export function Dashboard() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [showOnboard, setShowOnboard] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!loaded) return;
+    try {
+      if (!localStorage.getItem(LS_ONBOARDED_KEY)) setShowOnboard(true);
+    } catch {
+      // ignore
+    }
+  }, [loaded]);
+
+  const dismissOnboard = () => {
+    setShowOnboard(false);
+    try {
+      localStorage.setItem(LS_ONBOARDED_KEY, "1");
+    } catch {
+      // ignore
+    }
+  };
 
   const stats = useMemo(
     () => ({
       total: applications.length,
       inProgress: applications.filter((a) => a.result === "in_progress").length,
       passed: applications.filter((a) => a.result === "passed").length,
-      thisWeekTasks: applications.reduce((n, a) => n + thisWeekTaskCount(a), 0),
+      thisWeek: applications.reduce((n, a) => n + thisWeekTaskCount(a), 0),
     }),
     [applications],
   );
 
   const visible = useMemo(() => {
-    let list = applications.slice();
-    if (filters.result !== "all")
-      list = list.filter((a) => a.result === filters.result);
-    if (filters.priority !== "all")
-      list = list.filter((a) => a.priority === filters.priority);
-    if (filters.onlyThisWeek) list = list.filter(hasThisWeekTask);
-    const q = filters.query.trim().toLowerCase();
-    if (q)
-      list = list.filter(
-        (a) =>
-          a.company.toLowerCase().includes(q) ||
-          a.role.toLowerCase().includes(q),
-      );
-
+    let list = applications.filter((a) => {
+      if (
+        filters.situations.length &&
+        !filters.situations.includes(situationOf(a))
+      )
+        return false;
+      if (filters.priorities.length && !filters.priorities.includes(a.priority))
+        return false;
+      if (filters.onlyThisWeek && !hasThisWeekTask(a)) return false;
+      return true;
+    });
     const decorated = list.map((a) => ({ a, na: getNextAction(a) }));
     decorated.sort((x, y) => {
-      if (sort === "priority") {
+      if (sort === "priority")
         return (
           PRIORITY_RANK[x.a.priority] - PRIORITY_RANK[y.a.priority] ||
           x.na.sortKey - y.na.sortKey
         );
-      }
-      if (sort === "name") {
-        return x.a.company.localeCompare(y.a.company, "ja");
-      }
-      // deadline
+      if (sort === "name") return x.a.company.localeCompare(y.a.company, "ja");
       return (
         x.na.sortKey - y.na.sortKey ||
         x.a.company.localeCompare(y.a.company, "ja")
@@ -120,11 +144,10 @@ export function Dashboard() {
       if (
         applications.length > 0 &&
         !window.confirm(
-          `現在の${applications.length}件を置き換えて ${apps.length}件 を読み込みます。\n先にエクスポートでのバックアップを推奨します。続けますか？`,
+          `現在の${applications.length}件を置き換えて ${apps.length}件 を読み込みます。続けますか？`,
         )
-      ) {
+      )
         return;
-      }
       replaceAll(apps);
       toast.success(`${apps.length}社を読み込みました`);
     } catch (err) {
@@ -143,26 +166,18 @@ export function Dashboard() {
     );
   }
 
+  const now = new Date();
+  const dateLabel = `${now.getMonth() + 1}/${now.getDate()} ${WD[now.getDay()]}.`;
+
   return (
     <div className="min-h-screen">
-      {/* ヘッダー */}
-      <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <GraduationCap className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="hidden truncate text-base font-bold leading-tight sm:block">
-              就活ダッシュボード
-            </h1>
-            <p className="hidden text-xs text-muted-foreground sm:block">
-              {todayLabel()}
-            </p>
-            <p className="text-sm font-semibold leading-tight sm:hidden">
-              {todayShortLabel()}
-            </p>
-          </div>
-
+      {/* ヘッダー(白) */}
+      <header className="sticky top-0 z-30 border-b bg-card">
+        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5">
+          <span className="text-[15px] font-semibold tracking-wide text-primary">
+            {now.getMonth() + 1}/{now.getDate()}{" "}
+            <span className="text-muted-foreground">{WD[now.getDay()]}.</span>
+          </span>
           <div className="ml-auto flex items-center gap-1.5">
             <SaveIndicator />
             <input
@@ -172,39 +187,19 @@ export function Dashboard() {
               className="hidden"
               onChange={handleImportFile}
             />
-            <div className="hidden items-center gap-1.5 sm:flex">
-              <AccountMenu />
-              <ThemeToggle />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => fileRef.current?.click()}
-                title="インポート(JSON)"
-              >
-                <Upload className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleExport}
-                title="エクスポート(JSON)"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-            </div>
             <HeaderMenu
               onImport={() => fileRef.current?.click()}
               onExport={handleExport}
             />
-            <Button onClick={() => setAddOpen(true)} className="ml-0.5">
+            <Button size="sm" className="h-9" onClick={() => setAddOpen(true)}>
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">企業を追加</span>
+              <span className="hidden xs:inline sm:inline">追加</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-5 px-4 py-6">
+      <main className="mx-auto max-w-3xl px-4 pb-16 pt-4">
         {applications.length === 0 ? (
           <EmptyState
             onAdd={() => setAddOpen(true)}
@@ -212,27 +207,28 @@ export function Dashboard() {
           />
         ) : (
           <>
-            <SummaryBar
-              total={stats.total}
-              inProgress={stats.inProgress}
-              passed={stats.passed}
-              thisWeekTasks={stats.thisWeekTasks}
-              thisWeekActive={filters.onlyThisWeek}
-              onToggleThisWeek={() =>
-                setFilters((f) => ({ ...f, onlyThisWeek: !f.onlyThisWeek }))
-              }
-            />
+            <p className="px-0.5 text-[13px] text-muted-foreground">
+              今週やること{" "}
+              <b className="font-semibold text-danger">{stats.thisWeek}件</b> ·
+              進行中 {stats.inProgress}社 · 合格 {stats.passed}
+            </p>
 
-            <ControlsBar
-              sort={sort}
-              onSortChange={setSort}
-              filters={filters}
-              onFiltersChange={setFilters}
-            />
+            <div className="mt-3">
+              <AnnouncementBanner applications={applications} />
+            </div>
+
+            <div className="mt-3">
+              <ControlsBar
+                sort={sort}
+                onSortChange={setSort}
+                filters={filters}
+                onFiltersChange={setFilters}
+              />
+            </div>
 
             {visible.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-16 text-center">
-                <SearchX className="h-8 w-8 text-muted-foreground" />
+              <div className="mt-6 flex flex-col items-center gap-3 rounded-xl border border-dashed py-14 text-center">
+                <SearchX className="h-7 w-7 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
                   条件に一致する企業がありません
                 </p>
@@ -245,7 +241,7 @@ export function Dashboard() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-3">
+              <div className="mt-3 space-y-2.5">
                 {visible.map((app) => (
                   <div key={app.id} className="animate-fade-in">
                     <ApplicationCard
@@ -256,10 +252,6 @@ export function Dashboard() {
                 ))}
               </div>
             )}
-
-            <p className="pt-2 text-center text-xs text-muted-foreground">
-              {visible.length} / {applications.length} 社を表示
-            </p>
           </>
         )}
       </main>
@@ -275,12 +267,19 @@ export function Dashboard() {
 
       <ApplicationDetail
         appId={selectedId}
-        onOpenChange={(o) => {
-          if (!o) setSelectedId(null);
-        }}
+        onOpenChange={(o) => !o && setSelectedId(null)}
         onDeleted={(name) => {
           setSelectedId(null);
           toast.success(`「${name}」を削除しました`);
+        }}
+      />
+
+      <OnboardingDialog
+        open={showOnboard}
+        onClose={dismissOnboard}
+        onAdd={() => {
+          dismissOnboard();
+          setAddOpen(true);
         }}
       />
     </div>
@@ -289,42 +288,26 @@ export function Dashboard() {
 
 function SaveIndicator() {
   const { saveState, lastSavedAt } = useStore();
-  if (saveState === "saving") {
+  if (saveState === "saving")
     return (
       <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        保存中…
+        保存中
       </span>
     );
-  }
   if (saveState === "saved") {
     const t = lastSavedAt ? new Date(lastSavedAt) : null;
     const hhmm = t
       ? `${t.getHours()}:${String(t.getMinutes()).padStart(2, "0")}`
       : "";
     return (
-      <span className="hidden animate-fade-in items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 sm:flex">
+      <span className="hidden animate-fade-in items-center gap-1.5 text-xs text-success sm:flex">
         <Check className="h-3.5 w-3.5" />
-        保存しました{hhmm && ` ${hhmm}`}
+        保存{hhmm && ` ${hhmm}`}
       </span>
     );
   }
   return null;
-}
-
-function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      title="テーマ切替"
-    >
-      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-    </Button>
-  );
 }
 
 function HeaderMenu({
@@ -334,27 +317,39 @@ function HeaderMenu({
   onImport: () => void;
   onExport: () => void;
 }) {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useStore();
   const { mode, signOut } = useAuth();
-  const isDark = resolvedTheme === "dark";
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="sm:hidden" aria-label="メニュー">
+        <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="メニュー">
           <MoreVertical className="h-5 w-5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
-          {isDark ? <Sun /> : <Moon />}
-          {isDark ? "ライトモード" : "ダークモード"}
-        </DropdownMenuItem>
+      <DropdownMenuContent align="end" className="min-w-[13rem]">
+        <div className="flex items-center gap-2 px-2.5 py-1.5 text-[11px] text-muted-foreground">
+          <Palette className="h-3.5 w-3.5" />
+          テーマ
+        </div>
+        {THEME_OPTIONS.map((t) => (
+          <DropdownMenuItem key={t.value} onClick={() => setTheme(t.value)}>
+            <span
+              className={cn(
+                "h-3.5 w-3.5 rounded-full border",
+                theme === t.value ? "border-primary bg-primary" : "border-border",
+              )}
+            />
+            <span className="flex-1">{t.label}</span>
+            {theme === t.value && <Check className="h-3.5 w-3.5 text-primary" />}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onImport}>
-          <Upload />
+          <Upload className="h-4 w-4" />
           インポート（JSON）
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onExport}>
-          <Download />
+          <Download className="h-4 w-4" />
           エクスポート（JSON）
         </DropdownMenuItem>
         {mode === "cloud" && (
@@ -366,7 +361,7 @@ function HeaderMenu({
                 toast.success("ログアウトしました");
               }}
             >
-              <LogOut />
+              <LogOut className="h-4 w-4" />
               ログアウト
             </DropdownMenuItem>
           </>
@@ -376,25 +371,70 @@ function HeaderMenu({
   );
 }
 
-function AccountMenu() {
-  const { mode, user, signOut } = useAuth();
-  if (mode !== "cloud" || !user) return null;
+function AnnouncementBanner({ applications }: { applications: Application[] }) {
+  const items = useMemo(() => {
+    const up = applications
+      .flatMap((app) => {
+        const na = getNextAction(app);
+        if (na.type !== "step" || !na.step?.dueAt) return [];
+        const inst = dueInstant(na.step.dueAt);
+        if (inst == null) return [];
+        return [{ app, step: na.step, inst, dueAt: na.step.dueAt }];
+      })
+      .sort((a, b) => a.inst - b.inst);
+    if (up.length === 0) return null;
+    const first = up[0];
+    const d0 = dueToDate(first.dueAt);
+    const sameDay = up.filter((x) => {
+      const d = dueToDate(x.dueAt);
+      return (
+        d &&
+        d0 &&
+        d.getFullYear() === d0.getFullYear() &&
+        d.getMonth() === d0.getMonth() &&
+        d.getDate() === d0.getDate()
+      );
+    });
+    return { first, sameDay: sameDay.slice(0, 4), date: d0 };
+  }, [applications]);
+
+  if (!items || !items.date) return null;
+  const urgent = ["overdue", "soon", "near"].includes(
+    urgencyOf(items.first.dueAt),
+  );
+
   return (
-    <div className="flex items-center gap-1">
-      <span className="hidden max-w-[140px] truncate text-xs text-muted-foreground md:inline">
-        {user.email}
-      </span>
-      <Button
-        variant="ghost"
-        size="icon"
-        title="ログアウト"
-        onClick={async () => {
-          await signOut();
-          toast.success("ログアウトしました");
-        }}
-      >
-        <LogOut className="h-4 w-4" />
-      </Button>
+    <div
+      className={cn(
+        "rounded-xl bg-card p-3 shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] ring-1",
+        urgent ? "ring-[hsl(var(--danger)/0.45)]" : "ring-border",
+      )}
+      style={{ borderLeft: "3px solid", borderLeftColor: urgent ? "hsl(var(--danger))" : "hsl(var(--primary))" }}
+    >
+      <div className="flex items-center gap-1.5 text-[12px] font-medium">
+        <Bell className={cn("h-3.5 w-3.5", urgent ? "text-danger" : "text-primary")} />
+        <span className={urgent ? "text-danger" : "text-primary"}>直近の予定</span>
+        <span className="ml-auto text-[11px] text-muted-foreground">
+          {items.date.getMonth() + 1}/{items.date.getDate()} ·{" "}
+          {relativeLabel(items.first.dueAt)}
+        </span>
+      </div>
+      <div className="mt-1.5 space-y-1">
+        {items.sameDay.map((x) => (
+          <div key={x.app.id} className="flex items-center gap-2 text-[12.5px]">
+            <span
+              className={cn(
+                "h-1 w-1 shrink-0 rounded-full",
+                urgent ? "bg-danger" : "bg-primary",
+              )}
+            />
+            <span className="font-medium">{x.app.company || "(未設定)"}</span>
+            <span className="truncate text-muted-foreground">
+              {STEP_KIND_LABEL[x.step.kind]}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -407,15 +447,15 @@ function EmptyState({
   onImport: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-20 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
-        <Inbox className="h-8 w-8 text-muted-foreground" />
+    <div className="mt-6 flex flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-16 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-primary">
+        <Inbox className="h-7 w-7" />
       </div>
-      <h2 className="mt-5 text-lg font-semibold">まだ企業が登録されていません</h2>
-      <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
-        最初の企業を追加して、エントリー・ES・面接などの選考ステップと締切を登録しよう。毎朝ここを開けば「次にやること」が一目でわかる。
+      <h2 className="mt-4 font-semibold">まだ企業が登録されていません</h2>
+      <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
+        最初の企業を追加して、選考ステップと締切を登録しよう。
       </p>
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
         <Button onClick={onAdd}>
           <Plus className="h-4 w-4" />
           最初の企業を追加
@@ -426,5 +466,70 @@ function EmptyState({
         </Button>
       </div>
     </div>
+  );
+}
+
+function OnboardingDialog({
+  open,
+  onClose,
+  onAdd,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onAdd: () => void;
+}) {
+  const steps = [
+    {
+      n: 1,
+      t: "企業を追加",
+      d: "応募先を登録（選考種別・優先度も選べる）",
+    },
+    {
+      n: 2,
+      t: "選考ステップ＆締切を入れる",
+      d: "テンプレから一括もOK。「次の締切」が自動表示",
+    },
+    { n: 3, t: "毎朝ひらくだけ", d: "直近の予定と次にやることがトップに" },
+  ];
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm text-center">
+        <DialogTitle className="sr-only">ようこそ</DialogTitle>
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+          <Check className="h-6 w-6" />
+        </div>
+        <h2 className="mt-2 text-lg font-semibold">ようこそ！</h2>
+        <p className="text-sm text-muted-foreground">
+          就活の「次にやること」を、毎朝ここで。
+        </p>
+        <div className="mt-3 space-y-3 text-left">
+          {steps.map((s) => (
+            <div key={s.n} className="flex gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent text-sm font-semibold text-primary">
+                {s.n}
+              </div>
+              <div>
+                <div className="text-sm font-medium">{s.t}</div>
+                <div className="text-xs text-muted-foreground">{s.d}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <DialogDescription className="sr-only">使い方の説明</DialogDescription>
+        <div className="mt-5 space-y-2">
+          <Button className="w-full" onClick={onAdd}>
+            <Plus className="h-4 w-4" />
+            最初の企業を追加
+          </Button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xs text-muted-foreground"
+          >
+            あとで見る
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
