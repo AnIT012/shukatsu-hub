@@ -142,3 +142,9 @@ export function todayLabel(): string {
   const d = new Date();
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日(${WEEKDAY[d.getDay()]})`;
 }
+
+/** スマホ用のコンパクトな今日 "6/15(日)" */
+export function todayShortLabel(): string {
+  const d = new Date();
+  return `${d.getMonth() + 1}/${d.getDate()}(${WEEKDAY[d.getDay()]})`;
+}

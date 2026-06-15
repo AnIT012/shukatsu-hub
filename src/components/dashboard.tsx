@@ -10,6 +10,7 @@ import {
   Inbox,
   Loader2,
   LogOut,
+  MoreVertical,
   Moon,
   Plus,
   SearchX,
@@ -20,9 +21,16 @@ import type { Filters, Priority, SortKey } from "@/lib/types";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { getNextAction, hasThisWeekTask, thisWeekTaskCount } from "@/lib/next-action";
-import { todayLabel } from "@/lib/date";
+import { todayLabel, todayShortLabel } from "@/lib/date";
 import { exportApplications, parseBackup, readFile } from "@/lib/io";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SummaryBar } from "@/components/summary-bar";
 import { ControlsBar } from "@/components/controls-bar";
 import { ApplicationCard } from "@/components/application-card";
@@ -144,18 +152,19 @@ export function Dashboard() {
             <GraduationCap className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <h1 className="truncate text-base font-bold leading-tight">
+            <h1 className="hidden truncate text-base font-bold leading-tight sm:block">
               就活ダッシュボード
             </h1>
             <p className="hidden text-xs text-muted-foreground sm:block">
               {todayLabel()}
             </p>
+            <p className="text-sm font-semibold leading-tight sm:hidden">
+              {todayShortLabel()}
+            </p>
           </div>
 
           <div className="ml-auto flex items-center gap-1.5">
-            <AccountMenu />
             <SaveIndicator />
-            <ThemeToggle />
             <input
               ref={fileRef}
               type="file"
@@ -163,23 +172,31 @@ export function Dashboard() {
               className="hidden"
               onChange={handleImportFile}
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => fileRef.current?.click()}
-              title="インポート(JSON)"
-            >
-              <Upload className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleExport}
-              title="エクスポート(JSON)"
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-            <Button onClick={() => setAddOpen(true)} className="ml-1">
+            <div className="hidden items-center gap-1.5 sm:flex">
+              <AccountMenu />
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => fileRef.current?.click()}
+                title="インポート(JSON)"
+              >
+                <Upload className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleExport}
+                title="エクスポート(JSON)"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
+            <HeaderMenu
+              onImport={() => fileRef.current?.click()}
+              onExport={handleExport}
+            />
+            <Button onClick={() => setAddOpen(true)} className="ml-0.5">
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">企業を追加</span>
             </Button>
@@ -307,6 +324,55 @@ function ThemeToggle() {
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </Button>
+  );
+}
+
+function HeaderMenu({
+  onImport,
+  onExport,
+}: {
+  onImport: () => void;
+  onExport: () => void;
+}) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const { mode, signOut } = useAuth();
+  const isDark = resolvedTheme === "dark";
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="sm:hidden" aria-label="メニュー">
+          <MoreVertical className="h-5 w-5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => setTheme(isDark ? "light" : "dark")}>
+          {isDark ? <Sun /> : <Moon />}
+          {isDark ? "ライトモード" : "ダークモード"}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onImport}>
+          <Upload />
+          インポート（JSON）
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onExport}>
+          <Download />
+          エクスポート（JSON）
+        </DropdownMenuItem>
+        {mode === "cloud" && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={async () => {
+                await signOut();
+                toast.success("ログアウトしました");
+              }}
+            >
+              <LogOut />
+              ログアウト
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
