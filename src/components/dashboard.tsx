@@ -72,6 +72,10 @@ export function Dashboard() {
   const store = useStore();
   const { applications, loaded, replaceAll, seedSampleIfEmpty, deleteApplication } =
     store;
+  const { user, mode } = useAuth();
+  // 同意/オンボード済みフラグはアカウント別に持つ(同一ブラウザで複数アカウントを使っても誤って出ない問題を防ぐ)
+  const flagKey = (base: string) =>
+    mode === "cloud" && user ? `${base}:${user.id}` : base;
 
   const [sort, setSort] = useState<SortKey>("deadline");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -89,8 +93,8 @@ export function Dashboard() {
     // 新規(空)ユーザーのみサンプル投入。既存データには絶対に触れない(store側で多重ガード)
     seedSampleIfEmpty();
     try {
-      const legalOk = !!localStorage.getItem(LS_LEGAL_KEY);
-      const onboarded = !!localStorage.getItem(LS_ONBOARDED_KEY);
+      const legalOk = !!localStorage.getItem(flagKey(LS_LEGAL_KEY));
+      const onboarded = !!localStorage.getItem(flagKey(LS_ONBOARDED_KEY));
       // 初回は「規約同意 → オンボード → ツアー」の順
       if (!legalOk) {
         setLegalConsentMode(true);
@@ -102,12 +106,12 @@ export function Dashboard() {
       // ignore
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded]);
+  }, [loaded, user?.id, mode]);
 
   const closeOnboard = () => {
     setShowOnboard(false);
     try {
-      localStorage.setItem(LS_ONBOARDED_KEY, "1");
+      localStorage.setItem(flagKey(LS_ONBOARDED_KEY), "1");
     } catch {
       // ignore
     }
@@ -121,14 +125,14 @@ export function Dashboard() {
 
   const acceptLegal = () => {
     try {
-      localStorage.setItem(LS_LEGAL_KEY, "1");
+      localStorage.setItem(flagKey(LS_LEGAL_KEY), "1");
     } catch {
       // ignore
     }
     setLegalOpen(false);
     setLegalConsentMode(false);
     try {
-      if (!localStorage.getItem(LS_ONBOARDED_KEY)) setShowOnboard(true);
+      if (!localStorage.getItem(flagKey(LS_ONBOARDED_KEY))) setShowOnboard(true);
     } catch {
       // ignore
     }
