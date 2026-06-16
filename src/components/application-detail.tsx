@@ -78,8 +78,12 @@ export function ApplicationDetail({
   const widthRef = useRef(0);
 
   useEffect(() => {
-    setDragX(0);
-    setDragging(false);
+    // 開く時だけリセット。閉じる(appId=null)時にリセットすると、画面外へ送ったパネルが
+    // 一瞬元位置に戻ってからシートの閉じアニメが走り「ひょこっ」と戻って見えてしまう。
+    if (appId) {
+      setDragX(0);
+      setDragging(false);
+    }
   }, [appId]);
 
   return (
