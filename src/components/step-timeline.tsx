@@ -11,6 +11,7 @@ import {
   ListPlus,
   Plus,
   Trash2,
+  X,
 } from "lucide-react";
 import type { Application, StepKind, StepStatus } from "@/lib/types";
 import { useStore } from "@/lib/store";
@@ -196,37 +197,69 @@ export function StepTimeline({ app }: { app: Application }) {
                         placeholder="補足名(任意) 例: 一次(オンライン)"
                         className="h-9"
                       />
-                      <div className="grid grid-cols-[1.6fr_1fr] gap-2.5">
-                        <div className="min-w-0">
+                      <div className="space-y-2">
+                        <div>
                           <label className="mb-1 block text-[11px] text-muted-foreground">
                             締切 / 実施日
                           </label>
-                          <Input
-                            type="date"
-                            value={date}
-                            onChange={(e) =>
-                              updateStep(app.id, step.id, {
-                                dueAt: joinDue(e.target.value, time),
-                              })
-                            }
-                            className="h-9 w-full min-w-0 px-2.5 text-[16px] sm:text-sm"
-                          />
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="date"
+                              value={date}
+                              onChange={(e) =>
+                                updateStep(app.id, step.id, {
+                                  dueAt: joinDue(e.target.value, time),
+                                })
+                              }
+                              className="h-10 min-w-0 flex-1 px-2.5 text-[16px] sm:text-sm"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 shrink-0 text-muted-foreground"
+                              disabled={!date}
+                              title="締切をクリア"
+                              onClick={() =>
+                                updateStep(app.id, step.id, { dueAt: null })
+                              }
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="min-w-0">
+                        <div>
                           <label className="mb-1 block text-[11px] text-muted-foreground">
                             時刻（任意）
                           </label>
-                          <Input
-                            type="time"
-                            value={time}
-                            disabled={!date}
-                            onChange={(e) =>
-                              updateStep(app.id, step.id, {
-                                dueAt: joinDue(date, e.target.value),
-                              })
-                            }
-                            className="h-9 w-full min-w-0 px-2.5 text-[16px] sm:text-sm"
-                          />
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="time"
+                              value={time}
+                              disabled={!date}
+                              onChange={(e) =>
+                                updateStep(app.id, step.id, {
+                                  dueAt: joinDue(date, e.target.value),
+                                })
+                              }
+                              className="h-10 min-w-0 flex-1 px-2.5 text-[16px] sm:text-sm"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 shrink-0 text-muted-foreground"
+                              disabled={!time}
+                              title="時刻をクリア"
+                              onClick={() =>
+                                updateStep(app.id, step.id, {
+                                  dueAt: joinDue(date, ""),
+                                })
+                              }
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                       <div>

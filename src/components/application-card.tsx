@@ -128,10 +128,10 @@ export function ApplicationCard({
         <DateBlock app={app} urgent={urgent} />
         <div className="min-w-0 flex-1 self-center">
           <div className="flex items-center gap-1 text-[15px] font-semibold leading-tight">
+            <span className="truncate">{app.company || "(名称未設定)"}</span>
             {app.priority === "high" && (
               <Star className="h-3.5 w-3.5 shrink-0 fill-primary text-primary" />
             )}
-            <span className="truncate">{app.company || "(名称未設定)"}</span>
           </div>
           {showRole && app.role && (
             <div className="truncate text-[11px] text-muted-foreground">
