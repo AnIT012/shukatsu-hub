@@ -95,11 +95,14 @@ export function Dashboard() {
     try {
       const legalOk = !!localStorage.getItem(flagKey(LS_LEGAL_KEY));
       const onboarded = !!localStorage.getItem(flagKey(LS_ONBOARDED_KEY));
-      // 初回は「規約同意 → オンボード → ツアー」の順
+      // 実データ(サンプル除く)が無い=新規ユーザーのみチュートリアル対象。
+      // 既存ユーザーには規約同意だけを流す(更新後の再同意)。
+      const isNewUser =
+        applications.filter((a) => a.id !== SAMPLE_APP_ID).length === 0;
       if (!legalOk) {
         setLegalConsentMode(true);
         setLegalOpen(true);
-      } else if (!onboarded) {
+      } else if (!onboarded && isNewUser) {
         setShowOnboard(true);
       }
     } catch {
@@ -132,7 +135,11 @@ export function Dashboard() {
     setLegalOpen(false);
     setLegalConsentMode(false);
     try {
-      if (!localStorage.getItem(flagKey(LS_ONBOARDED_KEY))) setShowOnboard(true);
+      // 同意後にチュートリアルへ進むのは新規ユーザー(実データ無し)だけ
+      const isNewUser =
+        applications.filter((a) => a.id !== SAMPLE_APP_ID).length === 0;
+      if (!localStorage.getItem(flagKey(LS_ONBOARDED_KEY)) && isNewUser)
+        setShowOnboard(true);
     } catch {
       // ignore
     }

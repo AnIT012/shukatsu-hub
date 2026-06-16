@@ -168,8 +168,8 @@ export const LS_THEME_KEY = "shukatsu-dashboard:theme";
 export const LS_ONBOARDED_KEY = "shukatsu-dashboard:onboarded";
 /** サンプル投入済みフラグ(初回チュートリアル用) */
 export const LS_SEEDED_KEY = "shukatsu-dashboard:seeded";
-/** 規約同意フラグ */
-export const LS_LEGAL_KEY = "shukatsu-dashboard:legal-accepted";
+/** 規約同意フラグ。規約を改定して全員に再同意を求めるときは末尾のバージョンを上げる */
+export const LS_LEGAL_KEY = "shukatsu-dashboard:legal-accepted-v2";
 
 /** チュートリアル用サンプル企業の固定ID(自動削除に使う) */
 export const SAMPLE_APP_ID = "sample-anit-co";
