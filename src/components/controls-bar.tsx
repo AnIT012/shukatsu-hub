@@ -51,8 +51,8 @@ function Chip({
       className={cn(
         "rounded-full px-3.5 py-1.5 text-sm transition-colors",
         active
-          ? "bg-primary text-primary-foreground"
-          : "bg-muted text-foreground/80 hover:bg-secondary",
+          ? "bg-primary text-primary-foreground ring-1 ring-inset ring-[hsl(var(--primary))]"
+          : "bg-secondary text-foreground ring-1 ring-inset ring-[hsl(var(--muted-foreground)/0.32)] hover:bg-muted",
       )}
     >
       {children}
