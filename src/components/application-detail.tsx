@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Award,
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronRight,
   Clock,
@@ -41,8 +42,11 @@ import { StepTimeline } from "@/components/step-timeline";
 import {
   isInternType,
   PASSED_LABEL,
+  PRIORITY_LABEL,
   PRIORITY_OPTIONS,
+  RESULT_LABEL,
   RESULT_OPTIONS,
+  SELECTION_TYPE_LABEL,
   SELECTION_TYPE_OPTIONS,
   STEP_KIND_LABEL,
 } from "@/lib/constants";
@@ -170,8 +174,11 @@ function DetailBody({
     deleteEsEntry,
   } = useStore();
   const [editHeader, setEditHeader] = useState(false);
+  const [editBasic, setEditBasic] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [openEs, setOpenEs] = useState<string | null>(null);
+  const [editEs, setEditEs] = useState<string | null>(null);
+  const [editLinks, setEditLinks] = useState(false);
+  const [editMemo, setEditMemo] = useState(false);
   const next = getNextAction(app);
   const intern = isInternType(app.selectionType);
   const pinnedCount = app.links.filter((l) => l.pin).length;
@@ -239,9 +246,16 @@ function DetailBody({
           </button>
         )}
 
-        {/* セレクト群 */}
-        <div className="mt-3 space-y-2">
-          <div data-tour="type">
+        {/* 基本情報: 普段はバッジ表示 / ✎で編集モード(セレクト群) */}
+        {editBasic ? (
+          <div
+            data-tour="type"
+            className="mt-3 space-y-2 rounded-xl border-2 border-[hsl(var(--primary)/0.35)] bg-card p-3"
+          >
+            <div className="flex items-center gap-1.5 text-sm font-medium">
+              <Pencil className="h-4 w-4 text-primary" />
+              基本情報を編集
+            </div>
             <LabeledSelect
               label="選考種別"
               value={app.selectionType}
@@ -250,66 +264,126 @@ function DetailBody({
               }
               options={SELECTION_TYPE_OPTIONS}
             />
-          </div>
-          {intern && (
-            <div className="flex gap-2">
-              <div className="w-[44%]">
-                <Select
-                  value={app.venueMode || "none"}
-                  onValueChange={(v) =>
-                    updateApplication(app.id, {
-                      venueMode: (v === "none" ? "" : v) as VenueMode,
-                    })
-                  }
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <MapPin className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VENUE_OPTIONS.map((o) => (
-                      <SelectItem key={o.value || "none"} value={o.value || "none"}>
-                        {o.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {intern && (
+              <div className="flex gap-2">
+                <div className="w-[44%]">
+                  <div className="mb-1 text-[11px] text-muted-foreground">
+                    開催形式
+                  </div>
+                  <Select
+                    value={app.venueMode || "none"}
+                    onValueChange={(v) =>
+                      updateApplication(app.id, {
+                        venueMode: (v === "none" ? "" : v) as VenueMode,
+                      })
+                    }
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <MapPin className="mr-1 h-3.5 w-3.5 text-muted-foreground" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VENUE_OPTIONS.map((o) => (
+                        <SelectItem
+                          key={o.value || "none"}
+                          value={o.value || "none"}
+                        >
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <div className="mb-1 text-[11px] text-muted-foreground">
+                    開催地
+                  </div>
+                  <Input
+                    value={app.venuePlace}
+                    onChange={(e) =>
+                      updateApplication(app.id, { venuePlace: e.target.value })
+                    }
+                    placeholder="例: 東京・渋谷"
+                    disabled={app.venueMode !== "onsite"}
+                    className="h-9 w-full text-sm"
+                  />
+                </div>
               </div>
-              <Input
-                value={app.venuePlace}
-                onChange={(e) =>
-                  updateApplication(app.id, { venuePlace: e.target.value })
-                }
-                placeholder="開催地(例: 東京・渋谷)"
-                disabled={app.venueMode !== "onsite"}
-                className="h-9 flex-1 text-sm"
-              />
+            )}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <LabeledSelect
+                  label="優先度"
+                  value={app.priority}
+                  onChange={(v) =>
+                    updateApplication(app.id, { priority: v as any })
+                  }
+                  options={PRIORITY_OPTIONS.map((o) => ({
+                    value: o.value,
+                    label: `優先度 ${o.label}`,
+                  }))}
+                />
+              </div>
+              <div className="flex-1">
+                <LabeledSelect
+                  label="結果"
+                  value={app.result}
+                  onChange={(v) =>
+                    updateApplication(app.id, { result: v as any })
+                  }
+                  options={RESULT_OPTIONS}
+                />
+              </div>
             </div>
-          )}
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <LabeledSelect
-                label="優先度"
-                value={app.priority}
-                onChange={(v) =>
-                  updateApplication(app.id, { priority: v as any })
-                }
-                options={PRIORITY_OPTIONS.map((o) => ({
-                  value: o.value,
-                  label: `優先度 ${o.label}`,
-                }))}
-              />
-            </div>
-            <div className="flex-1">
-              <LabeledSelect
-                label="結果"
-                value={app.result}
-                onChange={(v) => updateApplication(app.id, { result: v as any })}
-                options={RESULT_OPTIONS}
-              />
-            </div>
+            <Button
+              className="w-full"
+              onClick={() => {
+                setEditBasic(false);
+                toast.success("保存しました");
+              }}
+            >
+              <Check className="h-4 w-4" />
+              保存
+            </Button>
           </div>
-        </div>
+        ) : (
+          <div
+            data-tour="type"
+            className="mt-3 flex flex-wrap items-center gap-1.5"
+          >
+            <InfoBadge>{SELECTION_TYPE_LABEL[app.selectionType]}</InfoBadge>
+            <InfoBadge>優先度 {PRIORITY_LABEL[app.priority]}</InfoBadge>
+            <InfoBadge
+              tone={
+                app.result === "passed"
+                  ? "success"
+                  : app.result === "rejected"
+                    ? "danger"
+                    : "default"
+              }
+            >
+              {app.result === "passed"
+                ? PASSED_LABEL[app.selectionType]
+                : RESULT_LABEL[app.result]}
+            </InfoBadge>
+            {intern && app.venueMode && (
+              <InfoBadge>
+                <MapPin className="h-3 w-3" />
+                {app.venueMode === "online"
+                  ? "オンライン"
+                  : `対面${app.venuePlace ? ` · ${app.venuePlace}` : ""}`}
+              </InfoBadge>
+            )}
+            <button
+              type="button"
+              onClick={() => setEditBasic(true)}
+              className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium text-primary hover:bg-accent"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              編集
+            </button>
+          </div>
+        )}
 
         {/* 次にやること バナー */}
         <div className="mt-4">
@@ -321,7 +395,7 @@ function DetailBody({
           <StepTimeline app={app} />
         </Section>
 
-        {/* ES設問・回答 */}
+        {/* ES設問・回答: 読み物表示 / 個別✎編集 */}
         <Section
           icon={<Pencil className="h-4 w-4" />}
           title="ES設問・回答"
@@ -332,7 +406,7 @@ function DetailBody({
               size="sm"
               onClick={() => {
                 const id = addEsEntry(app.id);
-                if (id) setOpenEs(id);
+                if (id) setEditEs(id);
               }}
             >
               <Plus className="h-4 w-4" />
@@ -347,105 +421,132 @@ function DetailBody({
           ) : (
             <div className="space-y-2">
               {app.esEntries.map((es) => {
-                const open = openEs === es.id;
-                const over = es.charLimit != null && es.answer.length > es.charLimit;
-                return (
-                  <div
-                    key={es.id}
-                    className="rounded-lg border bg-card"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setOpenEs(open ? null : es.id)}
-                      className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
+                const over =
+                  es.charLimit != null && es.answer.length > es.charLimit;
+                const counter =
+                  es.charLimit != null
+                    ? `${es.answer.length} / ${es.charLimit}字`
+                    : `${es.answer.length}字`;
+                if (editEs === es.id) {
+                  return (
+                    <div
+                      key={es.id}
+                      className="space-y-2 rounded-lg border-2 border-[hsl(var(--primary)/0.35)] bg-card p-3"
                     >
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                        {es.question || "(設問未入力)"}
-                      </span>
-                      {open ? (
-                        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      )}
-                    </button>
-                    {open && (
-                      <div className="space-y-2 px-3 pb-3">
+                      <Input
+                        value={es.question}
+                        onChange={(e) =>
+                          updateEsEntry(app.id, es.id, {
+                            question: e.target.value,
+                          })
+                        }
+                        placeholder="設問 例: 学生時代に力を入れたこと"
+                        className="h-9 text-sm"
+                      />
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          文字数制限
+                        </span>
                         <Input
-                          value={es.question}
+                          type="number"
+                          min={0}
+                          value={es.charLimit ?? ""}
                           onChange={(e) =>
                             updateEsEntry(app.id, es.id, {
-                              question: e.target.value,
+                              charLimit: e.target.value
+                                ? Number(e.target.value)
+                                : null,
                             })
                           }
-                          placeholder="設問 例: 学生時代に力を入れたこと"
-                          className="h-9 text-sm"
+                          placeholder="無制限"
+                          className="h-8 w-24 text-sm"
                         />
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">
-                            文字数制限
-                          </span>
-                          <Input
-                            type="number"
-                            min={0}
-                            value={es.charLimit ?? ""}
-                            onChange={(e) =>
-                              updateEsEntry(app.id, es.id, {
-                                charLimit: e.target.value
-                                  ? Number(e.target.value)
-                                  : null,
-                              })
-                            }
-                            placeholder="無制限"
-                            className="h-8 w-24 text-sm"
-                          />
-                          <span className="text-xs text-muted-foreground">字</span>
-                        </div>
-                        <Textarea
-                          value={es.answer}
-                          onChange={(e) =>
-                            updateEsEntry(app.id, es.id, {
-                              answer: e.target.value,
-                            })
-                          }
-                          placeholder="回答を書く / 貼り付ける"
-                          className="min-h-[90px] resize-y text-sm leading-relaxed"
-                        />
-                        <div className="flex items-center justify-between text-xs">
-                          <span
-                            className={cn(
-                              "text-muted-foreground",
-                              over && "font-medium text-danger",
-                            )}
-                          >
-                            {es.charLimit != null
-                              ? `${es.answer.length} / ${es.charLimit}字`
-                              : `${es.answer.length}字`}
-                          </span>
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              className="flex items-center gap-1 font-medium text-primary"
-                              onClick={() => {
-                                navigator.clipboard
-                                  ?.writeText(es.answer)
-                                  .then(() => toast.success("コピーしました"));
-                              }}
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                              コピー
-                            </button>
-                            <button
-                              type="button"
-                              className="flex items-center gap-1 text-muted-foreground hover:text-danger"
-                              onClick={() => deleteEsEntry(app.id, es.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              削除
-                            </button>
-                          </div>
-                        </div>
+                        <span className="text-xs text-muted-foreground">字</span>
                       </div>
-                    )}
+                      <Textarea
+                        value={es.answer}
+                        onChange={(e) =>
+                          updateEsEntry(app.id, es.id, {
+                            answer: e.target.value,
+                          })
+                        }
+                        placeholder="回答を書く / 貼り付ける"
+                        className="min-h-[110px] resize-y text-sm leading-relaxed"
+                      />
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={cn(
+                            "text-xs text-muted-foreground",
+                            over && "font-medium text-danger",
+                          )}
+                        >
+                          {counter}
+                        </span>
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-danger"
+                          onClick={() => {
+                            deleteEsEntry(app.id, es.id);
+                            setEditEs(null);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          削除
+                        </button>
+                      </div>
+                      <Button
+                        className="w-full"
+                        onClick={() => {
+                          setEditEs(null);
+                          toast.success("保存しました");
+                        }}
+                      >
+                        <Check className="h-4 w-4" />
+                        保存
+                      </Button>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={es.id} className="rounded-lg border bg-card p-3">
+                    <div className="text-sm font-medium">
+                      {es.question || "(設問未入力)"}
+                    </div>
+                    <p className="mt-1 line-clamp-4 whitespace-pre-wrap text-[13px] leading-relaxed text-muted-foreground">
+                      {es.answer || "(回答未入力)"}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between text-xs">
+                      <span
+                        className={cn(
+                          "text-muted-foreground",
+                          over && "font-medium text-danger",
+                        )}
+                      >
+                        {counter}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 font-medium text-primary"
+                          onClick={() => {
+                            navigator.clipboard
+                              ?.writeText(es.answer)
+                              .then(() => toast.success("コピーしました"));
+                          }}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          コピー
+                        </button>
+                        <button
+                          type="button"
+                          className="flex items-center gap-1 text-muted-foreground"
+                          onClick={() => setEditEs(es.id)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          編集
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -453,22 +554,53 @@ function DetailBody({
           )}
         </Section>
 
-        {/* 関連リンク */}
+        {/* 関連リンク: 飛ぶボタン表示 / ✎全体編集(飛ぶと編集を分離) */}
         <Section
           icon={<Link2 className="h-4 w-4" />}
           title="関連リンク"
           action={
-            <Button variant="ghost" size="sm" onClick={() => addLink(app.id)}>
-              <Plus className="h-4 w-4" />
-              追加
-            </Button>
+            <div className="flex items-center gap-1">
+              {app.links.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (editLinks) toast.success("保存しました");
+                    setEditLinks((v) => !v);
+                  }}
+                >
+                  {editLinks ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      完了
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="h-4 w-4" />
+                      編集
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  addLink(app.id);
+                  setEditLinks(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                追加
+              </Button>
+            </div>
           }
         >
           {app.links.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               マイページ等のURLを登録できます。
             </p>
-          ) : (
+          ) : editLinks ? (
             <div className="space-y-2">
               {app.links.map((link) => (
                 <div key={link.id} className="flex items-center gap-2">
@@ -509,19 +641,6 @@ function DetailBody({
                     <Pin className="h-4 w-4" />
                   </Button>
                   <Button
-                    asChild
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-9 w-9 shrink-0",
-                      !link.url && "pointer-events-none opacity-40",
-                    )}
-                  >
-                    <a href={link.url || "#"} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
-                  <Button
                     type="button"
                     variant="ghost"
                     size="icon"
@@ -533,17 +652,79 @@ function DetailBody({
                 </div>
               ))}
             </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {app.links.map((link) => (
+                <a
+                  key={link.id}
+                  href={link.url || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 text-[13px] font-medium text-primary",
+                    !link.url && "pointer-events-none opacity-40",
+                  )}
+                >
+                  {link.pin && <Pin className="h-3.5 w-3.5" />}
+                  <span className="max-w-[12rem] truncate">
+                    {link.label || "リンク"}
+                  </span>
+                  <ExternalLink className="h-3.5 w-3.5 opacity-60" />
+                </a>
+              ))}
+            </div>
           )}
         </Section>
 
-        {/* 全体メモ */}
-        <Section icon={<StickyNote className="h-4 w-4" />} title="全体メモ">
-          <Textarea
-            value={app.memo}
-            onChange={(e) => updateApplication(app.id, { memo: e.target.value })}
-            placeholder="志望動機メモ・面接の振り返り・人事の名前など自由に。"
-            className="min-h-[100px] resize-y leading-relaxed"
-          />
+        {/* 全体メモ: 表示 / ✎編集 */}
+        <Section
+          icon={<StickyNote className="h-4 w-4" />}
+          title="全体メモ"
+          action={
+            app.memo && !editMemo ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditMemo(true)}
+              >
+                <Pencil className="h-4 w-4" />
+                編集
+              </Button>
+            ) : null
+          }
+        >
+          {app.memo && !editMemo ? (
+            <button
+              type="button"
+              onClick={() => setEditMemo(true)}
+              className="w-full whitespace-pre-wrap rounded-lg border bg-card p-3 text-left text-[13px] leading-relaxed"
+            >
+              {app.memo}
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <Textarea
+                value={app.memo}
+                onChange={(e) =>
+                  updateApplication(app.id, { memo: e.target.value })
+                }
+                placeholder="志望動機メモ・面接の振り返り・人事の名前など自由に。"
+                className="min-h-[100px] resize-y leading-relaxed"
+              />
+              {app.memo && (
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    setEditMemo(false);
+                    toast.success("保存しました");
+                  }}
+                >
+                  <Check className="h-4 w-4" />
+                  保存
+                </Button>
+              )}
+            </div>
+          )}
         </Section>
 
         {/* フッター */}
@@ -613,6 +794,31 @@ function LabeledSelect({
         </SelectContent>
       </Select>
     </div>
+  );
+}
+
+function InfoBadge({
+  children,
+  tone = "default",
+}: {
+  children: React.ReactNode;
+  tone?: "default" | "success" | "danger";
+}) {
+  const cls =
+    tone === "success"
+      ? "bg-[hsl(var(--success)/0.14)] text-success ring-[hsl(var(--success)/0.4)]"
+      : tone === "danger"
+        ? "bg-[hsl(var(--danger)/0.1)] text-danger ring-[hsl(var(--danger)/0.4)]"
+        : "bg-secondary text-foreground ring-[hsl(var(--muted-foreground)/0.32)]";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium ring-1 ring-inset",
+        cls,
+      )}
+    >
+      {children}
+    </span>
   );
 }
 

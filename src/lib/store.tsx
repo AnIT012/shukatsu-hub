@@ -62,6 +62,8 @@ interface StoreValue {
   deleteApplication: (id: string) => void;
   addStep: (appId: string, kind?: SelectionStep["kind"]) => string | undefined;
   addStepsBulk: (appId: string, kinds: SelectionStep["kind"][]) => void;
+  /** 全ステップを kinds で作り直す(手付かず時のテンプレ上書き用) */
+  replaceSteps: (appId: string, kinds: SelectionStep["kind"][]) => void;
   updateStep: (
     appId: string,
     stepId: string,
@@ -324,6 +326,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [mutateApp],
   );
 
+  const replaceSteps = useCallback<StoreValue["replaceSteps"]>(
+    (appId, kinds) =>
+      mutateApp(appId, (a) => ({
+        ...a,
+        steps: kinds.map((k) => makeStep(k)),
+      })),
+    [mutateApp],
+  );
+
   const updateStep = useCallback<StoreValue["updateStep"]>(
     (appId, stepId, patch) =>
       mutateApp(appId, (a) => ({
@@ -477,6 +488,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     deleteApplication,
     addStep,
     addStepsBulk,
+    replaceSteps,
     updateStep,
     deleteStep,
     moveStep,

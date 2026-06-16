@@ -107,12 +107,24 @@ export function StepTimeline({ app }: { app: Application }) {
   const {
     addStep,
     addStepsBulk,
+    replaceSteps,
     updateStep,
     deleteStep,
     moveStep,
   } = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const nextId = getNextActionStep(app)?.id;
+  // 全ステップが完全に手付かず(空)なら、テンプレ適用は「置換」、着手後は「追加」
+  const pristine =
+    app.steps.length === 0 ||
+    app.steps.every(
+      (s) =>
+        s.status === "not_started" &&
+        !s.dueAt &&
+        !s.name.trim() &&
+        !s.location.trim() &&
+        !s.memo.trim(),
+    );
 
   const cycle = (id: string, status: StepStatus) =>
     updateStep(app.id, id, {
@@ -396,7 +408,11 @@ export function StepTimeline({ app }: { app: Application }) {
             {TEMPLATES.map((t) => (
               <DropdownMenuItem
                 key={t.label}
-                onClick={() => addStepsBulk(app.id, t.kinds)}
+                onClick={() =>
+                  pristine
+                    ? replaceSteps(app.id, t.kinds)
+                    : addStepsBulk(app.id, t.kinds)
+                }
               >
                 <ListPlus className="h-4 w-4" />
                 <span>
