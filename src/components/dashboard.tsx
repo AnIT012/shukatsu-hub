@@ -385,7 +385,7 @@ export function Dashboard() {
             <p className="px-0.5 text-[13px] text-muted-foreground">
               今週やること{" "}
               <b className="font-semibold text-danger">{stats.thisWeek}件</b> ·
-              進行中 {stats.inProgress}社 · 合格 {stats.passed}
+              進行中 {stats.inProgress}社 · 合格 {stats.passed}社
             </p>
 
             <div className="mt-3">
