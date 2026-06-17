@@ -18,6 +18,7 @@ import type {
   StepKind,
   StepStatus,
   Theme,
+  FontChoice,
 } from "./types";
 
 // ---------------- 選択肢 ----------------
@@ -155,16 +156,61 @@ export const STEP_KIND_ICON: Record<StepKind, LucideIcon> = {
 
 export const THEME_OPTIONS: { value: Theme; label: string }[] = [
   { value: "indigo", label: "標準" },
-  { value: "aiNezu", label: "藍鼠" },
-  { value: "sumi", label: "墨" },
   { value: "navy", label: "ネイビー" },
+  { value: "aiNezu", label: "藍鼠" },
+  { value: "mizuasagi", label: "水浅葱" },
+  { value: "seiji", label: "青磁" },
+  { value: "fuji", label: "藤" },
+  { value: "sakuraNezu", label: "桜鼠" },
+  { value: "akane", label: "茜" },
+  { value: "sumi", label: "墨" },
   { value: "greige", label: "グレージュ" },
+  { value: "kohaku", label: "琥珀" },
+  { value: "hatobaNezu", label: "鳩羽鼠" },
+];
+
+// ---------------- フォント ----------------
+
+export const FONT_OPTIONS: {
+  value: FontChoice;
+  label: string;
+  stack: string;
+  googleHref?: string;
+}[] = [
+  {
+    value: "system",
+    label: "標準",
+    stack:
+      'ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif',
+  },
+  {
+    value: "zenKaku",
+    label: "端正ゴシック",
+    stack: '"Zen Kaku Gothic New", sans-serif',
+    googleHref:
+      "https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap",
+  },
+  {
+    value: "shippori",
+    label: "明朝",
+    stack: '"Shippori Mincho", serif',
+    googleHref:
+      "https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&display=swap",
+  },
+  {
+    value: "zenMaru",
+    label: "丸ゴシック",
+    stack: '"Zen Maru Gothic", sans-serif',
+    googleHref:
+      "https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap",
+  },
 ];
 
 // ---------------- localStorage キー ----------------
 
 export const LS_KEY = "shukatsu-dashboard:v1";
 export const LS_THEME_KEY = "shukatsu-dashboard:theme";
+export const LS_FONT_KEY = "shukatsu-dashboard:font";
 export const LS_ONBOARDED_KEY = "shukatsu-dashboard:onboarded";
 /** サンプル投入済みフラグ(初回チュートリアル用) */
 export const LS_SEEDED_KEY = "shukatsu-dashboard:seeded";

@@ -214,7 +214,7 @@ export function EventsView({
       ) : (
         <div className="mt-3 space-y-2.5">
           {visible.map((ev) => (
-            <div key={ev.id} className="animate-fade-in">
+            <div key={ev.id}>
               <EventCard ev={ev} onOpen={() => onOpenEvent(ev.id)} />
             </div>
           ))}

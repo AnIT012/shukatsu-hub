@@ -26,7 +26,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ja" suppressHydrationWarning>
-      <body className="font-sans antialiased">
+      <body className="antialiased">
         {children}
         <Toaster />
         <Analytics />

@@ -97,7 +97,22 @@ export interface Application {
 }
 
 /** 配色テーマ */
-export type Theme = "indigo" | "aiNezu" | "sumi" | "navy" | "greige";
+export type Theme =
+  | "indigo"
+  | "aiNezu"
+  | "sumi"
+  | "navy"
+  | "greige"
+  | "mizuasagi"
+  | "seiji"
+  | "fuji"
+  | "sakuraNezu"
+  | "akane"
+  | "kohaku"
+  | "hatobaNezu";
+
+/** フォント選択 */
+export type FontChoice = "system" | "zenKaku" | "shippori" | "zenMaru";
 
 /** イベント(説明会/セミナー/OB訪問など)の状態 */
 export type EventStatus = "todo" | "attended"; // 未参加 / 参加済

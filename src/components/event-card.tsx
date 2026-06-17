@@ -3,7 +3,7 @@
 import { Clock, ExternalLink } from "lucide-react";
 import type { EventItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { dueToDate, relativeLabel, urgencyOf } from "@/lib/date";
+import { dueToDate, relativeLabel, splitDue, urgencyOf } from "@/lib/date";
 import { focusOf } from "@/lib/next-action";
 
 const WD_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -107,6 +107,7 @@ function EventDateBlock({
   focus: string | null;
   urgent: boolean;
 }) {
+  const time = focus ? splitDue(focus).time : "";
   if (!d) {
     return (
       <div className="flex w-14 shrink-0 items-center justify-center rounded-lg border border-dashed text-muted-foreground">
@@ -147,6 +148,16 @@ function EventDateBlock({
       >
         {WD_EN[d.getDay()]}
       </div>
+      {time && (
+        <div
+          className={cn(
+            "mt-0.5 text-[10px] font-semibold leading-none",
+            urgent ? "text-danger" : "text-foreground",
+          )}
+        >
+          {time}
+        </div>
+      )}
       <div
         className={cn(
           "mt-1 whitespace-nowrap text-[10px] leading-none",

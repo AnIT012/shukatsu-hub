@@ -19,8 +19,15 @@ import type {
   SelectionStep,
   SelectionType,
   Theme,
+  FontChoice,
 } from "./types";
-import { LS_KEY, LS_SEEDED_KEY, LS_THEME_KEY } from "./constants";
+import {
+  FONT_OPTIONS,
+  LS_FONT_KEY,
+  LS_KEY,
+  LS_SEEDED_KEY,
+  LS_THEME_KEY,
+} from "./constants";
 import { newId } from "./utils";
 import { DATA_TABLE, supabase } from "./supabase";
 import { normalizeApps, normalizeEvents } from "./io";
@@ -60,6 +67,8 @@ interface StoreValue {
   lastSavedAt: number | null;
   theme: Theme;
   setTheme: (t: Theme) => void;
+  font: FontChoice;
+  setFont: (f: FontChoice) => void;
   addApplication: (input: NewApplicationInput) => string;
   updateApplication: (id: string, patch: AppPatch) => void;
   deleteApplication: (id: string) => void;
@@ -90,6 +99,8 @@ interface StoreValue {
   ) => void;
   deleteEsEntry: (appId: string, entryId: string) => void;
   replaceAll: (apps: Application[]) => void;
+  /** 全データ(選考+イベント)を空にする。設定の「全データ削除」用。 */
+  clearAll: () => void;
   /** 新規(空)ユーザーにだけサンプルを投入。投入したら true。既存データは絶対に壊さない。 */
   seedSampleIfEmpty: () => boolean;
   // ---- 説明会・イベント ----
@@ -102,6 +113,23 @@ interface StoreValue {
 const StoreContext = createContext<StoreValue | null>(null);
 
 const nowISO = () => new Date().toISOString();
+
+function applyFont(font: FontChoice) {
+  if (typeof document === "undefined") return;
+  const opt = FONT_OPTIONS.find((o) => o.value === font) ?? FONT_OPTIONS[0];
+  // 選んだフォントだけ Google Fonts を動的読み込み(初期表示はシステムフォント)
+  if (opt.googleHref) {
+    const id = `gf-${opt.value}`;
+    if (!document.getElementById(id)) {
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = opt.googleHref;
+      document.head.appendChild(link);
+    }
+  }
+  document.documentElement.style.setProperty("--app-font", opt.stack);
+}
 
 function makeStep(kind: SelectionStep["kind"] = "es"): SelectionStep {
   return {
@@ -147,6 +175,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [theme, setThemeState] = useState<Theme>("indigo");
+  const [font, setFontState] = useState<FontChoice>("system");
   const hydratedRef = useRef(false);
   const dirtyRef = useRef(false);
   const seedTriedRef = useRef(false);
@@ -158,6 +187,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     try {
       const t = localStorage.getItem(LS_THEME_KEY) as Theme | null;
       if (t) setThemeState(t);
+      const f = localStorage.getItem(LS_FONT_KEY) as FontChoice | null;
+      if (f) setFontState(f);
     } catch {
       // ignore
     }
@@ -167,10 +198,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
+  useEffect(() => {
+    applyFont(font);
+  }, [font]);
+
   const setTheme = useCallback((t: Theme) => {
     setThemeState(t);
     try {
       localStorage.setItem(LS_THEME_KEY, t);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const setFont = useCallback((f: FontChoice) => {
+    setFontState(f);
+    try {
+      localStorage.setItem(LS_FONT_KEY, f);
     } catch {
       // ignore
     }
@@ -497,6 +541,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setApplications(apps);
   }, []);
 
+  const clearAll = useCallback(() => {
+    setApplications([]);
+    setEvents([]);
+  }, []);
+
   const mutateEvent = useCallback(
     (id: string, fn: (e: EventItem) => EventItem) => {
       setEvents((prev) =>
@@ -575,6 +624,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     lastSavedAt,
     theme,
     setTheme,
+    font,
+    setFont,
     addApplication,
     updateApplication,
     deleteApplication,
@@ -592,6 +643,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     updateEsEntry,
     deleteEsEntry,
     replaceAll,
+    clearAll,
     seedSampleIfEmpty,
     events,
     addEvent,

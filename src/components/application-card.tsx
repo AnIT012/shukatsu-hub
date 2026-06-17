@@ -24,7 +24,7 @@ import {
   trackSegments,
   type SegState,
 } from "@/lib/next-action";
-import { dueToDate, relativeLabel, urgencyOf } from "@/lib/date";
+import { dueToDate, relativeLabel, splitDue, urgencyOf } from "@/lib/date";
 
 const WD_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -230,6 +230,7 @@ function DateBlock({ app, urgent }: { app: Application; urgent: boolean }) {
   const focus = next.focusDate;
   const kindLabel = next.focusKind === "held" ? "実施" : "締切";
   const d = focus ? dueToDate(focus) : null;
+  const time = focus ? splitDue(focus).time : "";
   return (
     <div
       className={cn(
@@ -263,6 +264,16 @@ function DateBlock({ app, urgent }: { app: Application; urgent: boolean }) {
           >
             {WD_EN[d.getDay()]}
           </div>
+          {time && (
+            <div
+              className={cn(
+                "mt-0.5 text-[10px] font-semibold leading-none",
+                urgent ? "text-danger" : "text-foreground",
+              )}
+            >
+              {time}
+            </div>
+          )}
           <div
             className={cn(
               "mt-0.5 whitespace-nowrap text-[10px] leading-none",

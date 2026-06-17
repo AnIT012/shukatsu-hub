@@ -9,3 +9,7 @@ npm-debug.log*
 .env*.local
 *.tsbuildinfo
 next-env.d.ts
+
+# ローカル専用(機密の本番anonキー・個人のエディタ設定)
+.env.local.veriftmp
+.claude/

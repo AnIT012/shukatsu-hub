@@ -6,16 +6,12 @@ import {
   ArrowRight,
   Bell,
   Check,
-  Download,
-  FileText,
   HelpCircle,
   Inbox,
   Loader2,
-  LogOut,
-  MoreVertical,
-  Palette,
   Plus,
   SearchX,
+  Settings,
   Upload,
 } from "lucide-react";
 import type { Application, Filters, Priority, SortDir, SortKey } from "@/lib/types";
@@ -34,17 +30,9 @@ import {
   LS_ONBOARDED_KEY,
   SAMPLE_APP_ID,
   STEP_KIND_LABEL,
-  THEME_OPTIONS,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -55,10 +43,12 @@ import { ControlsBar } from "@/components/controls-bar";
 import { ApplicationCard } from "@/components/application-card";
 import { ApplicationDetail } from "@/components/application-detail";
 import { AddApplicationDialog } from "@/components/add-application-dialog";
+import { AddEventDialog } from "@/components/add-event-dialog";
 import { Tutorial, type TourStep } from "@/components/tutorial";
 import { LegalDialog } from "@/components/legal-dialog";
 import { EventsView } from "@/components/events-view";
 import { EventDetail } from "@/components/event-detail";
+import { SettingsSheet } from "@/components/settings-sheet";
 
 const DEFAULT_FILTERS: Filters = {
   situations: [],
@@ -78,7 +68,6 @@ export function Dashboard() {
     replaceAll,
     seedSampleIfEmpty,
     deleteApplication,
-    addEvent,
   } = store;
   const { user, mode } = useAuth();
   // 同意/オンボード済みフラグはアカウント別に持つ(同一ブラウザで複数アカウントを使っても誤って出ない問題を防ぐ)
@@ -92,10 +81,20 @@ export function Dashboard() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [addEventOpen, setAddEventOpen] = useState(false);
   const [showOnboard, setShowOnboard] = useState(false);
   const [tourIndex, setTourIndex] = useState(-1);
   const [legalOpen, setLegalOpen] = useState(false);
   const [legalConsentMode, setLegalConsentMode] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const swipeRef = useRef<{
+    x: number;
+    y: number;
+    axis: "" | "x" | "y";
+    w: number;
+  }>({ x: 0, y: 0, axis: "", w: 0 });
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -300,10 +299,7 @@ export function Dashboard() {
     deleteApplication(SAMPLE_APP_ID);
   };
 
-  const handleAddEvent = () => {
-    const id = addEvent({ company: "", title: "" });
-    setSelectedEventId(id);
-  };
+  const handleAddEvent = () => setAddEventOpen(true);
 
   const handleExport = () => {
     if (applications.length === 0) {
@@ -367,15 +363,15 @@ export function Dashboard() {
               className="hidden"
               onChange={handleImportFile}
             />
-            <HeaderMenu
-              onImport={() => fileRef.current?.click()}
-              onExport={handleExport}
-              onStartTour={startTour}
-              onOpenLegal={() => {
-                setLegalConsentMode(false);
-                setLegalOpen(true);
-              }}
-            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              aria-label="設定"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
             <Button
               size="sm"
               className="h-9"
@@ -402,74 +398,125 @@ export function Dashboard() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 pb-16 pt-4">
-        <div key={view} className="animate-fade-in">
-        {view === "events" ? (
-          <EventsView
-            onOpenEvent={setSelectedEventId}
-            onAddEvent={handleAddEvent}
-          />
-        ) : applications.length === 0 ? (
-          <EmptyState
-            onAdd={() => setAddOpen(true)}
-            onImport={() => fileRef.current?.click()}
-          />
-        ) : (
-          <>
-            <p className="px-0.5 text-[13px] text-muted-foreground">
-              今週やること{" "}
-              <b className="font-semibold text-danger">{stats.thisWeek}件</b> ·
-              進行中 {stats.inProgress}社 · 合格 {stats.passed}社
-            </p>
-
-            <div className="mt-3">
-              <AnnouncementBanner applications={applications} />
-            </div>
-
-            <div className="mt-3">
-              <ControlsBar
-                sort={sort}
-                onSortChange={setSort}
-                dir={sortDir}
-                onDirChange={setSortDir}
-                filters={filters}
-                onFiltersChange={setFilters}
+      <main className="mx-auto max-w-3xl overflow-hidden pb-16 pt-4">
+        <div
+          className="flex w-[200%]"
+          style={{
+            transform: `translateX(calc(${
+              view === "selection" ? "0%" : "-50%"
+            } + ${dragX}px))`,
+            transition: dragging
+              ? "none"
+              : "transform 0.34s cubic-bezier(0.22, 0.61, 0.36, 1)",
+          }}
+          onTouchStart={(e) => {
+            swipeRef.current = {
+              x: e.touches[0].clientX,
+              y: e.touches[0].clientY,
+              axis: "",
+              w: e.currentTarget.getBoundingClientRect().width / 2,
+            };
+          }}
+          onTouchMove={(e) => {
+            const dx = e.touches[0].clientX - swipeRef.current.x;
+            const dy = e.touches[0].clientY - swipeRef.current.y;
+            if (
+              !swipeRef.current.axis &&
+              (Math.abs(dx) > 8 || Math.abs(dy) > 8)
+            ) {
+              swipeRef.current.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+            }
+            if (swipeRef.current.axis === "x") {
+              let d = dx;
+              // 端方向への引っ張りには抵抗をかける
+              if (view === "selection" && d > 0) d *= 0.3;
+              if (view === "events" && d < 0) d *= 0.3;
+              if (!dragging) setDragging(true);
+              setDragX(d);
+            }
+          }}
+          onTouchEnd={() => {
+            if (swipeRef.current.axis === "x") {
+              setDragging(false);
+              const threshold = swipeRef.current.w * 0.25;
+              if (view === "selection" && dragX < -threshold) setView("events");
+              else if (view === "events" && dragX > threshold)
+                setView("selection");
+              setDragX(0);
+            }
+            swipeRef.current.axis = "";
+          }}
+        >
+          <div className="w-1/2 shrink-0 px-4">
+            {applications.length === 0 ? (
+              <EmptyState
+                onAdd={() => setAddOpen(true)}
+                onImport={() => fileRef.current?.click()}
               />
-            </div>
-
-            {visible.length === 0 ? (
-              <div className="mt-6 flex flex-col items-center gap-3 rounded-xl border border-dashed py-14 text-center">
-                <SearchX className="h-7 w-7 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  条件に一致する企業がありません
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setFilters(DEFAULT_FILTERS)}
-                >
-                  フィルターをリセット
-                </Button>
-              </div>
             ) : (
-              <div className="mt-3 space-y-2.5">
-                {visible.map((app, i) => (
-                  <div
-                    key={app.id}
-                    className="animate-fade-in"
-                    data-tour={i === 0 ? "card" : undefined}
-                  >
-                    <ApplicationCard
-                      app={app}
-                      showRole={dupCompanies.has(app.company.trim())}
-                      onOpen={() => setSelectedId(app.id)}
-                    />
+              <>
+                <p className="px-0.5 text-[13px] text-muted-foreground">
+                  今週やること{" "}
+                  <b className="font-semibold text-danger">
+                    {stats.thisWeek}件
+                  </b>{" "}
+                  · 進行中 {stats.inProgress}社 · 合格 {stats.passed}社
+                </p>
+
+                <div className="mt-3">
+                  <AnnouncementBanner applications={applications} />
+                </div>
+
+                <div className="mt-3">
+                  <ControlsBar
+                    sort={sort}
+                    onSortChange={setSort}
+                    dir={sortDir}
+                    onDirChange={setSortDir}
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                  />
+                </div>
+
+                {visible.length === 0 ? (
+                  <div className="mt-6 flex flex-col items-center gap-3 rounded-xl border border-dashed py-14 text-center">
+                    <SearchX className="h-7 w-7 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      条件に一致する企業がありません
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFilters(DEFAULT_FILTERS)}
+                    >
+                      フィルターをリセット
+                    </Button>
                   </div>
-                ))}
-              </div>
+                ) : (
+                  <div className="mt-3 space-y-2.5">
+                    {visible.map((app, i) => (
+                      <div
+                        key={app.id}
+                        data-tour={i === 0 ? "card" : undefined}
+                      >
+                        <ApplicationCard
+                          app={app}
+                          showRole={dupCompanies.has(app.company.trim())}
+                          onOpen={() => setSelectedId(app.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
+          </div>
+          <div className="w-1/2 shrink-0 px-4">
+            <EventsView
+              onOpenEvent={setSelectedEventId}
+              onAddEvent={handleAddEvent}
+            />
+          </div>
         </div>
       </main>
 
@@ -478,6 +525,15 @@ export function Dashboard() {
         onOpenChange={setAddOpen}
         onCreated={(id, name) => {
           setSelectedId(id);
+          toast.success(`「${name}」を追加しました`);
+        }}
+      />
+
+      <AddEventDialog
+        open={addEventOpen}
+        onOpenChange={setAddEventOpen}
+        onCreated={(id, name) => {
+          setSelectedEventId(id);
           toast.success(`「${name}」を追加しました`);
         }}
       />
@@ -518,6 +574,18 @@ export function Dashboard() {
         }}
         requireConsent={legalConsentMode}
         onAgree={acceptLegal}
+      />
+
+      <SettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        onImport={() => fileRef.current?.click()}
+        onExport={handleExport}
+        onStartTour={startTour}
+        onOpenLegal={() => {
+          setLegalConsentMode(false);
+          setLegalOpen(true);
+        }}
       />
 
       {tourIndex >= 0 && (
@@ -580,80 +648,6 @@ function SaveIndicator() {
     );
   }
   return null;
-}
-
-function HeaderMenu({
-  onImport,
-  onExport,
-  onStartTour,
-  onOpenLegal,
-}: {
-  onImport: () => void;
-  onExport: () => void;
-  onStartTour: () => void;
-  onOpenLegal: () => void;
-}) {
-  const { theme, setTheme } = useStore();
-  const { mode, signOut } = useAuth();
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="メニュー">
-          <MoreVertical className="h-5 w-5" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[13rem]">
-        <DropdownMenuItem onClick={onStartTour}>
-          <HelpCircle className="h-4 w-4" />
-          使い方ガイド
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onOpenLegal}>
-          <FileText className="h-4 w-4" />
-          プライバシー・利用規約
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <div className="flex items-center gap-2 px-2.5 py-1.5 text-[11px] text-muted-foreground">
-          <Palette className="h-3.5 w-3.5" />
-          テーマ
-        </div>
-        {THEME_OPTIONS.map((t) => (
-          <DropdownMenuItem key={t.value} onClick={() => setTheme(t.value)}>
-            <span
-              className={cn(
-                "h-3.5 w-3.5 rounded-full border",
-                theme === t.value ? "border-primary bg-primary" : "border-border",
-              )}
-            />
-            <span className="flex-1">{t.label}</span>
-            {theme === t.value && <Check className="h-3.5 w-3.5 text-primary" />}
-          </DropdownMenuItem>
-        ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onImport}>
-          <Upload className="h-4 w-4" />
-          インポート（JSON）
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onExport}>
-          <Download className="h-4 w-4" />
-          エクスポート（JSON）
-        </DropdownMenuItem>
-        {mode === "cloud" && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={async () => {
-                await signOut();
-                toast.success("ログアウトしました");
-              }}
-            >
-              <LogOut className="h-4 w-4" />
-              ログアウト
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 }
 
 function AnnouncementBanner({ applications }: { applications: Application[] }) {

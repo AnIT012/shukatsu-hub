@@ -111,6 +111,160 @@
     --input: 35 24% 87%;
     --ring: 24 13% 37%;
   }
+
+  /* 水浅葱(みずあさぎ) — くすみ水色 */
+  [data-theme="mizuasagi"] {
+    --background: 190 30% 95%;
+    --foreground: 195 18% 18%;
+    --card: 190 33% 99%;
+    --card-foreground: 195 18% 18%;
+    --popover: 190 33% 99%;
+    --popover-foreground: 195 18% 18%;
+    --primary: 191 32% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 190 22% 92%;
+    --secondary-foreground: 191 32% 38%;
+    --muted: 190 22% 92%;
+    --muted-foreground: 192 10% 50%;
+    --accent: 190 32% 92%;
+    --accent-foreground: 191 32% 34%;
+    --danger: 346 45% 49%;
+    --border: 190 20% 88%;
+    --input: 190 20% 88%;
+    --ring: 191 32% 38%;
+  }
+
+  /* 青磁(せいじ) — くすみ青緑 */
+  [data-theme="seiji"] {
+    --background: 158 28% 95%;
+    --foreground: 162 16% 17%;
+    --card: 152 32% 99%;
+    --card-foreground: 162 16% 17%;
+    --popover: 152 32% 99%;
+    --popover-foreground: 162 16% 17%;
+    --primary: 160 34% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 158 20% 92%;
+    --secondary-foreground: 160 34% 36%;
+    --muted: 158 20% 92%;
+    --muted-foreground: 160 9% 48%;
+    --accent: 158 30% 92%;
+    --accent-foreground: 160 34% 32%;
+    --danger: 346 45% 49%;
+    --border: 156 20% 88%;
+    --input: 156 20% 88%;
+    --ring: 160 34% 36%;
+  }
+
+  /* 藤(ふじ) — くすみ紫 */
+  [data-theme="fuji"] {
+    --background: 258 30% 96%;
+    --foreground: 260 16% 19%;
+    --card: 270 30% 99%;
+    --card-foreground: 260 16% 19%;
+    --popover: 270 30% 99%;
+    --popover-foreground: 260 16% 19%;
+    --primary: 258 26% 47%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 258 24% 94%;
+    --secondary-foreground: 258 26% 47%;
+    --muted: 258 24% 94%;
+    --muted-foreground: 256 10% 53%;
+    --accent: 258 32% 94%;
+    --accent-foreground: 258 28% 43%;
+    --danger: 346 45% 49%;
+    --border: 258 22% 90%;
+    --input: 258 22% 90%;
+    --ring: 258 26% 47%;
+  }
+
+  /* 桜鼠(さくらねず) — くすみピンク。締切(danger)は朱で区別 */
+  [data-theme="sakuraNezu"] {
+    --background: 350 33% 96%;
+    --foreground: 345 14% 20%;
+    --card: 350 38% 99%;
+    --card-foreground: 345 14% 20%;
+    --popover: 350 38% 99%;
+    --popover-foreground: 345 14% 20%;
+    --primary: 348 28% 51%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 350 28% 94%;
+    --secondary-foreground: 348 28% 51%;
+    --muted: 350 28% 94%;
+    --muted-foreground: 348 10% 54%;
+    --accent: 350 33% 94%;
+    --accent-foreground: 348 30% 45%;
+    --danger: 6 65% 52%;
+    --border: 350 24% 91%;
+    --input: 350 24% 91%;
+    --ring: 348 28% 51%;
+  }
+
+  /* 茜(あかね) — くすみ赤。締切(danger)は朱橙で区別 */
+  [data-theme="akane"] {
+    --background: 6 32% 95%;
+    --foreground: 2 16% 19%;
+    --card: 10 38% 99%;
+    --card-foreground: 2 16% 19%;
+    --popover: 10 38% 99%;
+    --popover-foreground: 2 16% 19%;
+    --primary: 2 42% 44%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 6 28% 93%;
+    --secondary-foreground: 2 42% 44%;
+    --muted: 6 28% 93%;
+    --muted-foreground: 4 12% 50%;
+    --accent: 6 34% 93%;
+    --accent-foreground: 2 42% 40%;
+    --danger: 22 74% 47%;
+    --border: 6 24% 89%;
+    --input: 6 24% 89%;
+    --ring: 2 42% 44%;
+  }
+
+  /* 琥珀(こはく) — 金茶 */
+  [data-theme="kohaku"] {
+    --background: 36 42% 95%;
+    --foreground: 30 18% 19%;
+    --card: 40 48% 98%;
+    --card-foreground: 30 18% 19%;
+    --popover: 40 48% 98%;
+    --popover-foreground: 30 18% 19%;
+    --primary: 34 48% 41%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 36 30% 92%;
+    --secondary-foreground: 34 48% 41%;
+    --muted: 36 30% 92%;
+    --muted-foreground: 34 14% 48%;
+    --accent: 36 40% 91%;
+    --accent-foreground: 34 48% 37%;
+    --danger: 4 60% 50%;
+    --border: 36 28% 88%;
+    --input: 36 28% 88%;
+    --ring: 34 48% 41%;
+  }
+
+  /* 鳩羽鼠(はとばねず) — 紫がかった鼠 */
+  [data-theme="hatobaNezu"] {
+    --background: 250 14% 95%;
+    --foreground: 252 8% 19%;
+    --card: 260 18% 99%;
+    --card-foreground: 252 8% 19%;
+    --popover: 260 18% 99%;
+    --popover-foreground: 252 8% 19%;
+    --primary: 250 13% 44%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 250 14% 93%;
+    --secondary-foreground: 250 13% 44%;
+    --muted: 250 14% 93%;
+    --muted-foreground: 250 7% 52%;
+    --accent: 250 18% 93%;
+    --accent-foreground: 250 14% 40%;
+    --danger: 346 45% 49%;
+    --border: 250 12% 90%;
+    --input: 250 12% 90%;
+    --ring: 250 13% 44%;
+  }
 }
 
 @layer base {
@@ -124,6 +278,16 @@
   body {
     @apply text-foreground;
     background-color: hsl(var(--background));
+    font-family: var(
+      --app-font,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Hiragino Kaku Gothic ProN",
+      "Noto Sans JP",
+      Meiryo,
+      sans-serif
+    );
     overscroll-behavior-y: none;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
