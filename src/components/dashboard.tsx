@@ -107,6 +107,70 @@ export function Dashboard() {
     w: number;
   }>({ x: 0, y: 0, axis: "", w: 0 });
   const fileRef = useRef<HTMLInputElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const viewIdxRef = useRef(0);
+  const dragXRef = useRef(0);
+
+  // 横スワイプ中は縦スクロールを完全ロック(非passiveで touchmove を preventDefault)
+  useEffect(() => {
+    viewIdxRef.current = VIEWS.indexOf(view);
+  }, [view]);
+
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const onStart = (e: TouchEvent) => {
+      swipeRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        axis: "",
+        w: el.getBoundingClientRect().width / 3,
+      };
+      dragXRef.current = 0;
+    };
+    const onMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      const dx = t.clientX - swipeRef.current.x;
+      const dy = t.clientY - swipeRef.current.y;
+      if (!swipeRef.current.axis && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+        swipeRef.current.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      }
+      if (swipeRef.current.axis === "x") {
+        // 横と確定したら縦の既定スクロールを止める=斜めでも縦に動かない
+        if (e.cancelable) e.preventDefault();
+        let d = dx;
+        const vi = viewIdxRef.current;
+        if (vi === 0 && d > 0) d *= 0.3;
+        if (vi === 2 && d < 0) d *= 0.3;
+        dragXRef.current = d;
+        setDragging(true);
+        setDragX(d);
+      }
+    };
+    const onEnd = () => {
+      if (swipeRef.current.axis === "x") {
+        setDragging(false);
+        const threshold = swipeRef.current.w * 0.25;
+        const vi = viewIdxRef.current;
+        const d = dragXRef.current;
+        if (d < -threshold && vi < 2) setView(VIEWS[vi + 1]);
+        else if (d > threshold && vi > 0) setView(VIEWS[vi - 1]);
+        setDragX(0);
+        dragXRef.current = 0;
+      }
+      swipeRef.current.axis = "";
+    };
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    el.addEventListener("touchcancel", onEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onEnd);
+    };
+  }, [loaded]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -428,50 +492,15 @@ export function Dashboard() {
       <main className="relative flex-1 overflow-hidden bg-background">
         {/* 3ペインを横スライド。各ページは独立スクロール(高さ同期しない=空白せり上がり無し) */}
         <div
+          ref={carouselRef}
           className="flex h-full w-[300%]"
           style={{
             transform: `translateX(calc(${-viewIdx * (100 / 3)}% + ${dragX}px))`,
             transition: dragging
               ? "none"
               : "transform 0.34s cubic-bezier(0.22, 0.61, 0.36, 1)",
-          }}
-          onTouchStart={(e) => {
-            swipeRef.current = {
-              x: e.touches[0].clientX,
-              y: e.touches[0].clientY,
-              axis: "",
-              w: e.currentTarget.getBoundingClientRect().width / 3,
-            };
-          }}
-          onTouchMove={(e) => {
-            const dx = e.touches[0].clientX - swipeRef.current.x;
-            const dy = e.touches[0].clientY - swipeRef.current.y;
-            if (
-              !swipeRef.current.axis &&
-              (Math.abs(dx) > 8 || Math.abs(dy) > 8)
-            ) {
-              swipeRef.current.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-            }
-            if (swipeRef.current.axis === "x") {
-              let d = dx;
-              // 両端方向への引っ張りには抵抗をかける
-              if (viewIdx === 0 && d > 0) d *= 0.3;
-              if (viewIdx === 2 && d < 0) d *= 0.3;
-              if (!dragging) setDragging(true);
-              setDragX(d);
-            }
-          }}
-          onTouchEnd={() => {
-            if (swipeRef.current.axis === "x") {
-              setDragging(false);
-              const threshold = swipeRef.current.w * 0.25;
-              if (dragX < -threshold && viewIdx < 2)
-                setView(VIEWS[viewIdx + 1]);
-              else if (dragX > threshold && viewIdx > 0)
-                setView(VIEWS[viewIdx - 1]);
-              setDragX(0);
-            }
-            swipeRef.current.axis = "";
+            // 横はJSで処理(横スクロールしない)・縦は通常スクロール。横確定時は preventDefault で縦も止める
+            touchAction: "pan-y",
           }}
         >
           {/* 選考 */}
