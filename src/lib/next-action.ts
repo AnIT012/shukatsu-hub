@@ -142,7 +142,7 @@ export type SegState =
   | "done" // 通過(フル・色)
   | "current" // 進行中(半分)
   | "next" // 着手前の現在地(空に近い)
-  | "waiting" // 結果待ち(フル・灰)
+  | "waiting" // 結果待ち(フル・薄い primary の点線=やったけど未確定)
   | "empty" // 未到達
   | "failed" // 不合格で落ちた/通ってきた段(フル・赤)
   | "declined"; // 辞退(フル・灰)

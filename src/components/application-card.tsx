@@ -45,8 +45,6 @@ function segClass(state: SegState): string {
   switch (state) {
     case "done":
       return "bg-primary";
-    case "waiting":
-      return "bg-[hsl(var(--muted-foreground)/0.5)]";
     case "failed":
       return "bg-danger";
     case "declined":
@@ -58,10 +56,23 @@ function segClass(state: SegState): string {
 
 function Seg({ state }: { state: SegState }) {
   if (state === "current") {
+    // 進行中: 左半分だけ塗る(現在地)
     return (
       <div className="h-1 flex-1 overflow-hidden rounded-full bg-border">
         <div className="h-full w-1/2 rounded-full bg-primary" />
       </div>
+    );
+  }
+  if (state === "waiting") {
+    // 結果待ち: 「やったけど未確定」→ 薄い primary の点線(done のべた塗りと対比)
+    return (
+      <div
+        className="h-1 flex-1 rounded-full"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(to right, hsl(var(--primary)/0.55) 0 5px, transparent 5px 9px)",
+        }}
+      />
     );
   }
   return <div className={cn("h-1 flex-1 rounded-full", segClass(state))} />;
