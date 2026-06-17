@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Bell,
   Check,
+  CloudOff,
   HelpCircle,
   Inbox,
   ListChecks,
@@ -726,6 +727,15 @@ function SaveIndicator() {
           <Check className="h-3 w-3" />
         </span>
         <span className="hidden sm:inline">保存{hhmm && ` ${hhmm}`}</span>
+      </span>
+    );
+  }
+  if (saveState === "offline") {
+    // 端末には保存済み。接続が戻り次第クラウドへ自動同期する。
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <CloudOff className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">オフライン・接続後に同期</span>
       </span>
     );
   }

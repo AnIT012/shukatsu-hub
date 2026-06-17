@@ -36,7 +36,7 @@ import { normalizeApps, normalizeEvents } from "./io";
 import { buildSampleApplications } from "./sample";
 import { useAuth } from "./auth";
 
-export type SaveState = "idle" | "saving" | "saved";
+export type SaveState = "idle" | "saving" | "saved" | "offline";
 
 interface NewApplicationInput {
   company: string;
@@ -156,6 +156,12 @@ interface LocalData {
   events: EventItem[];
   notify: NotifySettings;
   pushSubscriptions: PushSubscriptionJSON[];
+  /** この端末で最後に保存した時刻(ISO)。クラウドの updated_at と比較して新しい方を採用する */
+  savedAt: string;
+  /** まだクラウドへ送れていない編集があるか(オフライン編集の取りこぼし防止) */
+  dirty: boolean;
+  theme: Theme | null;
+  font: FontChoice | null;
 }
 
 function readLocal(key: string): LocalData | null {
@@ -173,9 +179,32 @@ function readLocal(key: string): LocalData | null {
       pushSubscriptions: Array.isArray(parsed?.pushSubscriptions)
         ? parsed.pushSubscriptions
         : [],
+      savedAt: typeof parsed?.savedAt === "string" ? parsed.savedAt : "",
+      dirty: parsed?.dirty === true,
+      theme: typeof parsed?.theme === "string" ? (parsed.theme as Theme) : null,
+      font: typeof parsed?.font === "string" ? (parsed.font as FontChoice) : null,
     };
   } catch {
     return null;
+  }
+}
+
+interface CachePayload {
+  applications: Application[];
+  events: EventItem[];
+  notify: NotifySettings;
+  pushSubscriptions: PushSubscriptionJSON[];
+  theme: Theme;
+  font: FontChoice;
+  savedAt: string;
+}
+
+/** 端末キャッシュに保存。オフラインでも必ず成功させ、dirty で未送信を記録する。 */
+function writeLocal(key: string, payload: CachePayload, dirty: boolean) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ version: 1, dirty, ...payload }));
+  } catch {
+    // 容量超過等は無視(UI 表示には影響させない)
   }
 }
 
@@ -247,6 +276,57 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // ---- 未送信(dirty)の端末キャッシュをクラウドへ追従させる ----
+  // 端末キャッシュを唯一の真実として読み、オンラインなら送信。成功で dirty を下ろす。
+  // オフライン/失敗時は dirty を保ったまま saveState を "offline" にして、復帰時に再送する。
+  const flushToCloud = useCallback(async (): Promise<boolean> => {
+    if (mode !== "cloud" || !supabase || !user) return false;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setSaveState("offline");
+      return false;
+    }
+    const cached = readLocal(cacheKey);
+    if (!cached || !cached.dirty) return false;
+    try {
+      const { error } = await supabase.from(DATA_TABLE).upsert({
+        user_id: user.id,
+        data: {
+          applications: cached.applications,
+          events: cached.events,
+          notify: cached.notify,
+          pushSubscriptions: cached.pushSubscriptions,
+          ...(cached.theme ? { theme: cached.theme } : {}),
+          ...(cached.font ? { font: cached.font } : {}),
+        },
+        updated_at: cached.savedAt || nowISO(),
+      });
+      if (error) throw error;
+      // 送信済み → 同じ内容で dirty を下ろして記録
+      writeLocal(
+        cacheKey,
+        {
+          applications: cached.applications,
+          events: cached.events,
+          notify: cached.notify,
+          pushSubscriptions: cached.pushSubscriptions,
+          theme: cached.theme ?? "indigo",
+          font: cached.font ?? "system",
+          savedAt: cached.savedAt || nowISO(),
+        },
+        false,
+      );
+      dirtyRef.current = false;
+      setSaveState("saved");
+      setLastSavedAt(Date.now());
+      return true;
+    } catch {
+      // ネット不調 → 未送信のまま。エラートーストは出さず(編集ごとに鳴ると煩い)、表示だけ「オフライン」
+      setSaveState("offline");
+      return false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, user?.id, cacheKey]);
+
   // ---- 初回ロード(モード別) ----
   useEffect(() => {
     let cancelled = false;
@@ -261,6 +341,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setEvents(cached.events);
         setNotifyState(cached.notify);
         setPushSubscriptions(cached.pushSubscriptions);
+        if (cached.theme) setThemeState(cached.theme);
+        if (cached.font) setFontState(cached.font);
       }
 
       if (mode === "local" || !supabase || !user) {
@@ -271,31 +353,62 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       try {
         const { data, error } = await supabase
           .from(DATA_TABLE)
-          .select("data")
+          .select("data, updated_at")
           .eq("user_id", user.id)
           .maybeSingle();
         if (cancelled) return;
         if (error) throw error;
 
         const remote = data?.data;
+        const remoteUpdatedAt: string =
+          typeof data?.updated_at === "string" ? data.updated_at : "";
+
+        // 端末に未送信(dirty)の編集があるなら「新しい方を採用」。
+        // ローカルが新しければ表示を保持してクラウドを追従させる(リロード時の巻き戻し防止)。
+        if (cached?.dirty) {
+          const localNewer =
+            !remoteUpdatedAt ||
+            (!!cached.savedAt && cached.savedAt >= remoteUpdatedAt);
+          if (localNewer) {
+            dirtyRef.current = true;
+            if (!cancelled) setLoaded(true);
+            await flushToCloud();
+            return;
+          }
+          // クラウドの方が新しい → 以降でクラウドを適用(ローカル編集は破棄)
+        }
+
         if (Array.isArray(remote)) {
           // 旧形式(配列) → applications のみ。events は空で開始
           setApplications(normalizeApps(remote));
           setEvents([]);
         } else if (remote && typeof remote === "object") {
-          setApplications(normalizeApps((remote as any).applications));
-          setEvents(normalizeEvents((remote as any).events));
-          setNotifyState({
-            ...DEFAULT_NOTIFY,
-            ...((remote as any).notify ?? {}),
-          });
-          setPushSubscriptions(
-            Array.isArray((remote as any).pushSubscriptions)
-              ? (remote as any).pushSubscriptions
-              : [],
-          );
+          const apps = normalizeApps((remote as any).applications);
+          const evs = normalizeEvents((remote as any).events);
+          const ntf = { ...DEFAULT_NOTIFY, ...((remote as any).notify ?? {}) };
+          const subs = Array.isArray((remote as any).pushSubscriptions)
+            ? (remote as any).pushSubscriptions
+            : [];
+          setApplications(apps);
+          setEvents(evs);
+          setNotifyState(ntf);
+          setPushSubscriptions(subs);
           if ((remote as any).theme) setTheme((remote as any).theme);
           if ((remote as any).font) setFont((remote as any).font);
+          // クラウドを正として採用 → 端末キャッシュを clean 同期(次回起動の判定基準を揃える)
+          writeLocal(
+            cacheKey,
+            {
+              applications: apps,
+              events: evs,
+              notify: ntf,
+              pushSubscriptions: subs,
+              theme: ((remote as any).theme as Theme) ?? cached?.theme ?? "indigo",
+              font: ((remote as any).font as FontChoice) ?? cached?.font ?? "system",
+              savedAt: remoteUpdatedAt || nowISO(),
+            },
+            false,
+          );
         } else {
           // クラウドが空 → ローカルのキャッシュ/レガシーを移行
           const legacy = cached ?? readLocal(LS_KEY);
@@ -339,45 +452,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     dirtyRef.current = true;
     setSaveState("saving");
-    const t = window.setTimeout(async () => {
-      try {
-        localStorage.setItem(
-          cacheKey,
-          JSON.stringify({
-            version: 1,
-            savedAt: nowISO(),
-            applications,
-            events,
-            notify,
-            pushSubscriptions,
-            theme,
-            font,
-          }),
-        );
-        if (mode === "cloud" && supabase && user) {
-          const { error } = await supabase.from(DATA_TABLE).upsert({
-            user_id: user.id,
-            data: {
-              applications,
-              events,
-              notify,
-              pushSubscriptions,
-              theme,
-              font,
-            },
-            updated_at: nowISO(),
-          });
-          if (error) throw error;
-        }
+    const isCloud = mode === "cloud" && !!supabase && !!user;
+    const payload: CachePayload = {
+      applications,
+      events,
+      notify,
+      pushSubscriptions,
+      theme,
+      font,
+      savedAt: nowISO(),
+    };
+    const t = window.setTimeout(() => {
+      // (1) まず端末に保存。オフラインでも必ず成功させ「見た目の編集」を確定させる。
+      //     クラウド利用時は dirty=true で記録し、送信できるまで未送信として残す。
+      writeLocal(cacheKey, payload, isCloud);
+      if (!isCloud) {
+        // ローカルモードは端末保存で完結
         dirtyRef.current = false;
         setSaveState("saved");
         setLastSavedAt(Date.now());
-      } catch (e) {
-        setSaveState("idle");
-        toast.error("保存に失敗しました", {
-          description: e instanceof Error ? e.message : undefined,
-        });
+        return;
       }
+      // (2) クラウドへ追従。失敗(オフライン)時は dirty のまま → 復帰時に自動再送。
+      void flushToCloud();
     }, 600);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -391,14 +488,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     loaded,
     mode,
     user?.id,
+    cacheKey,
+    flushToCloud,
   ]);
 
-  // ---- 他端末の更新を取り込む ----
+  // ---- 復帰時の同期: 未送信があれば送信(flush)、無ければ他端末の更新を取り込む(pull) ----
   useEffect(() => {
     if (mode !== "cloud" || !supabase || !user) return;
-    const pull = async () => {
-      if (document.visibilityState !== "visible") return;
-      if (dirtyRef.current) return;
+    const sync = async () => {
+      if (document.visibilityState === "hidden") return;
+      // 未送信のローカル編集があるなら、まず送信して追いつかせる(pull で上書きしない)
+      if (dirtyRef.current) {
+        await flushToCloud();
+        return;
+      }
       const { data, error } = await supabase!
         .from(DATA_TABLE)
         .select("data")
@@ -426,14 +529,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if ((remote as any).font) setFont((remote as any).font);
       }
     };
-    document.addEventListener("visibilitychange", pull);
-    window.addEventListener("focus", pull);
+    document.addEventListener("visibilitychange", sync);
+    window.addEventListener("focus", sync);
+    window.addEventListener("online", sync);
     return () => {
-      document.removeEventListener("visibilitychange", pull);
-      window.removeEventListener("focus", pull);
+      document.removeEventListener("visibilitychange", sync);
+      window.removeEventListener("focus", sync);
+      window.removeEventListener("online", sync);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, user?.id]);
+  }, [mode, user?.id, flushToCloud]);
 
   const mutateApp = useCallback(
     (id: string, fn: (app: Application) => Application) => {

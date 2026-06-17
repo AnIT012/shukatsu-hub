@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { SwRegister } from "@/components/sw-register";
 
 export const metadata: Metadata = {
   title: "就活Hub",
@@ -28,6 +29,7 @@ export default function RootLayout({
     <html lang="ja" suppressHydrationWarning>
       <body className="antialiased">
         {children}
+        <SwRegister />
         <Toaster />
         <Analytics />
       </body>
