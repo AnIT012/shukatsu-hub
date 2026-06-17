@@ -3,6 +3,7 @@
 import {
   Award,
   Clock,
+  Hourglass,
   ListPlus,
   MinusCircle,
   Pin,
@@ -64,15 +65,13 @@ function Seg({ state }: { state: SegState }) {
     );
   }
   if (state === "waiting") {
-    // 結果待ち: 「やったけど未確定」→ 薄い primary の点線(done のべた塗りと対比)
+    // 結果待ち: 段はべた塗り(=やった)。次ステップとの境界に砂時計マーク(=審査中)を重ねる
     return (
-      <div
-        className="h-1 flex-1 rounded-full"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(to right, hsl(var(--primary)/0.55) 0 5px, transparent 5px 9px)",
-        }}
-      />
+      <div className="relative h-1 flex-1 rounded-full bg-primary">
+        <span className="absolute right-0 top-1/2 z-10 flex h-3.5 w-3.5 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card">
+          <Hourglass className="h-2 w-2" />
+        </span>
+      </div>
     );
   }
   return <div className={cn("h-1 flex-1 rounded-full", segClass(state))} />;
