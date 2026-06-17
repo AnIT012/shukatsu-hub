@@ -66,6 +66,7 @@ export function Dashboard() {
   const store = useStore();
   const {
     applications,
+    events,
     loaded,
     replaceAll,
     seedSampleIfEmpty,
@@ -92,6 +93,9 @@ export function Dashboard() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [paneH, setPaneH] = useState<number | undefined>(undefined);
+  const selPaneRef = useRef<HTMLDivElement>(null);
+  const evPaneRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{
     x: number;
     y: number;
@@ -319,6 +323,13 @@ export function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourIndex]);
 
+  // カルーセルの高さを表示中ページに追従(選考が長くてもイベントは短く保つ)
+  useEffect(() => {
+    const el = view === "selection" ? selPaneRef.current : evPaneRef.current;
+    if (el) setPaneH(el.offsetHeight);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, applications, events, filters, sort, sortDir, loaded]);
+
   const startTour = () => setTourIndex(0);
   const tourNext = () =>
     setTourIndex((i) => Math.min(i + 1, tourSteps.length - 1));
@@ -377,9 +388,9 @@ export function Dashboard() {
   const dateLabel = `${now.getMonth() + 1}/${now.getDate()} ${WD[now.getDay()]}.`;
 
   return (
-    <div className="min-h-screen">
+    <div className="flex h-[100dvh] flex-col overflow-hidden">
       {/* ヘッダー(白) */}
-      <header className="sticky top-0 z-30 border-b bg-card pt-[env(safe-area-inset-top)]">
+      <header className="shrink-0 border-b bg-card pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5">
           <span className="text-[15px] font-semibold tracking-wide text-primary">
             {now.getMonth() + 1}/{now.getDate()}{" "}
@@ -429,16 +440,18 @@ export function Dashboard() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl overflow-hidden pb-16 pt-4">
+      <main className="flex-1 overflow-y-auto overscroll-contain">
+        <div className="mx-auto max-w-3xl overflow-hidden pb-16 pt-4">
         <div
-          className="flex w-[200%]"
+          className="flex w-[200%] items-start overflow-hidden"
           style={{
+            height: paneH,
             transform: `translateX(calc(${
               view === "selection" ? "0%" : "-50%"
             } + ${dragX}px))`,
             transition: dragging
-              ? "none"
-              : "transform 0.34s cubic-bezier(0.22, 0.61, 0.36, 1)",
+              ? "height 0.3s ease"
+              : "transform 0.34s cubic-bezier(0.22, 0.61, 0.36, 1), height 0.3s ease",
           }}
           onTouchStart={(e) => {
             swipeRef.current = {
@@ -478,7 +491,7 @@ export function Dashboard() {
             swipeRef.current.axis = "";
           }}
         >
-          <div className="w-1/2 shrink-0 px-4">
+          <div ref={selPaneRef} className="w-1/2 shrink-0 px-4">
             {applications.length === 0 ? (
               <EmptyState
                 onAdd={() => setAddOpen(true)}
@@ -542,12 +555,13 @@ export function Dashboard() {
               </>
             )}
           </div>
-          <div className="w-1/2 shrink-0 px-4">
+          <div ref={evPaneRef} className="w-1/2 shrink-0 px-4">
             <EventsView
               onOpenEvent={setSelectedEventId}
               onAddEvent={handleAddEvent}
             />
           </div>
+        </div>
         </div>
       </main>
 

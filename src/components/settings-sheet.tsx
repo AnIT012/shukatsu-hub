@@ -298,58 +298,67 @@ function SettingsBody({
             )}
 
             {notify.enabled && (
-              <div className="space-y-2.5 border-t pt-3">
-                <div className="text-[12px] text-muted-foreground">
-                  タイミング
-                </div>
-                <NotifyRadio
-                  checked={notify.mode === "morning"}
-                  onClick={() => setNotify({ mode: "morning" })}
-                  label="毎朝まとめて"
-                  desc="次の予定を毎朝"
-                />
-                <NotifyRadio
-                  checked={notify.mode === "lead"}
-                  onClick={() => setNotify({ mode: "lead" })}
-                  label="タイミングを指定"
-                />
-                {notify.mode === "lead" && (
-                  <div className="flex gap-2 pl-[26px]">
-                    {[3, 2, 1].map((d) => (
-                      <button
-                        key={d}
-                        type="button"
-                        onClick={() => toggleLead(d)}
-                        className={cn(
-                          "rounded-lg border px-3 py-1 text-[12px] transition-colors",
-                          notify.leadDays.includes(d)
-                            ? "border-primary bg-accent text-accent-foreground"
-                            : "border-border text-muted-foreground",
-                        )}
-                      >
-                        {d === 1 ? "前日" : `${d}日前`}
-                      </button>
-                    ))}
+              <div className="space-y-3 border-t pt-3">
+                <div>
+                  <div className="mb-2 text-[12px] font-medium text-muted-foreground">
+                    通知する内容
                   </div>
-                )}
-                <div className="flex items-center border-t pt-2.5 text-sm">
-                  <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-                  通知する時刻
-                  <Select
-                    value={String(notify.hour)}
-                    onValueChange={(v) => setNotify({ hour: Number(v) })}
-                  >
-                    <SelectTrigger className="ml-auto h-8 w-[92px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {NOTIFY_HOURS.map((h) => (
-                        <SelectItem key={h} value={String(h)}>
-                          {h}:00
-                        </SelectItem>
+                  <div className="space-y-1.5">
+                    <NotifyRadio
+                      checked={notify.mode === "morning"}
+                      onClick={() => setNotify({ mode: "morning" })}
+                      label="毎日まとめて"
+                      desc="次の予定をまとめて1通"
+                    />
+                    <NotifyRadio
+                      checked={notify.mode === "lead"}
+                      onClick={() => setNotify({ mode: "lead" })}
+                      label="必要なときだけ"
+                      desc="締切が近づいたら"
+                    />
+                  </div>
+                  {notify.mode === "lead" && (
+                    <div className="mt-2 flex gap-2 pl-[26px]">
+                      {[3, 2, 1].map((d) => (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => toggleLead(d)}
+                          className={cn(
+                            "rounded-lg border px-3 py-1 text-[12px] transition-colors",
+                            notify.leadDays.includes(d)
+                              ? "border-primary bg-accent text-accent-foreground"
+                              : "border-border text-muted-foreground",
+                          )}
+                        >
+                          {d === 1 ? "前日" : `${d}日前`}
+                        </button>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
+                </div>
+                <div className="border-t pt-3">
+                  <div className="mb-2 text-[12px] font-medium text-muted-foreground">
+                    通知する時刻
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <Select
+                      value={String(notify.hour)}
+                      onValueChange={(v) => setNotify({ hour: Number(v) })}
+                    >
+                      <SelectTrigger className="h-8 w-[92px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {NOTIFY_HOURS.map((h) => (
+                          <SelectItem key={h} value={String(h)}>
+                            {h}:00
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             )}
