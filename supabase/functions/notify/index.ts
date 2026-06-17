@@ -1,0 +1,203 @@
+// 就活Hub 通知配信 (Supabase Edge Function / Deno)
+// 毎朝 cron から叩かれ、通知ON のユーザーへ Web Push を送る。
+// 秘密鍵は Supabase secrets にのみ置く(コードには公開鍵すら書かない)。
+//
+// 必要な secrets:
+//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (関数に自動付与される場合あり)
+//   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT(mailto:...)
+//   CRON_SECRET (cron からの呼び出しを認証する任意の文字列)
+
+import webpush from "npm:web-push@3.6.7";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+);
+
+webpush.setVapidDetails(
+  Deno.env.get("VAPID_SUBJECT") ?? "mailto:notify@example.com",
+  Deno.env.get("VAPID_PUBLIC_KEY")!,
+  Deno.env.get("VAPID_PRIVATE_KEY")!,
+);
+
+const KIND_LABEL: Record<string, string> = {
+  entry: "エントリー",
+  es: "ES提出",
+  web_test: "Webテスト",
+  video: "録画動画",
+  gd: "GD",
+  interview: "面接",
+  final_interview: "最終面接",
+  internship: "インターン参加",
+  other: "その他",
+};
+
+const dateOnly = (s: string) => s.slice(0, 10);
+const timeOf = (s: string) => (s.includes("T") ? s.slice(11, 16) : "");
+
+function jstToday(): string {
+  const now = new Date();
+  return new Date(now.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+function addDays(ymd: string, n: number): string {
+  const d = new Date(ymd + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+// アプリの focusOf と同じ考え方: 締切優先・消化/超過で実施日へ
+function focusDate(
+  due: string | null,
+  held: string | null,
+  done: boolean | undefined,
+  today: string,
+): string | null {
+  if (due && !done) {
+    if (held && dateOnly(due) < today) return held;
+    return due;
+  }
+  return held ?? null;
+}
+
+interface Item {
+  company: string;
+  label: string;
+  day: string;
+  date: string;
+}
+
+function collectSteps(apps: any[], today: string): Item[] {
+  const out: Item[] = [];
+  for (const app of apps ?? []) {
+    for (const s of app.steps ?? []) {
+      if (s.status === "done") continue;
+      const fd = focusDate(s.dueAt, s.heldAt, s.dueDone, today);
+      if (!fd) continue;
+      out.push({
+        company: app.company || "(企業未設定)",
+        label: KIND_LABEL[s.kind] ?? "予定",
+        day: dateOnly(fd),
+        date: fd,
+      });
+    }
+  }
+  return out;
+}
+
+function collectEvents(events: any[], today: string): Item[] {
+  const out: Item[] = [];
+  for (const ev of events ?? []) {
+    if (ev.status === "attended") continue;
+    const fd = focusDate(ev.applyBy, ev.heldAt, ev.applyDone, today);
+    if (!fd) continue;
+    out.push({
+      company: ev.company || ev.title || "(イベント)",
+      label: ev.title || "イベント",
+      day: dateOnly(fd),
+      date: fd,
+    });
+  }
+  return out;
+}
+
+function nearestDay(items: Item[], today: string): Item[] {
+  const future = items.filter((i) => i.day >= today);
+  if (!future.length) return [];
+  const min = future.reduce((a, b) => (a.day < b.day ? a : b)).day;
+  return future.filter((i) => i.day === min);
+}
+
+function fmtItem(it: Item): string {
+  const md = it.day.slice(5).replace("-", "/");
+  const t = timeOf(it.date);
+  return `${it.company} ${it.label}・${md}${t ? " " + t : ""}`;
+}
+
+function buildPayload(
+  apps: any[],
+  events: any[],
+  notify: any,
+  today: string,
+): { title: string; body: string; url: string } | null {
+  const sel = collectSteps(apps, today);
+  const ev = collectEvents(events, today);
+  let selPick: Item[] = [];
+  let evPick: Item[] = [];
+
+  if (notify.mode === "lead") {
+    const days: string[] = (notify.leadDays ?? [1]).map((n: number) =>
+      addDays(today, n),
+    );
+    selPick = sel.filter((i) => days.includes(i.day));
+    evPick = ev.filter((i) => days.includes(i.day));
+  } else {
+    // morning: 各カテゴリの「一番近い日」の全件
+    selPick = nearestDay(sel, today);
+    evPick = nearestDay(ev, today);
+  }
+
+  if (!selPick.length && !evPick.length) return null;
+
+  const lines: string[] = [];
+  if (selPick.length) lines.push("【選考】" + selPick.map(fmtItem).join(" / "));
+  if (evPick.length) lines.push("【イベント】" + evPick.map(fmtItem).join(" / "));
+
+  const title =
+    notify.mode === "lead" ? "就活Hub｜まもなくの予定" : "就活Hub｜今日の予定";
+  return { title, body: lines.join("\n"), url: "/" };
+}
+
+Deno.serve(async (req) => {
+  // cron からの呼び出しを認証
+  const secret = Deno.env.get("CRON_SECRET");
+  if (secret) {
+    const auth = req.headers.get("authorization") ?? "";
+    if (auth !== `Bearer ${secret}`) {
+      return new Response("unauthorized", { status: 401 });
+    }
+  }
+
+  const today = jstToday();
+  const { data: rows, error } = await supabase
+    .from("user_data")
+    .select("user_id, data");
+  if (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  let users = 0;
+  let sent = 0;
+  let failed = 0;
+
+  for (const row of rows ?? []) {
+    const d = (row as any).data ?? {};
+    const notify = d.notify;
+    if (!notify?.enabled) continue;
+    const subs: any[] = d.pushSubscriptions ?? [];
+    if (!subs.length) continue;
+
+    const payload = buildPayload(d.applications, d.events, notify, today);
+    if (!payload) continue;
+    users++;
+
+    for (const sub of subs) {
+      try {
+        await webpush.sendNotification(sub, JSON.stringify(payload));
+        sent++;
+      } catch (e) {
+        failed++;
+        // 404/410 は失効購読。本番では user_data から取り除くと良い。
+        console.error("push failed:", (e as any)?.statusCode ?? e);
+      }
+    }
+  }
+
+  return new Response(JSON.stringify({ today, users, sent, failed }), {
+    headers: { "content-type": "application/json" },
+  });
+});
