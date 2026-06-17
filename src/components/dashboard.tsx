@@ -8,7 +8,7 @@ import {
   Check,
   HelpCircle,
   Inbox,
-  Loader2,
+  ListChecks,
   Plus,
   SearchX,
   Settings,
@@ -377,9 +377,15 @@ export function Dashboard() {
 
   if (!loaded) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-        読み込み中…
+      <div className="flex h-[100dvh] flex-col items-center justify-center gap-5">
+        <div className="animate-app-pulse flex h-16 w-16 items-center justify-center rounded-[18px] bg-primary text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.3)]">
+          <ListChecks className="h-8 w-8" />
+        </div>
+        <div className="flex gap-1.5">
+          <span className="animate-app-bounce h-1.5 w-1.5 rounded-full bg-primary" />
+          <span className="animate-app-bounce h-1.5 w-1.5 rounded-full bg-primary [animation-delay:0.15s]" />
+          <span className="animate-app-bounce h-1.5 w-1.5 rounded-full bg-primary [animation-delay:0.3s]" />
+        </div>
       </div>
     );
   }
@@ -684,7 +690,10 @@ function SaveIndicator() {
   if (saveState === "saving")
     return (
       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/30" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary/70" />
+        </span>
         <span className="hidden sm:inline">保存中</span>
       </span>
     );
@@ -694,8 +703,10 @@ function SaveIndicator() {
       ? `${t.getHours()}:${String(t.getMinutes()).padStart(2, "0")}`
       : "";
     return (
-      <span className="flex animate-fade-in items-center gap-1.5 text-xs text-success">
-        <Check className="h-3.5 w-3.5" />
+      <span className="flex items-center gap-1.5 text-xs text-success">
+        <span className="animate-app-pop flex h-4 w-4 items-center justify-center rounded-full bg-[hsl(var(--success)/0.15)]">
+          <Check className="h-3 w-3" />
+        </span>
         <span className="hidden sm:inline">保存{hhmm && ` ${hhmm}`}</span>
       </span>
     );

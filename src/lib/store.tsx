@@ -294,6 +294,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               ? (remote as any).pushSubscriptions
               : [],
           );
+          if ((remote as any).theme) setTheme((remote as any).theme);
+          if ((remote as any).font) setFont((remote as any).font);
         } else {
           // クラウドが空 → ローカルのキャッシュ/レガシーを移行
           const legacy = cached ?? readLocal(LS_KEY);
@@ -348,12 +350,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             events,
             notify,
             pushSubscriptions,
+            theme,
+            font,
           }),
         );
         if (mode === "cloud" && supabase && user) {
           const { error } = await supabase.from(DATA_TABLE).upsert({
             user_id: user.id,
-            data: { applications, events, notify, pushSubscriptions },
+            data: {
+              applications,
+              events,
+              notify,
+              pushSubscriptions,
+              theme,
+              font,
+            },
             updated_at: nowISO(),
           });
           if (error) throw error;
@@ -370,7 +381,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }, 600);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applications, events, notify, pushSubscriptions, loaded, mode, user?.id]);
+  }, [
+    applications,
+    events,
+    notify,
+    pushSubscriptions,
+    theme,
+    font,
+    loaded,
+    mode,
+    user?.id,
+  ]);
 
   // ---- 他端末の更新を取り込む ----
   useEffect(() => {
@@ -401,6 +422,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             ? (remote as any).pushSubscriptions
             : [],
         );
+        if ((remote as any).theme) setTheme((remote as any).theme);
+        if ((remote as any).font) setFont((remote as any).font);
       }
     };
     document.addEventListener("visibilitychange", pull);
