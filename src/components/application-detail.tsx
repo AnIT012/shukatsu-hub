@@ -38,21 +38,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StepTimeline } from "@/components/step-timeline";
+import { StageTimeline } from "@/components/stage-timeline";
 import {
   isInternType,
   PASSED_LABEL,
   PRIORITY_LABEL,
   PRIORITY_OPTIONS,
   RESULT_LABEL,
-  RESULT_OPTIONS,
   SELECTION_TYPE_LABEL,
   SELECTION_TYPE_OPTIONS,
   STEP_KIND_LABEL,
 } from "@/lib/constants";
-import { getNextAction } from "@/lib/next-action";
+import { getStageNextAction } from "@/lib/next-action";
 import { formatDue, formatStamp, relativeLabel, urgencyOf } from "@/lib/date";
-import { cn } from "@/lib/utils";
+import { cn, safeHref } from "@/lib/utils";
 
 const VENUE_OPTIONS: { value: VenueMode; label: string }[] = [
   { value: "", label: "未設定" },
@@ -173,13 +172,13 @@ function DetailBody({
     updateEsEntry,
     deleteEsEntry,
   } = useStore();
-  const [editHeader, setEditHeader] = useState(false);
   const [editBasic, setEditBasic] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editEs, setEditEs] = useState<string | null>(null);
   const [editLinks, setEditLinks] = useState(false);
   const [editMemo, setEditMemo] = useState(false);
-  const next = getNextAction(app);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const next = getStageNextAction(app);
   const intern = isInternType(app.selectionType);
   const pinnedCount = app.links.filter((l) => l.pin).length;
 
@@ -201,39 +200,11 @@ function DetailBody({
       </div>
 
       <div className="px-4 py-4">
-        {/* 企業名・職種(タップ編集) */}
-        {editHeader ? (
-          <div className="space-y-2">
-            <Input
-              autoFocus
-              value={app.company}
-              onChange={(e) =>
-                updateApplication(app.id, { company: e.target.value })
-              }
-              placeholder="企業名"
-              className="text-base font-semibold"
-            />
-            <Input
-              value={app.role}
-              onChange={(e) =>
-                updateApplication(app.id, { role: e.target.value })
-              }
-              placeholder="職種 / コース名"
-              className="h-9 text-sm"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-primary"
-              onClick={() => setEditHeader(false)}
-            >
-              完了
-            </Button>
-          </div>
-        ) : (
+        {/* 企業名・職種(タップで基本情報を編集) */}
+        {!editBasic && (
           <button
             type="button"
-            onClick={() => setEditHeader(true)}
+            onClick={() => setEditBasic(true)}
             className="group block text-left"
           >
             <h2 className="text-lg font-semibold leading-tight">
@@ -246,7 +217,7 @@ function DetailBody({
           </button>
         )}
 
-        {/* 基本情報: 普段はバッジ表示 / ✎で編集モード(セレクト群) */}
+        {/* 基本情報: 普段はバッジ表示 / ✎で編集モード(企業名・職種もここで編集) */}
         {editBasic ? (
           <div
             data-tour="type"
@@ -255,6 +226,31 @@ function DetailBody({
             <div className="flex items-center gap-1.5 text-sm font-medium">
               <Pencil className="h-4 w-4 text-primary" />
               基本情報を編集
+            </div>
+            <div>
+              <div className="mb-1 text-[11px] text-muted-foreground">企業名</div>
+              <Input
+                autoFocus
+                value={app.company}
+                onChange={(e) =>
+                  updateApplication(app.id, { company: e.target.value })
+                }
+                placeholder="企業名"
+                className="h-9 text-sm font-medium"
+              />
+            </div>
+            <div>
+              <div className="mb-1 text-[11px] text-muted-foreground">
+                職種 / コース名
+              </div>
+              <Input
+                value={app.role}
+                onChange={(e) =>
+                  updateApplication(app.id, { role: e.target.value })
+                }
+                placeholder="例: 総合職サマーインターン"
+                className="h-9 text-sm"
+              />
             </div>
             <LabeledSelect
               label="選考種別"
@@ -310,31 +306,18 @@ function DetailBody({
                 </div>
               </div>
             )}
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <LabeledSelect
-                  label="優先度"
-                  value={app.priority}
-                  onChange={(v) =>
-                    updateApplication(app.id, { priority: v as any })
-                  }
-                  options={PRIORITY_OPTIONS.map((o) => ({
-                    value: o.value,
-                    label: `優先度 ${o.label}`,
-                  }))}
-                />
-              </div>
-              <div className="flex-1">
-                <LabeledSelect
-                  label="結果"
-                  value={app.result}
-                  onChange={(v) =>
-                    updateApplication(app.id, { result: v as any })
-                  }
-                  options={RESULT_OPTIONS}
-                />
-              </div>
-            </div>
+            <LabeledSelect
+              label="優先度"
+              value={app.priority}
+              onChange={(v) => updateApplication(app.id, { priority: v as any })}
+              options={PRIORITY_OPTIONS.map((o) => ({
+                value: o.value,
+                label: `優先度 ${o.label}`,
+              }))}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              合否（通過・不合格・辞退）は下の選考フローで各段階ごとに設定します。
+            </p>
             <Button
               className="w-full"
               onClick={() => {
@@ -376,14 +359,6 @@ function DetailBody({
                   : `対面${app.venuePlace ? ` · ${app.venuePlace}` : ""}`}
               </InfoBadge>
             )}
-            <button
-              type="button"
-              onClick={() => setEditBasic(true)}
-              className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium text-primary hover:bg-accent"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              編集
-            </button>
           </div>
         )}
 
@@ -392,9 +367,9 @@ function DetailBody({
           <NextBanner app={app} next={next} />
         </div>
 
-        {/* 選考ステップ */}
-        <Section icon={<ListChecks className="h-4 w-4" />} title="選考ステップ">
-          <StepTimeline app={app} />
+        {/* 選考フロー(段階＞タスク) */}
+        <Section icon={<ListChecks className="h-4 w-4" />} title="選考フロー">
+          <StageTimeline app={app} />
         </Section>
 
         {/* ES設問・回答: 読み物表示 / 個別✎編集 */}
@@ -529,15 +504,40 @@ function DetailBody({
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
-                          className="flex items-center gap-1 font-medium text-primary"
+                          className={cn(
+                            "flex items-center gap-1 font-medium",
+                            copiedId === es.id ? "text-success" : "text-primary",
+                          )}
                           onClick={() => {
                             navigator.clipboard
                               ?.writeText(es.answer)
-                              .then(() => toast.success("コピーしました"));
+                              .then(() => {
+                                toast.success("コピーしました");
+                                setCopiedId(es.id);
+                                window.setTimeout(
+                                  () =>
+                                    setCopiedId((c) =>
+                                      c === es.id ? null : c,
+                                    ),
+                                  1300,
+                                );
+                              });
                           }}
                         >
-                          <Copy className="h-3.5 w-3.5" />
-                          コピー
+                          {copiedId === es.id ? (
+                            <>
+                              <Check
+                                key="copied"
+                                className="animate-evo-flip h-3.5 w-3.5"
+                              />
+                              コピー済
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3.5 w-3.5" />
+                              コピー
+                            </>
+                          )}
                         </button>
                         <button
                           type="button"
@@ -627,20 +627,28 @@ function DetailBody({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                      "h-9 w-9 shrink-0",
-                      link.pin ? "text-primary" : "text-muted-foreground",
+                      "h-9 w-9 shrink-0 transition-all",
+                      link.pin
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "border border-input text-muted-foreground hover:bg-accent",
                     )}
                     disabled={!link.pin && pinnedCount >= 2}
                     title={
                       link.pin
-                        ? "ピン留め中（カードに表示）"
+                        ? "ピン留め中（カードに表示）・タップで解除"
                         : pinnedCount >= 2
                           ? "ピンは最大2つまで"
                           : "カードにピン留め"
                     }
                     onClick={() => updateLink(app.id, link.id, { pin: !link.pin })}
                   >
-                    <Pin className="h-4 w-4" />
+                    <Pin
+                      key={link.pin ? "on" : "off"}
+                      className={cn(
+                        "h-4 w-4",
+                        link.pin && "animate-evo-drop fill-current",
+                      )}
+                    />
                   </Button>
                   <Button
                     type="button"
@@ -659,7 +667,7 @@ function DetailBody({
               {app.links.map((link) => (
                 <a
                   key={link.id}
-                  href={link.url || "#"}
+                  href={safeHref(link.url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={cn(
@@ -842,7 +850,7 @@ function Section({
   return (
     <section className="mt-5" data-tour={dataTour}>
       <div className="mb-2.5 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+        <h3 className="flex items-center gap-1.5 text-[15px] font-semibold text-foreground [&_svg]:text-muted-foreground">
           {icon}
           {title}
         </h3>
@@ -858,7 +866,7 @@ function NextBanner({
   next,
 }: {
   app: Application;
-  next: ReturnType<typeof getNextAction>;
+  next: ReturnType<typeof getStageNextAction>;
 }) {
   if (next.type === "result") {
     const map = {
@@ -878,23 +886,18 @@ function NextBanner({
   }
 
   if (next.type !== "step") {
-    const waitingStep = next.step;
     return (
       <div className="rounded-xl bg-muted px-4 py-3">
         <div className="flex items-center gap-2 text-muted-foreground">
           {next.type === "waiting" ? (
             <>
               <Clock className="h-5 w-5" />
-              <span className="font-medium">
-                {waitingStep
-                  ? `${STEP_KIND_LABEL[waitingStep.kind]}の結果待ち`
-                  : "結果待ち（全ステップ完了）"}
-              </span>
+              <span className="font-medium">結果待ち</span>
             </>
           ) : (
             <>
               <ListPlus className="h-5 w-5" />
-              <span className="text-sm">下の「テンプレから」で選考フローを追加</span>
+              <span className="text-sm">下の「段階を追加」で選考フローを登録</span>
             </>
           )}
         </div>
@@ -902,11 +905,12 @@ function NextBanner({
     );
   }
 
-  const step = next.step!;
+  // 次にやるタスク(並行なら複数)
   const focus = next.focusDate;
   const kindLabel = next.focusKind === "held" ? "実施" : "締切";
   const u = focus ? urgencyOf(focus) : "none";
   const urgent = u === "overdue" || u === "soon" || u === "near";
+  const parallel = next.tasks.length > 1;
   return (
     <div
       className={cn(
@@ -918,15 +922,12 @@ function NextBanner({
     >
       <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         <Target className="h-3.5 w-3.5" />
-        次にやること
+        次にやること{parallel && "（並行）"}
       </div>
       <div className="mt-0.5 text-base font-bold leading-tight">
-        {STEP_KIND_LABEL[step.kind]}
-        {step.name && (
-          <span className="ml-1.5 text-sm font-medium text-muted-foreground">
-            {step.name}
-          </span>
-        )}
+        {next.tasks
+          .map((t) => STEP_KIND_LABEL[t.kind] + (t.name ? ` ${t.name}` : ""))
+          .join(" ・ ")}
       </div>
       <div
         className={cn(

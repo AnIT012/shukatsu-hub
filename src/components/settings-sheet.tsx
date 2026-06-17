@@ -13,6 +13,7 @@ import {
   LogOut,
   MessageSquare,
   Palette,
+  RotateCcw,
   Smartphone,
   Trash2,
   Type,
@@ -133,18 +134,46 @@ export function SettingsSheet({
   );
 }
 
+/** 下タブから開くページ版(Sheet を使わずインライン表示)。 */
+export function SettingsPage({
+  onImport,
+  onExport,
+  onStartTour,
+  onOpenLegal,
+  onBack,
+}: {
+  onImport: () => void;
+  onExport: () => void;
+  onStartTour: () => void;
+  onOpenLegal: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <SettingsBody
+      asPage
+      onClose={onBack}
+      onImport={onImport}
+      onExport={onExport}
+      onStartTour={onStartTour}
+      onOpenLegal={onOpenLegal}
+    />
+  );
+}
+
 function SettingsBody({
   onClose,
   onImport,
   onExport,
   onStartTour,
   onOpenLegal,
+  asPage = false,
 }: {
   onClose: () => void;
   onImport: () => void;
   onExport: () => void;
   onStartTour: () => void;
   onOpenLegal: () => void;
+  asPage?: boolean;
 }) {
   const {
     theme,
@@ -155,15 +184,25 @@ function SettingsBody({
     setNotify,
     addPushSubscription,
     clearAll,
+    restoreFromRaw,
     applications,
     events,
   } = useStore();
   const { mode, user, signOut } = useAuth();
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmRestore, setConfirmRestore] = useState(false);
+  const [hasV2Backup, setHasV2Backup] = useState(false);
   const [needsHome, setNeedsHome] = useState(false);
 
   useEffect(() => {
     setNeedsHome(isIOS() && !isStandalone());
+    try {
+      setHasV2Backup(
+        !!localStorage.getItem("shukatsu-dashboard:_backupBeforeV2"),
+      );
+    } catch {
+      // ignore
+    }
   }, []);
 
   const handleToggleNotify = async () => {
@@ -218,20 +257,24 @@ function SettingsBody({
 
   return (
     <>
-      <SheetTitle className="sr-only">設定</SheetTitle>
-      <div className="sticky top-0 z-20 flex items-center border-b bg-card px-3 py-2.5">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex items-center gap-1 text-sm font-medium text-primary"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          戻る
-        </button>
-        <span className="absolute left-1/2 -translate-x-1/2 text-sm font-semibold">
-          設定
-        </span>
-      </div>
+      {!asPage && (
+        <>
+          <SheetTitle className="sr-only">設定</SheetTitle>
+          <div className="sticky top-0 z-20 flex items-center border-b bg-card px-3 py-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center gap-1 text-sm font-medium text-primary"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              戻る
+            </button>
+            <span className="absolute left-1/2 -translate-x-1/2 text-sm font-semibold">
+              設定
+            </span>
+          </div>
+        </>
+      )}
 
       <div className="space-y-6 px-4 py-5">
         {mode === "cloud" && user?.email && (
@@ -433,6 +476,47 @@ function SettingsBody({
               label="エクスポート（JSON）"
               onClick={onExport}
             />
+            {hasV2Backup &&
+              (confirmRestore ? (
+                <div className="flex items-center gap-2 border-t bg-[hsl(var(--warning)/0.08)] px-3 py-2.5">
+                  <span className="flex-1 text-[13px]">
+                    選考管理アップデート前の状態に戻しますか？（以降の変更は失われます）
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setConfirmRestore(false)}
+                  >
+                    やめる
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      try {
+                        const raw = localStorage.getItem(
+                          "shukatsu-dashboard:_backupBeforeV2",
+                        );
+                        if (raw && restoreFromRaw(raw)) {
+                          toast.success("移行前のデータに戻しました");
+                        } else {
+                          toast.error("復元に失敗しました");
+                        }
+                      } catch {
+                        toast.error("復元に失敗しました");
+                      }
+                      setConfirmRestore(false);
+                    }}
+                  >
+                    戻す
+                  </Button>
+                </div>
+              ) : (
+                <Row
+                  icon={<RotateCcw className="h-4 w-4" />}
+                  label="移行前のデータに戻す（保険）"
+                  onClick={() => setConfirmRestore(true)}
+                />
+              ))}
             {confirmClear ? (
               <div className="flex items-center gap-2 border-t bg-[hsl(var(--danger)/0.06)] px-3 py-2.5">
                 <span className="flex-1 text-[13px]">

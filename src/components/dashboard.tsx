@@ -9,20 +9,19 @@ import {
   CloudOff,
   HelpCircle,
   Inbox,
-  ListChecks,
   Plus,
+  RefreshCw,
   SearchX,
-  Settings,
   Upload,
 } from "lucide-react";
 import type { Application, Filters, Priority, SortDir, SortKey } from "@/lib/types";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import {
-  getNextAction,
-  hasThisWeekTask,
+  getStageNextAction,
+  hasThisWeekStageTask,
   situationOf,
-  thisWeekTaskCount,
+  thisWeekStageTaskCount,
 } from "@/lib/next-action";
 import { dueInstant, dueToDate, relativeLabel, urgencyOf } from "@/lib/date";
 import { exportApplications, parseBackup, readFile } from "@/lib/io";
@@ -50,9 +49,12 @@ import { Tutorial, type TourStep } from "@/components/tutorial";
 import { LegalDialog } from "@/components/legal-dialog";
 import { EventsView } from "@/components/events-view";
 import { EventDetail } from "@/components/event-detail";
-import { SettingsSheet } from "@/components/settings-sheet";
+import { SettingsPage } from "@/components/settings-sheet";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
+import { VersionNotice } from "@/components/version-notice";
 import { OnboardingPrompts } from "@/components/onboarding-prompts";
+import { BottomNav, type NavView } from "@/components/bottom-nav";
+import { AppLoader } from "@/components/app-loader";
 
 const DEFAULT_FILTERS: Filters = {
   situations: [],
@@ -63,6 +65,9 @@ const DEFAULT_FILTERS: Filters = {
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
 
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// 下タブと同じ並び。スワイプ(選考⇄イベント⇄設定)のインデックス算出に使う
+const VIEWS: NavView[] = ["selection", "events", "settings"];
 
 export function Dashboard() {
   const store = useStore();
@@ -79,7 +84,7 @@ export function Dashboard() {
   const flagKey = (base: string) =>
     mode === "cloud" && user ? `${base}:${user.id}` : base;
 
-  const [view, setView] = useState<"selection" | "events">("selection");
+  const [view, setView] = useState<NavView>("selection");
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>("deadline");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -87,17 +92,14 @@ export function Dashboard() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
+  const [addSpin, setAddSpin] = useState(false);
   const [showOnboard, setShowOnboard] = useState(false);
   const [tourIndex, setTourIndex] = useState(-1);
   const [legalOpen, setLegalOpen] = useState(false);
   const [legalConsentMode, setLegalConsentMode] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const [paneH, setPaneH] = useState<number | undefined>(undefined);
-  const selPaneRef = useRef<HTMLDivElement>(null);
-  const evPaneRef = useRef<HTMLDivElement>(null);
   const swipeRef = useRef<{
     x: number;
     y: number;
@@ -196,7 +198,7 @@ export function Dashboard() {
       total: applications.length,
       inProgress: applications.filter((a) => a.result === "in_progress").length,
       passed: applications.filter((a) => a.result === "passed").length,
-      thisWeek: applications.reduce((n, a) => n + thisWeekTaskCount(a), 0),
+      thisWeek: applications.reduce((n, a) => n + thisWeekStageTaskCount(a), 0),
     }),
     [applications],
   );
@@ -222,10 +224,10 @@ export function Dashboard() {
         return false;
       if (filters.priorities.length && !filters.priorities.includes(a.priority))
         return false;
-      if (filters.onlyThisWeek && !hasThisWeekTask(a)) return false;
+      if (filters.onlyThisWeek && !hasThisWeekStageTask(a)) return false;
       return true;
     });
-    const decorated = list.map((a) => ({ a, na: getNextAction(a) }));
+    const decorated = list.map((a) => ({ a, na: getStageNextAction(a) }));
     const dirMul = sortDir === "asc" ? 1 : -1;
     decorated.sort((x, y) => {
       let r: number;
@@ -252,13 +254,13 @@ export function Dashboard() {
       steps.push(
         {
           tour: "tabs",
-          title: "選考とイベント",
-          body: "上のタブで「選考」と「イベント（説明会）」を切り替え。左右にスワイプしてもOK。",
+          title: "選考・イベント・設定",
+          body: "下のタブで「選考」「イベント（説明会）」「設定」を切り替え。選考⇄イベントは左右スワイプでもOK。",
         },
         {
           tour: "card",
           title: "応募先カード",
-          body: "企業ごとにカードで一覧（締切が近い順）。左の日付＝次の締切で、1週間以内は赤で強調。下のバーが進捗（色＝通過／半分＝進行中／灰＝結果待ち）。",
+          body: "企業ごとにカードで一覧（締切が近い順）。左の日付＝次の締切で、1週間以内は赤で強調。下のバーが進捗（緑＝通過／黄＝やった待ち／灰＝未／赤＝不合格）。",
         },
         {
           tour: "banner",
@@ -283,14 +285,14 @@ export function Dashboard() {
         {
           tour: "status-dot",
           openDetail: true,
-          title: "丸＝状態の切替",
-          body: "この丸をタップするたびに 未着手→進行中→結果待ち→完了 と変わる。完了にすると、次のステップが自動で「次にやる」になるよ。",
+          title: "丸＝やった/未",
+          body: "この丸をタップで「未 ⇄ やった」を切り替え。タスクをやったら、その段階の「通過／不合格」を選べばOK。",
         },
         {
           tour: "step",
           openDetail: true,
-          title: "ステップの編集",
-          body: "ステップをタップで編集（締切・場所・メモ）。左の⠿でドラッグ並べ替え。「テンプレから」で定番フローを一括追加もできる。",
+          title: "段階＞タスクの編集",
+          body: "段階は実線ブロック。タスクをタップで編集（締切・実施日・メモ）。「並行で追加」でES＋Webテストなど同時選考も入れられる。",
         },
         {
           tour: "type",
@@ -314,7 +316,7 @@ export function Dashboard() {
     }
     steps.push({
       title: "これで準備OK",
-      body: "通知・テーマ・このガイドは、右上の設定（⚙）からいつでも開けるよ。就活がんばろう！",
+      body: "通知・テーマ・このガイドは、下のタブの「設定」からいつでも開けるよ。就活がんばろう！",
     });
     return steps;
   }, [applications.length]);
@@ -329,13 +331,6 @@ export function Dashboard() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourIndex]);
-
-  // カルーセルの高さを表示中ページに追従(選考が長くてもイベントは短く保つ)
-  useEffect(() => {
-    const el = view === "selection" ? selPaneRef.current : evPaneRef.current;
-    if (el) setPaneH(el.offsetHeight);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, applications, events, filters, sort, sortDir, loaded]);
 
   const startTour = () => setTourIndex(0);
   const tourNext = () =>
@@ -383,22 +378,12 @@ export function Dashboard() {
   };
 
   if (!loaded) {
-    return (
-      <div className="flex h-[100dvh] flex-col items-center justify-center gap-5">
-        <div className="animate-app-pulse flex h-16 w-16 items-center justify-center rounded-[18px] bg-primary text-primary-foreground shadow-[0_8px_24px_hsl(var(--primary)/0.3)]">
-          <ListChecks className="h-8 w-8" />
-        </div>
-        <div className="flex gap-1.5">
-          <span className="animate-app-bounce h-1.5 w-1.5 rounded-full bg-primary" />
-          <span className="animate-app-bounce h-1.5 w-1.5 rounded-full bg-primary [animation-delay:0.15s]" />
-          <span className="animate-app-bounce h-1.5 w-1.5 rounded-full bg-primary [animation-delay:0.3s]" />
-        </div>
-      </div>
-    );
+    return <AppLoader />;
   }
 
   const now = new Date();
   const dateLabel = `${now.getMonth() + 1}/${now.getDate()} ${WD[now.getDay()]}.`;
+  const viewIdx = VIEWS.indexOf(view);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -409,7 +394,7 @@ export function Dashboard() {
             {now.getMonth() + 1}/{now.getDate()}{" "}
             <span className="text-muted-foreground">{WD[now.getDay()]}.</span>
           </span>
-          <div className="ml-auto flex items-center gap-1.5">
+          <div className="ml-auto flex items-center gap-1">
             <SaveIndicator />
             <input
               ref={fileRef}
@@ -418,71 +403,44 @@ export function Dashboard() {
               className="hidden"
               onChange={handleImportFile}
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9"
-              aria-label="設定"
-              onClick={() => setSettingsOpen(true)}
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-            <Button
-              size="sm"
-              className="h-9"
-              data-tour="add"
-              onClick={() =>
-                view === "events" ? handleAddEvent() : setAddOpen(true)
-              }
-            >
-              <Plus className="h-4 w-4" />
-              追加
-            </Button>
+            <RefreshButton />
+            {view !== "settings" && (
+              <Button
+                size="icon"
+                className="h-9 w-9"
+                data-tour="add"
+                aria-label={view === "events" ? "イベントを追加" : "企業を追加"}
+                onClick={() => {
+                  setAddSpin(true);
+                  window.setTimeout(() => setAddSpin(false), 500);
+                  view === "events" ? handleAddEvent() : setAddOpen(true);
+                }}
+              >
+                <Plus
+                  className={cn("h-4.5 w-4.5", addSpin && "animate-spin-once")}
+                />
+              </Button>
+            )}
           </div>
-        </div>
-        <div className="mx-auto flex max-w-3xl" data-tour="tabs">
-          <TabBtn
-            active={view === "selection"}
-            onClick={() => setView("selection")}
-          >
-            選考
-          </TabBtn>
-          <TabBtn active={view === "events"} onClick={() => setView("events")}>
-            イベント
-          </TabBtn>
         </div>
       </header>
 
-      <main
-        className={cn(
-          "flex-1 overscroll-contain bg-background",
-          dragging ? "overflow-hidden" : "overflow-y-auto",
-        )}
-      >
-        <div className="mx-auto max-w-3xl pb-16 pt-4">
-          <div className="px-4">
-            <OnboardingPrompts
-              onOpenSettings={() => setSettingsOpen(true)}
-            />
-          </div>
-          <div className="overflow-hidden">
+      <main className="relative flex-1 overflow-hidden bg-background">
+        {/* 3ペインを横スライド。各ページは独立スクロール(高さ同期しない=空白せり上がり無し) */}
         <div
-          className="flex w-[200%] items-start overflow-hidden"
+          className="flex h-full w-[300%]"
           style={{
-            height: paneH,
-            transform: `translateX(calc(${
-              view === "selection" ? "0%" : "-50%"
-            } + ${dragX}px))`,
+            transform: `translateX(calc(${-viewIdx * (100 / 3)}% + ${dragX}px))`,
             transition: dragging
-              ? "height 0.3s ease"
-              : "transform 0.34s cubic-bezier(0.22, 0.61, 0.36, 1), height 0.3s ease",
+              ? "none"
+              : "transform 0.34s cubic-bezier(0.22, 0.61, 0.36, 1)",
           }}
           onTouchStart={(e) => {
             swipeRef.current = {
               x: e.touches[0].clientX,
               y: e.touches[0].clientY,
               axis: "",
-              w: e.currentTarget.getBoundingClientRect().width / 2,
+              w: e.currentTarget.getBoundingClientRect().width / 3,
             };
           }}
           onTouchMove={(e) => {
@@ -496,9 +454,9 @@ export function Dashboard() {
             }
             if (swipeRef.current.axis === "x") {
               let d = dx;
-              // 端方向への引っ張りには抵抗をかける
-              if (view === "selection" && d > 0) d *= 0.3;
-              if (view === "events" && d < 0) d *= 0.3;
+              // 両端方向への引っ張りには抵抗をかける
+              if (viewIdx === 0 && d > 0) d *= 0.3;
+              if (viewIdx === 2 && d < 0) d *= 0.3;
               if (!dragging) setDragging(true);
               setDragX(d);
             }
@@ -507,88 +465,125 @@ export function Dashboard() {
             if (swipeRef.current.axis === "x") {
               setDragging(false);
               const threshold = swipeRef.current.w * 0.25;
-              if (view === "selection" && dragX < -threshold) setView("events");
-              else if (view === "events" && dragX > threshold)
-                setView("selection");
+              if (dragX < -threshold && viewIdx < 2)
+                setView(VIEWS[viewIdx + 1]);
+              else if (dragX > threshold && viewIdx > 0)
+                setView(VIEWS[viewIdx - 1]);
               setDragX(0);
             }
             swipeRef.current.axis = "";
           }}
         >
-          <div ref={selPaneRef} className="w-1/2 shrink-0 px-4">
-            {applications.length === 0 ? (
-              <EmptyState
-                onAdd={() => setAddOpen(true)}
-                onImport={() => fileRef.current?.click()}
-              />
-            ) : (
-              <>
-                <p className="px-0.5 text-[13px] text-muted-foreground">
-                  今週やること{" "}
-                  <b className="font-semibold text-danger">
-                    {stats.thisWeek}件
-                  </b>{" "}
-                  · 進行中 {stats.inProgress}社 · 合格 {stats.passed}社
-                </p>
-
-                <div className="mt-3">
-                  <AnnouncementBanner applications={applications} />
-                </div>
-
-                <div className="mt-3">
-                  <ControlsBar
-                    sort={sort}
-                    onSortChange={setSort}
-                    dir={sortDir}
-                    onDirChange={setSortDir}
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                  />
-                </div>
-
-                {visible.length === 0 ? (
-                  <div className="mt-6 flex flex-col items-center gap-3 rounded-xl border border-dashed py-14 text-center">
-                    <SearchX className="h-7 w-7 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      条件に一致する企業がありません
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setFilters(DEFAULT_FILTERS)}
-                    >
-                      フィルターをリセット
-                    </Button>
+          {/* 選考 */}
+          <div className="h-full w-1/3 shrink-0 overflow-y-auto overscroll-contain scrollbar-thin">
+            <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+              <OnboardingPrompts onOpenSettings={() => setView("settings")} />
+              {applications.length === 0 ? (
+                <EmptyState
+                  onAdd={() => setAddOpen(true)}
+                  onImport={() => fileRef.current?.click()}
+                />
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-0.5 text-[13px]">
+                    <span className="text-muted-foreground">
+                      今週やること{" "}
+                      <b className="text-[18px] font-bold text-danger">
+                        {stats.thisWeek}
+                      </b>
+                    </span>
+                    <span className="text-muted-foreground">
+                      進行中{" "}
+                      <b className="text-[16px] font-bold text-foreground">
+                        {stats.inProgress}
+                      </b>
+                    </span>
+                    <span className="text-muted-foreground">
+                      合格{" "}
+                      <b className="text-[16px] font-bold text-success">
+                        {stats.passed}
+                      </b>
+                    </span>
                   </div>
-                ) : (
-                  <div className="mt-3 space-y-2.5">
-                    {visible.map((app, i) => (
-                      <div
-                        key={app.id}
-                        data-tour={i === 0 ? "card" : undefined}
+
+                  <div className="mt-3">
+                    <AnnouncementBanner applications={applications} />
+                  </div>
+
+                  <div className="mt-3">
+                    <ControlsBar
+                      sort={sort}
+                      onSortChange={setSort}
+                      dir={sortDir}
+                      onDirChange={setSortDir}
+                      filters={filters}
+                      onFiltersChange={setFilters}
+                    />
+                  </div>
+
+                  {visible.length === 0 ? (
+                    <div className="mt-6 flex flex-col items-center gap-3 rounded-xl border border-dashed py-14 text-center">
+                      <SearchX className="h-7 w-7 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        条件に一致する企業がありません
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFilters(DEFAULT_FILTERS)}
                       >
-                        <ApplicationCard
-                          app={app}
-                          showRole={dupCompanies.has(app.company.trim())}
-                          onOpen={() => setSelectedId(app.id)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
+                        フィルターをリセット
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-2.5">
+                      {visible.map((app, i) => (
+                        <div
+                          key={app.id}
+                          data-tour={i === 0 ? "card" : undefined}
+                        >
+                          <ApplicationCard
+                            app={app}
+                            showRole={dupCompanies.has(app.company.trim())}
+                            onOpen={() => setSelectedId(app.id)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
-          <div ref={evPaneRef} className="w-1/2 shrink-0 px-4">
-            <EventsView
-              onOpenEvent={setSelectedEventId}
-              onAddEvent={handleAddEvent}
-            />
+          {/* イベント */}
+          <div className="h-full w-1/3 shrink-0 overflow-y-auto overscroll-contain scrollbar-thin">
+            <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+              <EventsView
+                onOpenEvent={setSelectedEventId}
+                onAddEvent={handleAddEvent}
+              />
+            </div>
           </div>
-        </div>
+          {/* 設定 */}
+          <div className="h-full w-1/3 shrink-0 overflow-y-auto overscroll-contain scrollbar-thin">
+            <div className="mx-auto max-w-3xl pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+              <SettingsPage
+                onImport={() => fileRef.current?.click()}
+                onExport={handleExport}
+                onStartTour={startTour}
+                onOpenLegal={() => {
+                  setLegalConsentMode(false);
+                  setLegalOpen(true);
+                }}
+                onBack={() => setView("selection")}
+              />
+            </div>
           </div>
         </div>
       </main>
+
+      {/* 下タブは常時固定表示(隠さない)。モーダルは中央に出るので競合しない */}
+      <BottomNav view={view} onChange={setView} />
 
       <AddApplicationDialog
         open={addOpen}
@@ -646,18 +641,6 @@ export function Dashboard() {
         onAgree={acceptLegal}
       />
 
-      <SettingsSheet
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        onImport={() => fileRef.current?.click()}
-        onExport={handleExport}
-        onStartTour={startTour}
-        onOpenLegal={() => {
-          setLegalConsentMode(false);
-          setLegalOpen(true);
-        }}
-      />
-
       {mode === "cloud" && user && (
         <FeedbackPrompt
           open={feedbackOpen}
@@ -665,6 +648,9 @@ export function Dashboard() {
           onClose={closeFeedback}
         />
       )}
+
+      {/* 選考フロー(段階＞タスク)移行の通告(移行ユーザーに1回だけ) */}
+      <VersionNotice />
 
       {tourIndex >= 0 && (
         <Tutorial
@@ -679,28 +665,28 @@ export function Dashboard() {
   );
 }
 
-function TabBtn({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function RefreshButton() {
+  const { syncNow } = useStore();
+  const [spinning, setSpinning] = useState(false);
+  const handle = async () => {
+    if (spinning) return;
+    setSpinning(true);
+    try {
+      await syncNow();
+    } finally {
+      window.setTimeout(() => setSpinning(false), 600);
+    }
+  };
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex-1 border-b-2 py-2.5 text-center text-sm font-medium transition-colors",
-        active
-          ? "border-primary text-primary"
-          : "border-transparent text-muted-foreground hover:text-foreground",
-      )}
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-9 w-9 text-muted-foreground"
+      aria-label="同期"
+      onClick={handle}
     >
-      {children}
-    </button>
+      <RefreshCw className={cn("h-[18px] w-[18px]", spinning && "animate-spin")} />
+    </Button>
   );
 }
 
@@ -723,8 +709,8 @@ function SaveIndicator() {
       : "";
     return (
       <span className="flex items-center gap-1.5 text-xs text-success">
-        <span className="animate-app-pop flex h-4 w-4 items-center justify-center rounded-full bg-[hsl(var(--success)/0.15)]">
-          <Check className="h-3 w-3" />
+        <span className="flex h-4 w-4 items-center justify-center overflow-hidden rounded-full bg-[hsl(var(--success)/0.15)]">
+          <Check className="animate-check-pop h-3 w-3" />
         </span>
         <span className="hidden sm:inline">保存{hhmm && ` ${hhmm}`}</span>
       </span>
@@ -749,14 +735,14 @@ function AnnouncementBanner({ applications }: { applications: Application[] }) {
   const items = useMemo(() => {
     const up = applications
       .flatMap((app) => {
-        const na = getNextAction(app);
+        const na = getStageNextAction(app);
         if (na.type !== "step" || !na.focusDate) return [];
         const inst = dueInstant(na.focusDate);
         if (inst == null) return [];
         return [
           {
             app,
-            step: na.step!,
+            step: na.tasks[0],
             inst,
             dueAt: na.focusDate,
             kind: na.focusKind,
@@ -780,44 +766,62 @@ function AnnouncementBanner({ applications }: { applications: Application[] }) {
     return { first, sameDay: sameDay.slice(0, 4), date: d0 };
   }, [applications]);
 
-  if (!items || !items.date) return null;
-  const urgent = ["overdue", "soon", "near"].includes(
-    urgencyOf(items.first.dueAt),
-  );
+  // 固定枠。今週内(urgent)=「直近の予定」赤枠 / それより先=「次の予定」テーマ色枠 / 予定なし=枠のみ
+  const first = items?.first ?? null;
+  const urgent =
+    !!first && ["overdue", "soon", "near"].includes(urgencyOf(first.dueAt));
+  const accent = !first
+    ? "text-muted-foreground"
+    : urgent
+      ? "text-danger"
+      : "text-primary";
 
   return (
     <div
       data-tour="banner"
       className={cn(
-        "rounded-xl bg-card p-3 shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] ring-1",
-        urgent ? "ring-[hsl(var(--danger)/0.45)]" : "ring-border",
+        "rounded-xl bg-card p-3 shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] ring-2",
+        !first
+          ? "ring-border"
+          : urgent
+            ? "ring-[hsl(var(--danger)/0.6)]"
+            : "ring-[hsl(var(--primary)/0.75)]",
       )}
-      style={{ borderLeft: "3px solid", borderLeftColor: urgent ? "hsl(var(--danger))" : "hsl(var(--primary))" }}
     >
       <div className="flex items-center gap-1.5 text-[12px] font-medium">
-        <Bell className={cn("h-3.5 w-3.5", urgent ? "text-danger" : "text-primary")} />
-        <span className={urgent ? "text-danger" : "text-primary"}>直近の予定</span>
-        <span className="ml-auto text-[11px] text-muted-foreground">
-          {items.date.getMonth() + 1}/{items.date.getDate()} ·{" "}
-          {relativeLabel(items.first.dueAt)}
+        <Bell className={cn("h-3.5 w-3.5", accent)} />
+        <span className={accent}>
+          {first && !urgent ? "次の予定" : "直近の予定"}
         </span>
+        {first && items?.date && (
+          <span className="ml-auto text-[11px] text-muted-foreground">
+            {items.date.getMonth() + 1}/{items.date.getDate()} ·{" "}
+            {relativeLabel(first.dueAt)}
+          </span>
+        )}
       </div>
-      <div className="mt-1.5 space-y-1">
-        {items.sameDay.map((x) => (
-          <div key={x.app.id} className="flex items-center gap-2 text-[12.5px]">
-            <span
-              className={cn(
-                "h-1 w-1 shrink-0 rounded-full",
-                urgent ? "bg-danger" : "bg-primary",
-              )}
-            />
-            <span className="font-medium">{x.app.company || "(未設定)"}</span>
-            <span className="truncate text-muted-foreground">
-              {STEP_KIND_LABEL[x.step.kind]}
-            </span>
-          </div>
-        ))}
-      </div>
+      {first ? (
+        <div className="mt-1.5 space-y-1">
+          {(items?.sameDay ?? []).map((x) => (
+            <div key={x.app.id} className="flex items-center gap-2 text-[12.5px]">
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 shrink-0 rounded-full",
+                  urgent ? "bg-danger" : "bg-primary",
+                )}
+              />
+              <span className="font-medium">{x.app.company || "(未設定)"}</span>
+              <span className="truncate text-muted-foreground">
+                {STEP_KIND_LABEL[x.step.kind]}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-1 text-[12.5px] text-muted-foreground">
+          締切・実施日のある予定はまだありません
+        </p>
+      )}
     </div>
   );
 }

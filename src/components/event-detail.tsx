@@ -10,6 +10,8 @@ import {
   Link2,
   MapPin,
   Pencil,
+  Pin,
+  Plus,
   StickyNote,
   Trash2,
   X,
@@ -29,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { focusOf } from "@/lib/next-action";
 import { formatDue, joinDue, relativeLabel, splitDue, urgencyOf } from "@/lib/date";
-import { cn } from "@/lib/utils";
+import { cn, safeHref } from "@/lib/utils";
 
 const VENUE_OPTIONS: { value: VenueMode; label: string }[] = [
   { value: "", label: "未設定" },
@@ -40,6 +42,7 @@ const VENUE_OPTIONS: { value: VenueMode; label: string }[] = [
 const STATUS_OPTIONS: { value: EventStatus; label: string }[] = [
   { value: "todo", label: "未参加" },
   { value: "attended", label: "参加済" },
+  { value: "declined", label: "辞退" },
 ];
 
 export function EventDetail({
@@ -157,16 +160,24 @@ function EventDetailBody({
   onClose: () => void;
   onDeleted: (name: string) => void;
 }) {
-  const { updateEvent, deleteEvent } = useStore();
-  const [editHeader, setEditHeader] = useState(false);
+  const {
+    updateEvent,
+    deleteEvent,
+    addEventLink,
+    updateEventLink,
+    deleteEventLink,
+  } = useStore();
   const [editBasic, setEditBasic] = useState(false);
+  const [editSchedule, setEditSchedule] = useState(false);
+  const [editLinks, setEditLinks] = useState(false);
   const [editMemo, setEditMemo] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const pinnedCount = ev.links.filter((l) => l.pin).length;
 
   const apply = splitDue(ev.applyBy);
   const held = splitDue(ev.heldAt);
   const f = focusOf(ev.applyBy, ev.heldAt, ev.applyDone);
-  const u = ev.status !== "attended" && f.date ? urgencyOf(f.date) : "none";
+  const u = ev.status === "todo" && f.date ? urgencyOf(f.date) : "none";
   const urgent = u === "overdue" || u === "soon" || u === "near";
   const venueLabel =
     ev.venueMode === "online"
@@ -192,35 +203,11 @@ function EventDetailBody({
       </div>
 
       <div className="px-4 py-4">
-        {/* 企業名・イベント名(タップ編集) */}
-        {editHeader ? (
-          <div className="space-y-2">
-            <Input
-              autoFocus
-              value={ev.title}
-              onChange={(e) => updateEvent(ev.id, { title: e.target.value })}
-              placeholder="イベント名"
-              className="text-base font-semibold"
-            />
-            <Input
-              value={ev.company}
-              onChange={(e) => updateEvent(ev.id, { company: e.target.value })}
-              placeholder="企業名"
-              className="h-9 text-sm"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-primary"
-              onClick={() => setEditHeader(false)}
-            >
-              完了
-            </Button>
-          </div>
-        ) : (
+        {/* イベント名・企業名(タップで基本情報を編集) */}
+        {!editBasic && (
           <button
             type="button"
-            onClick={() => setEditHeader(true)}
+            onClick={() => setEditBasic(true)}
             className="group block text-left"
           >
             <h2 className="text-lg font-semibold leading-tight">
@@ -235,12 +222,33 @@ function EventDetailBody({
           </button>
         )}
 
-        {/* 基本情報: バッジ表示 / ✎編集 */}
+        {/* 基本情報: バッジ表示 / ✎編集(イベント名・企業名もここで編集) */}
         {editBasic ? (
           <div className="mt-3 space-y-2 rounded-xl border-2 border-[hsl(var(--primary)/0.35)] bg-card p-3">
             <div className="flex items-center gap-1.5 text-sm font-medium">
               <Pencil className="h-4 w-4 text-primary" />
               基本情報を編集
+            </div>
+            <div>
+              <div className="mb-1 text-[11px] text-muted-foreground">
+                イベント名
+              </div>
+              <Input
+                autoFocus
+                value={ev.title}
+                onChange={(e) => updateEvent(ev.id, { title: e.target.value })}
+                placeholder="イベント名"
+                className="h-9 text-sm font-medium"
+              />
+            </div>
+            <div>
+              <div className="mb-1 text-[11px] text-muted-foreground">企業名</div>
+              <Input
+                value={ev.company}
+                onChange={(e) => updateEvent(ev.id, { company: e.target.value })}
+                placeholder="企業名"
+                className="h-9 text-sm"
+              />
             </div>
             <div className="flex gap-2">
               <div className="w-[44%]">
@@ -284,26 +292,6 @@ function EventDetailBody({
                 />
               </div>
             </div>
-            <div>
-              <div className="mb-1 text-[11px] text-muted-foreground">状態</div>
-              <Select
-                value={ev.status}
-                onValueChange={(v) =>
-                  updateEvent(ev.id, { status: v as EventStatus })
-                }
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <Button
               className="w-full"
               onClick={() => {
@@ -316,24 +304,41 @@ function EventDetailBody({
             </Button>
           </div>
         ) : (
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <InfoBadge tone={ev.status === "attended" ? "success" : "default"}>
-              {ev.status === "attended" ? "参加済" : "未参加"}
-            </InfoBadge>
-            {venueLabel && (
+          venueLabel && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
               <InfoBadge>
                 <MapPin className="h-3 w-3" />
                 {venueLabel}
               </InfoBadge>
-            )}
-            <button
-              type="button"
-              onClick={() => setEditBasic(true)}
-              className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium text-primary hover:bg-accent"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              編集
-            </button>
+            </div>
+          )
+        )}
+
+        {/* 状態(タップで即設定。編集に入らず切り替えられる) */}
+        {!editBasic && (
+          <div className="mt-3 flex gap-1.5">
+            {STATUS_OPTIONS.map((o) => {
+              const active = ev.status === o.value;
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => updateEvent(ev.id, { status: o.value })}
+                  className={cn(
+                    "flex-1 rounded-lg border py-2 text-[13px] font-medium transition-colors",
+                    !active
+                      ? "border-input text-muted-foreground hover:bg-muted"
+                      : o.value === "attended"
+                        ? "border-[hsl(var(--success)/0.45)] bg-[hsl(var(--success)/0.12)] text-success"
+                        : o.value === "declined"
+                          ? "border-input bg-muted text-foreground"
+                          : "border-primary bg-accent text-accent-foreground",
+                  )}
+                >
+                  {o.label}
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -365,92 +370,250 @@ function EventDetailBody({
           </div>
         )}
 
-        {/* 日程(申込締切 + 開催日) */}
-        <Section title="日程">
-          <div className="space-y-3 rounded-lg border bg-muted/40 p-2.5">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-muted-foreground">
-                  申込締切
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    updateEvent(ev.id, { applyDone: !ev.applyDone })
+        {/* 日程(普段は表示・✎タップで編集) */}
+        <Section
+          title="日程"
+          action={
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (editSchedule) toast.success("保存しました");
+                setEditSchedule((v) => !v);
+              }}
+            >
+              {editSchedule ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  完了
+                </>
+              ) : (
+                <>
+                  <Pencil className="h-4 w-4" />
+                  編集
+                </>
+              )}
+            </Button>
+          }
+        >
+          {editSchedule ? (
+            <div className="space-y-3 rounded-lg border bg-muted/40 p-2.5">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    申込締切
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateEvent(ev.id, { applyDone: !ev.applyDone })
+                    }
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                      ev.applyDone
+                        ? "border-[hsl(var(--success)/0.4)] bg-[hsl(var(--success)/0.1)] text-success"
+                        : "border-input text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    {ev.applyDone && <Check className="h-3 w-3" />}
+                    {ev.applyDone ? "申込済み" : "申込した"}
+                  </button>
+                </div>
+                <DateRow
+                  date={apply.date}
+                  time={apply.time}
+                  onDate={(d) =>
+                    updateEvent(ev.id, { applyBy: joinDue(d, apply.time) })
                   }
+                  onTime={(t) =>
+                    updateEvent(ev.id, { applyBy: joinDue(apply.date, t) })
+                  }
+                  onClearDate={() => updateEvent(ev.id, { applyBy: null })}
+                  onClearTime={() =>
+                    updateEvent(ev.id, { applyBy: joinDue(apply.date, "") })
+                  }
+                  clearLabel="申込締切"
+                />
+              </div>
+              <div className="space-y-1.5 border-t pt-2.5">
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  開催日時
+                </span>
+                <DateRow
+                  date={held.date}
+                  time={held.time}
+                  onDate={(d) =>
+                    updateEvent(ev.id, { heldAt: joinDue(d, held.time) })
+                  }
+                  onTime={(t) =>
+                    updateEvent(ev.id, { heldAt: joinDue(held.date, t) })
+                  }
+                  onClearDate={() => updateEvent(ev.id, { heldAt: null })}
+                  onClearTime={() =>
+                    updateEvent(ev.id, { heldAt: joinDue(held.date, "") })
+                  }
+                  clearLabel="開催日"
+                />
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditSchedule(true)}
+              className="block w-full space-y-2 rounded-lg border bg-card p-3 text-left text-[13px]"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">申込締切</span>
+                <span
                   className={cn(
-                    "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
-                    ev.applyDone
-                      ? "border-[hsl(var(--success)/0.4)] bg-[hsl(var(--success)/0.1)] text-success"
-                      : "border-input text-muted-foreground hover:bg-muted",
+                    "text-right",
+                    ev.applyDone && "text-muted-foreground line-through",
                   )}
                 >
-                  {ev.applyDone && <Check className="h-3 w-3" />}
-                  {ev.applyDone ? "申込済み" : "申込した"}
-                </button>
+                  {ev.applyBy ? formatDue(ev.applyBy) : "未設定"}
+                  {ev.applyBy && ev.applyDone ? "・申込済" : ""}
+                </span>
               </div>
-              <DateRow
-                date={apply.date}
-                time={apply.time}
-                onDate={(d) =>
-                  updateEvent(ev.id, { applyBy: joinDue(d, apply.time) })
-                }
-                onTime={(t) =>
-                  updateEvent(ev.id, { applyBy: joinDue(apply.date, t) })
-                }
-                onClearDate={() => updateEvent(ev.id, { applyBy: null })}
-                onClearTime={() =>
-                  updateEvent(ev.id, { applyBy: joinDue(apply.date, "") })
-                }
-                clearLabel="申込締切"
-              />
-            </div>
-            <div className="space-y-1.5 border-t pt-2.5">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                開催日時
-              </span>
-              <DateRow
-                date={held.date}
-                time={held.time}
-                onDate={(d) =>
-                  updateEvent(ev.id, { heldAt: joinDue(d, held.time) })
-                }
-                onTime={(t) =>
-                  updateEvent(ev.id, { heldAt: joinDue(held.date, t) })
-                }
-                onClearDate={() => updateEvent(ev.id, { heldAt: null })}
-                onClearTime={() =>
-                  updateEvent(ev.id, { heldAt: joinDue(held.date, "") })
-                }
-                clearLabel="開催日"
-              />
-            </div>
-          </div>
+              <div className="flex items-center justify-between gap-2 border-t pt-2">
+                <span className="text-muted-foreground">開催日時</span>
+                <span className="text-right">
+                  {ev.heldAt ? formatDue(ev.heldAt) : "未設定"}
+                </span>
+              </div>
+            </button>
+          )}
         </Section>
 
-        {/* URL(リンク) */}
-        <Section title="予約ページ・URL" icon={<Link2 className="h-4 w-4" />}>
-          <div className="flex items-center gap-2">
-            <Input
-              value={ev.url}
-              onChange={(e) => updateEvent(ev.id, { url: e.target.value })}
-              placeholder="https://..."
-              className="h-9 flex-1 text-sm"
-            />
-            <Button
-              asChild
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-9 w-9 shrink-0",
-                !ev.url && "pointer-events-none opacity-40",
+        {/* 関連リンク(予約ページ等): 飛ぶボタン表示 / ✎編集(選考と同じ) */}
+        <Section
+          icon={<Link2 className="h-4 w-4" />}
+          title="関連リンク"
+          action={
+            <div className="flex items-center gap-1">
+              {ev.links.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (editLinks) toast.success("保存しました");
+                    setEditLinks((v) => !v);
+                  }}
+                >
+                  {editLinks ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      完了
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="h-4 w-4" />
+                      編集
+                    </>
+                  )}
+                </Button>
               )}
-            >
-              <a href={ev.url || "#"} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </Button>
-          </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  addEventLink(ev.id);
+                  setEditLinks(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                追加
+              </Button>
+            </div>
+          }
+        >
+          {ev.links.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              予約ページ・マイページ等のURLを登録できます。
+            </p>
+          ) : editLinks ? (
+            <div className="space-y-2">
+              {ev.links.map((link) => (
+                <div key={link.id} className="flex items-center gap-2">
+                  <Input
+                    value={link.label}
+                    onChange={(e) =>
+                      updateEventLink(ev.id, link.id, { label: e.target.value })
+                    }
+                    placeholder="ラベル"
+                    className="h-9 w-[34%] text-sm"
+                  />
+                  <Input
+                    value={link.url}
+                    onChange={(e) =>
+                      updateEventLink(ev.id, link.id, { url: e.target.value })
+                    }
+                    placeholder="https://..."
+                    className="h-9 flex-1 text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-9 w-9 shrink-0 transition-all",
+                      link.pin
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "border border-input text-muted-foreground hover:bg-accent",
+                    )}
+                    disabled={!link.pin && pinnedCount >= 2}
+                    title={
+                      link.pin
+                        ? "ピン留め中（カードに表示）・タップで解除"
+                        : pinnedCount >= 2
+                          ? "ピンは最大2つまで"
+                          : "カードにピン留め"
+                    }
+                    onClick={() =>
+                      updateEventLink(ev.id, link.id, { pin: !link.pin })
+                    }
+                  >
+                    <Pin
+                      key={link.pin ? "on" : "off"}
+                      className={cn(
+                        "h-4 w-4",
+                        link.pin && "animate-evo-drop fill-current",
+                      )}
+                    />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-muted-foreground hover:text-danger"
+                    onClick={() => deleteEventLink(ev.id, link.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {ev.links.map((link) => (
+                <a
+                  key={link.id}
+                  href={safeHref(link.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 text-[13px] font-medium text-primary",
+                    !link.url && "pointer-events-none opacity-40",
+                  )}
+                >
+                  {link.pin && <Pin className="h-3.5 w-3.5" />}
+                  <span className="max-w-[12rem] truncate">
+                    {link.label || "リンク"}
+                  </span>
+                  <ExternalLink className="h-3.5 w-3.5 opacity-60" />
+                </a>
+              ))}
+            </div>
+          )}
         </Section>
 
         {/* メモ */}
@@ -618,7 +781,7 @@ function Section({
   return (
     <section className="mt-5">
       <div className="mb-2.5 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+        <h3 className="flex items-center gap-1.5 text-[15px] font-semibold text-foreground [&_svg]:text-muted-foreground">
           {icon}
           {title}
         </h3>

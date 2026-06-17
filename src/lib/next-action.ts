@@ -1,5 +1,23 @@
-import type { Application, SelectionStep, Situation } from "./types";
+import type {
+  Application,
+  EventItem,
+  ResultStatus,
+  SelectionStage,
+  SelectionStep,
+  SelectionTask,
+  Situation,
+} from "./types";
 import { dueInstant, isDueThisWeekOrOverdue } from "./date";
+
+/** イベントが完了扱いか(参加済/辞退を選んだ、または開催日が過ぎた)。状態自体は書き換えない。 */
+export function isEventDone(ev: EventItem): boolean {
+  if (ev.status !== "todo") return true;
+  if (ev.heldAt) {
+    const inst = dueInstant(ev.heldAt);
+    if (inst != null && inst < Date.now()) return true;
+  }
+  return false;
+}
 
 const NO_DUE_KEY = Number.MAX_SAFE_INTEGER;
 const TERMINAL_KEY = Number.POSITIVE_INFINITY;
@@ -124,15 +142,16 @@ export function getNextAction(app: Application): NextAction {
   return { type: "step", step, sortKey, focusDate: fd, focusKind: fk };
 }
 
-/** 状況分類(フィルタ・バッジ用) */
+/** 状況分類(フィルタ・バッジ用)。passed/rejected/declined は app.result(段階から同期)、結果待ちは段階から判定。 */
 export function situationOf(app: Application): Situation {
   if (app.result === "passed") return "passed";
   if (app.result === "rejected") return "rejected";
   if (app.result === "declined") return "declined";
-  const step = getNextActionStep(app);
-  // ステップ未登録(empty)は「進行中」扱い。全ステップ完了の本当の結果待ちだけ waiting。
-  if (!step) return app.steps.length === 0 ? "in_progress" : "waiting";
-  if (step.status === "waiting") return "waiting";
+  const stage = currentStage(app);
+  if (!stage) return "in_progress";
+  // 現在段階の全タスクをやった(結果待ち) or 段階を明示的に結果待ちにした
+  if (stage.result === "waiting") return "waiting";
+  if (stage.tasks.length > 0 && stage.tasks.every((t) => t.done)) return "waiting";
   return "in_progress";
 }
 
@@ -195,4 +214,159 @@ export function thisWeekTaskCount(app: Application): number {
 
 export function hasThisWeekTask(app: Application): boolean {
   return thisWeekTaskCount(app) > 0;
+}
+
+// ============================================================
+// 段階 ＞ タスク (新モデル)
+// ============================================================
+
+/** タスクの注目日(締切優先・やった/超過で実施日へ) */
+export function taskFocusDate(t: SelectionTask): string | null {
+  return focusOf(t.dueAt, t.heldAt, t.done).date;
+}
+
+/** タスクの注目日が締切か実施日か */
+export function taskFocusKind(t: SelectionTask): FocusKind | null {
+  return focusOf(t.dueAt, t.heldAt, t.done).kind;
+}
+
+/** 段階が決着済み(通過/不合格/辞退)か */
+export function isStageSettled(s: SelectionStage): boolean {
+  return (
+    s.result === "passed" || s.result === "failed" || s.result === "declined"
+  );
+}
+
+/** 現在の段階 = 先頭から最初の未決着(未/結果待ち)段階。全段階決着なら null。 */
+export function currentStage(app: Application): SelectionStage | null {
+  return app.stages.find((s) => !isStageSettled(s)) ?? null;
+}
+
+/** stages から全体結果を導出。不合格/辞退は段階優先、全段階通過で合格。 */
+export function deriveResult(stages: SelectionStage[]): ResultStatus {
+  if (stages.some((s) => s.result === "failed")) return "rejected";
+  if (stages.some((s) => s.result === "declined")) return "declined";
+  if (stages.length > 0 && stages.every((s) => s.result === "passed"))
+    return "passed";
+  return "in_progress";
+}
+
+/** 今やるべきタスク(現在段階の未done)。並行なら複数返る(取りこぼし防止)。 */
+export function nextTasks(app: Application): SelectionTask[] {
+  const stage = currentStage(app);
+  if (!stage) return [];
+  return stage.tasks.filter((t) => !t.done);
+}
+
+/** 段階版の「次のアクション」。card の主役表示用(tasks=並行可)。 */
+export interface StageNextAction {
+  type: NextActionType;
+  /** 次にやるタスク(並行=複数)。waiting/result/empty では空配列 */
+  tasks: SelectionTask[];
+  sortKey: number;
+  /** 代表(最も締切が近い)タスクの注目日 */
+  focusDate: string | null;
+  focusKind: FocusKind | null;
+}
+
+export function getStageNextAction(app: Application): StageNextAction {
+  if (app.result !== "in_progress") {
+    return {
+      type: "result",
+      tasks: [],
+      sortKey: TERMINAL_KEY,
+      focusDate: null,
+      focusKind: null,
+    };
+  }
+  if (app.stages.length === 0) {
+    return {
+      type: "empty",
+      tasks: [],
+      sortKey: TERMINAL_KEY,
+      focusDate: null,
+      focusKind: null,
+    };
+  }
+  const tasks = nextTasks(app);
+  if (tasks.length === 0) {
+    // 現在段階の全タスクをやった(結果待ち) or 全段階決着
+    return {
+      type: "waiting",
+      tasks: [],
+      sortKey: NO_DUE_KEY,
+      focusDate: null,
+      focusKind: null,
+    };
+  }
+  // 締切が近い順に並べ、代表(先頭)を sortKey/ハイライトに使う
+  const sorted = [...tasks].sort(
+    (a, b) =>
+      (dueInstant(taskFocusDate(a)) ?? NO_DUE_KEY) -
+      (dueInstant(taskFocusDate(b)) ?? NO_DUE_KEY),
+  );
+  const lead = sorted[0];
+  const fd = taskFocusDate(lead);
+  const fk = taskFocusKind(lead);
+  const sortKey = fd ? (dueInstant(fd) ?? NO_DUE_KEY) : NO_DUE_KEY;
+  return { type: "step", tasks: sorted, sortKey, focusDate: fd, focusKind: fk };
+}
+
+// ---- 進捗トラック(段階セグメント) ----
+
+export type StageSegState =
+  | "passed" // 通過(緑)
+  | "current" // 現在地(着手中・灰の強調)
+  | "waiting" // やった・結果待ち(黄)
+  | "empty" // 未到達(灰)
+  | "failed" // 不合格(赤)
+  | "declined"; // 辞退(灰)
+
+export interface StageSegment {
+  stage: SelectionStage;
+  state: StageSegState;
+}
+
+export function stageSegments(app: Application): StageSegment[] {
+  const curId = currentStage(app)?.id ?? null;
+  return app.stages.map((s) => {
+    if (s.result === "passed") return { stage: s, state: "passed" as const };
+    if (s.result === "failed") return { stage: s, state: "failed" as const };
+    if (s.result === "declined")
+      return { stage: s, state: "declined" as const };
+    // pending / waiting
+    const allDone = s.tasks.length > 0 && s.tasks.every((t) => t.done);
+    if (s.result === "waiting" || (s.id === curId && allDone))
+      return { stage: s, state: "waiting" as const };
+    if (s.id === curId) return { stage: s, state: "current" as const };
+    return { stage: s, state: "empty" as const };
+  });
+}
+
+/** 通過した段階数 / 全段階数 */
+export function stageProgress(app: Application): {
+  done: number;
+  total: number;
+} {
+  return {
+    done: app.stages.filter((s) => s.result === "passed").length,
+    total: app.stages.length,
+  };
+}
+
+/** 今週やるべき(今週締切 or 期限切れ)未doneタスク数(段階版) */
+export function thisWeekStageTaskCount(app: Application): number {
+  if (app.result !== "in_progress") return 0;
+  let n = 0;
+  for (const s of app.stages) {
+    if (isStageSettled(s)) continue;
+    for (const t of s.tasks) {
+      if (!t.done && t.dueAt && isDueThisWeekOrOverdue(t.dueAt)) n++;
+    }
+  }
+  return n;
+}
+
+export function hasThisWeekStageTask(app: Application): boolean {
+  return thisWeekStageTaskCount(app) > 0;
 }

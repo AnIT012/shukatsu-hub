@@ -3,15 +3,14 @@
 import {
   Award,
   Clock,
-  Hourglass,
   ListPlus,
   MinusCircle,
   Pin,
   Star,
   XCircle,
 } from "lucide-react";
-import type { Application } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import type { Application, SelectionStage } from "@/lib/types";
+import { cn, safeHref } from "@/lib/utils";
 import {
   PASSED_LABEL,
   SELECTION_TYPE_LABEL,
@@ -20,14 +19,22 @@ import {
   STEP_KIND_SHORT,
 } from "@/lib/constants";
 import {
-  getNextAction,
+  getStageNextAction,
   situationOf,
-  trackSegments,
-  type SegState,
+  stageSegments,
+  type StageNextAction,
+  type StageSegState,
 } from "@/lib/next-action";
 import { dueToDate, relativeLabel, splitDue, urgencyOf } from "@/lib/date";
 
 const WD_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** 段階の見出し(段階名 > 先頭タスクの種別) */
+function stageShort(stage: SelectionStage): string {
+  if (stage.label.trim()) return stage.label.trim();
+  const first = stage.tasks[0];
+  return first ? STEP_KIND_SHORT[first.kind] : "段階";
+}
 
 function situationBadgeClass(sit: string): string {
   switch (sit) {
@@ -42,39 +49,22 @@ function situationBadgeClass(sit: string): string {
   }
 }
 
-function segClass(state: SegState): string {
+// 進捗バーの色は視認性優先で固定(テーマ非連動): 緑=通過 / 黄=やった待ち / 灰=未 / 赤=不合格
+function segClass(state: StageSegState): string {
   switch (state) {
-    case "done":
-      return "bg-primary";
+    case "passed":
+      return "bg-success";
+    case "waiting":
+      return "bg-amber-400";
     case "failed":
       return "bg-danger";
+    case "current":
+      return "bg-foreground/30"; // 現在地(着手中)= 濃いめの灰
     case "declined":
       return "bg-[hsl(var(--muted-foreground)/0.4)]";
     default:
-      return "bg-border";
+      return "bg-border"; // empty(未到達)
   }
-}
-
-function Seg({ state }: { state: SegState }) {
-  if (state === "current") {
-    // 進行中: 左半分だけ塗る(現在地)
-    return (
-      <div className="h-1 flex-1 overflow-hidden rounded-full bg-border">
-        <div className="h-full w-1/2 rounded-full bg-primary" />
-      </div>
-    );
-  }
-  if (state === "waiting") {
-    // 結果待ち: 段はべた塗り(=やった)。次ステップとの境界に砂時計マーク(=審査中)を重ねる
-    return (
-      <div className="relative h-1 flex-1 rounded-full bg-primary">
-        <span className="absolute right-0 top-1/2 z-10 flex h-3.5 w-3.5 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card">
-          <Hourglass className="h-2 w-2" />
-        </span>
-      </div>
-    );
-  }
-  return <div className={cn("h-1 flex-1 rounded-full", segClass(state))} />;
 }
 
 export function ApplicationCard({
@@ -86,9 +76,9 @@ export function ApplicationCard({
   onOpen: () => void;
   showRole?: boolean;
 }) {
-  const next = getNextAction(app);
+  const next = getStageNextAction(app);
   const sit = situationOf(app);
-  const segs = trackSegments(app);
+  const segs = stageSegments(app);
   const pinned = app.links.filter((l) => l.pin && l.url).slice(0, 2);
 
   const u =
@@ -137,7 +127,7 @@ export function ApplicationCard({
       </div>
 
       <div className="mt-2 flex items-stretch gap-3">
-        <DateBlock app={app} urgent={urgent} />
+        <DateBlock app={app} next={next} urgent={urgent} />
         <div className="min-w-0 flex-1 self-center">
           <div className="flex items-center gap-1 text-[15px] font-semibold leading-tight">
             <span className="truncate">{app.company || "(名称未設定)"}</span>
@@ -160,22 +150,25 @@ export function ApplicationCard({
             <div className="mb-1 flex gap-1.5">
               {segs.map((s) => (
                 <div
-                  key={s.step.id}
+                  key={s.stage.id}
                   className={cn(
                     "flex-1 truncate text-center text-[10px]",
-                    s.state === "current" || s.state === "next"
-                      ? "font-medium text-primary"
+                    s.state === "current"
+                      ? "font-medium text-foreground"
                       : "text-muted-foreground/70",
                   )}
                 >
-                  {STEP_KIND_SHORT[s.step.kind]}
+                  {stageShort(s.stage)}
                 </div>
               ))}
             </div>
           )}
           <div className="flex gap-1.5">
             {segs.map((s) => (
-              <Seg key={s.step.id} state={s.state} />
+              <div
+                key={s.stage.id}
+                className={cn("h-1 flex-1 rounded-full", segClass(s.state))}
+              />
             ))}
           </div>
         </div>
@@ -186,7 +179,7 @@ export function ApplicationCard({
           {pinned.map((l) => (
             <a
               key={l.id}
-              href={l.url}
+              href={safeHref(l.url)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
@@ -202,9 +195,15 @@ export function ApplicationCard({
   );
 }
 
-function DateBlock({ app, urgent }: { app: Application; urgent: boolean }) {
-  const next = getNextAction(app);
-
+function DateBlock({
+  app,
+  next,
+  urgent,
+}: {
+  app: Application;
+  next: StageNextAction;
+  urgent: boolean;
+}) {
   if (next.type === "result") {
     const map = {
       passed: { icon: Award, cls: "text-success" },
@@ -300,33 +299,30 @@ function DateBlock({ app, urgent }: { app: Application; urgent: boolean }) {
   );
 }
 
-function NextLine({
-  app,
-  next,
-}: {
-  app: Application;
-  next: ReturnType<typeof getNextAction>;
-}) {
+function NextLine({ app, next }: { app: Application; next: StageNextAction }) {
   if (next.type === "step") {
+    // 並行なら複数を「・」で連結(取りこぼし防止)
+    const names = next.tasks
+      .map((t) => t.name.trim() || STEP_KIND_LABEL[t.kind])
+      .slice(0, 3);
     return (
       <div className="mt-1 truncate text-[12.5px]">
         <span className="text-muted-foreground">次: </span>
-        <span className="font-medium">{STEP_KIND_LABEL[next.step!.kind]}</span>
+        <span className="font-medium">{names.join("・")}</span>
       </div>
     );
   }
   if (next.type === "waiting") {
-    const s = next.step;
     return (
       <div className="mt-1 truncate text-[12.5px] text-muted-foreground">
-        {s ? `${STEP_KIND_LABEL[s.kind]}の結果待ち` : "結果待ち（全ステップ完了）"}
+        結果待ち
       </div>
     );
   }
   if (next.type === "empty") {
     return (
       <div className="mt-1 truncate text-[12.5px] text-muted-foreground">
-        ステップ未登録
+        選考ステップ未登録
       </div>
     );
   }

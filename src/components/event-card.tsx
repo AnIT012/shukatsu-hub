@@ -1,10 +1,16 @@
 "use client";
 
-import { Clock, ExternalLink } from "lucide-react";
+import { Clock, Pin } from "lucide-react";
 import type { EventItem } from "@/lib/types";
-import { cn } from "@/lib/utils";
-import { dueToDate, relativeLabel, splitDue, urgencyOf } from "@/lib/date";
-import { focusOf } from "@/lib/next-action";
+import { cn, safeHref } from "@/lib/utils";
+import {
+  dueInstant,
+  dueToDate,
+  relativeLabel,
+  splitDue,
+  urgencyOf,
+} from "@/lib/date";
+import { focusOf, isEventDone } from "@/lib/next-action";
 
 const WD_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -16,11 +22,18 @@ export function EventCard({
   onOpen: () => void;
 }) {
   const attended = ev.status === "attended";
+  const declined = ev.status === "declined";
+  const done = isEventDone(ev); // 参加済/辞退/開催済は注目度を下げる
+  // 状態未設定だが開催日が過ぎた=「終了」
+  const ended =
+    ev.status === "todo" &&
+    !!ev.heldAt &&
+    (dueInstant(ev.heldAt) ?? Infinity) < Date.now();
   // 注目日: 申込締切を優先、消化/超過で開催日へ(選考ステップと同じ focusOf ロジック)
   const f = focusOf(ev.applyBy, ev.heldAt, ev.applyDone);
   const focus = f.date;
   const focusKind = f.kind === "held" ? "開催" : "締切";
-  const u = !attended && focus ? urgencyOf(focus) : "none";
+  const u = !done && focus ? urgencyOf(focus) : "none";
   const urgent = u === "overdue" || u === "soon" || u === "near";
   const d = focus ? dueToDate(focus) : null;
   const venue =
@@ -29,6 +42,7 @@ export function EventCard({
       : ev.venueMode === "onsite"
         ? ev.venuePlace || "対面"
         : ev.venuePlace;
+  const pinned = ev.links.filter((l) => l.pin && l.url).slice(0, 2);
 
   return (
     <div
@@ -44,7 +58,7 @@ export function EventCard({
       className={cn(
         "group block w-full cursor-pointer rounded-xl bg-card p-3 text-left shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] ring-1 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgba(20,28,55,0.06),0_10px_22px_rgba(20,28,55,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:translate-y-0",
         urgent ? "ring-[hsl(var(--danger)/0.55)]" : "ring-border",
-        attended ? "opacity-70" : "",
+        done ? "opacity-70" : "",
       )}
     >
       <div className="flex items-center gap-2">
@@ -52,13 +66,15 @@ export function EventCard({
           className={cn(
             "rounded px-2 py-0.5 text-[11px] font-medium",
             attended
-              ? "bg-muted text-muted-foreground"
-              : "bg-accent text-accent-foreground",
+              ? "bg-[hsl(var(--success)/0.14)] text-success"
+              : declined || ended
+                ? "bg-muted text-muted-foreground"
+                : "bg-accent text-accent-foreground",
           )}
         >
-          {attended ? "参加済" : "未参加"}
+          {attended ? "参加済" : declined ? "辞退" : ended ? "終了" : "未参加"}
         </span>
-        {urgent && !attended && (
+        {urgent && !done && (
           <span className="text-[11px] font-medium text-danger">
             {focusKind}間近
           </span>
@@ -78,18 +94,21 @@ export function EventCard({
         </div>
       </div>
 
-      {ev.url && (
-        <div className="mt-2.5">
-          <a
-            href={ev.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-[12px] font-medium text-primary transition-opacity hover:opacity-80"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            予約ページ
-          </a>
+      {pinned.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          {pinned.map((l) => (
+            <a
+              key={l.id}
+              href={safeHref(l.url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
+            >
+              <Pin className="h-3 w-3" />
+              <span className="max-w-[8rem] truncate">{l.label || "リンク"}</span>
+            </a>
+          ))}
         </div>
       )}
     </div>

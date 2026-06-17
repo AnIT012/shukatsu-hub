@@ -16,8 +16,12 @@ import type {
   Priority,
   RelatedLink,
   ResultStatus,
+  SelectionStage,
   SelectionStep,
+  SelectionTask,
   SelectionType,
+  StageResult,
+  StepKind,
   Theme,
   FontChoice,
   NotifySettings,
@@ -33,6 +37,7 @@ import {
 import { newId } from "./utils";
 import { DATA_TABLE, supabase } from "./supabase";
 import { normalizeApps, normalizeEvents } from "./io";
+import { deriveResult } from "./next-action";
 import { buildSampleApplications } from "./sample";
 import { useAuth } from "./auth";
 
@@ -67,6 +72,8 @@ interface StoreValue {
   applications: Application[];
   saveState: SaveState;
   lastSavedAt: number | null;
+  /** 手動同期(更新ボタン)。未送信があれば送信、無ければ最新を取得。 */
+  syncNow: () => Promise<void>;
   theme: Theme;
   setTheme: (t: Theme) => void;
   font: FontChoice;
@@ -90,6 +97,36 @@ interface StoreValue {
   deleteStep: (appId: string, stepId: string) => void;
   moveStep: (appId: string, stepId: string, dir: -1 | 1) => void;
   setStepOrder: (appId: string, orderedIds: string[]) => void;
+  // ---- 選考段階(段階＞タスク・新モデル) ----
+  /** 段階を追加(1段階1タスク=直列)。返り値は新タスクのid(編集を開く用) */
+  addStage: (appId: string, kind?: StepKind) => string | undefined;
+  deleteStage: (appId: string, stageId: string) => void;
+  moveStage: (appId: string, stageId: string, dir: -1 | 1) => void;
+  setStageResult: (
+    appId: string,
+    stageId: string,
+    result: StageResult,
+  ) => void;
+  /** 既存段階に並行タスクを追加。返り値は新タスクのid */
+  addTask: (
+    appId: string,
+    stageId: string,
+    kind?: StepKind,
+  ) => string | undefined;
+  updateTask: (
+    appId: string,
+    stageId: string,
+    taskId: string,
+    patch: Partial<Omit<SelectionTask, "id">>,
+  ) => void;
+  /** タスク削除。段階の最後の1つを消すと段階ごと削除する */
+  deleteTask: (appId: string, stageId: string, taskId: string) => void;
+  /** 〇トグル: 未 ⇄ やった */
+  toggleTaskDone: (appId: string, stageId: string, taskId: string) => void;
+  /** kinds から段階をまとめて追加(各kind=1段階1タスク・直列) */
+  addStagesBulk: (appId: string, kinds: StepKind[]) => void;
+  /** 全段階を kinds で作り直す(手付かず時のテンプレ上書き用) */
+  replaceStages: (appId: string, kinds: StepKind[]) => void;
   addLink: (appId: string) => string | undefined;
   updateLink: (
     appId: string,
@@ -105,6 +142,8 @@ interface StoreValue {
   ) => void;
   deleteEsEntry: (appId: string, entryId: string) => void;
   replaceAll: (apps: Application[]) => void;
+  /** 移行前バックアップ等の生JSON文字列から applications/events を復元。成功で true */
+  restoreFromRaw: (raw: string) => boolean;
   /** 全データ(選考+イベント)を空にする。設定の「全データ削除」用。 */
   clearAll: () => void;
   /** 新規(空)ユーザーにだけサンプルを投入。投入したら true。既存データは絶対に壊さない。 */
@@ -114,6 +153,13 @@ interface StoreValue {
   addEvent: (input: { company: string; title: string }) => string;
   updateEvent: (id: string, patch: EventPatch) => void;
   deleteEvent: (id: string) => void;
+  addEventLink: (id: string) => string | undefined;
+  updateEventLink: (
+    id: string,
+    linkId: string,
+    patch: Partial<Omit<RelatedLink, "id">>,
+  ) => void;
+  deleteEventLink: (id: string, linkId: string) => void;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -149,6 +195,23 @@ function makeStep(kind: SelectionStep["kind"] = "es"): SelectionStep {
     location: "",
     memo: "",
   };
+}
+
+function makeTask(kind: StepKind = "es"): SelectionTask {
+  return {
+    id: newId(),
+    kind,
+    name: "",
+    dueAt: null,
+    heldAt: null,
+    location: "",
+    memo: "",
+    done: false,
+  };
+}
+
+function makeStage(kind: StepKind = "es"): SelectionStage {
+  return { id: newId(), label: "", tasks: [makeTask(kind)], result: "pending" };
 }
 
 interface LocalData {
@@ -224,6 +287,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const hydratedRef = useRef(false);
   const dirtyRef = useRef(false);
   const seedTriedRef = useRef(false);
+  // saveState の最新値を同期参照(オフライン復帰の検知用・クロージャの陳腐化回避)
+  const saveStateRef = useRef<SaveState>("idle");
+  useEffect(() => {
+    saveStateRef.current = saveState;
+  }, [saveState]);
 
   const cacheKey = mode === "cloud" && user ? `${LS_KEY}:${user.id}` : LS_KEY;
 
@@ -287,6 +355,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     const cached = readLocal(cacheKey);
     if (!cached || !cached.dirty) return false;
+    // 直前がオフライン表示なら「復帰して同期できた瞬間」→ 同期完了アニメ(トースト)を1回出す
+    const recovering = saveStateRef.current === "offline";
     try {
       const { error } = await supabase.from(DATA_TABLE).upsert({
         user_id: user.id,
@@ -318,6 +388,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dirtyRef.current = false;
       setSaveState("saved");
       setLastSavedAt(Date.now());
+      if (recovering) {
+        toast.success("クラウドに同期しました", {
+          description: "オフライン中の変更を反映しました",
+        });
+      }
       return true;
     } catch {
       // ネット不調 → 未送信のまま。エラートーストは出さず(編集ごとに鳴ると煩い)、表示だけ「オフライン」
@@ -326,6 +401,57 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, user?.id, cacheKey]);
+
+  // ---- 手動同期(更新ボタン): 未送信があれば送信、無ければ最新を取得 ----
+  const syncNow = useCallback(async () => {
+    if (mode !== "cloud" || !supabase || !user) {
+      toast.success("この端末に保存済みです");
+      return;
+    }
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setSaveState("offline");
+      toast.info("オフラインです", {
+        description: "接続が戻ると自動で同期します",
+      });
+      return;
+    }
+    if (dirtyRef.current) {
+      const ok = await flushToCloud();
+      if (ok) toast.success("同期しました");
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from(DATA_TABLE)
+        .select("data")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      const remote = data?.data;
+      hydratedRef.current = false;
+      if (Array.isArray(remote)) {
+        setApplications(normalizeApps(remote));
+        setEvents([]);
+      } else if (remote && typeof remote === "object") {
+        setApplications(normalizeApps((remote as any).applications));
+        setEvents(normalizeEvents((remote as any).events));
+        setNotifyState({ ...DEFAULT_NOTIFY, ...((remote as any).notify ?? {}) });
+        setPushSubscriptions(
+          Array.isArray((remote as any).pushSubscriptions)
+            ? (remote as any).pushSubscriptions
+            : [],
+        );
+        if ((remote as any).theme) setTheme((remote as any).theme);
+        if ((remote as any).font) setFont((remote as any).font);
+      }
+      setSaveState("saved");
+      setLastSavedAt(Date.now());
+      toast.success("最新の状態にしました");
+    } catch {
+      toast.error("同期に失敗しました");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, user?.id, flushToCloud]);
 
   // ---- 初回ロード(モード別) ----
   useEffect(() => {
@@ -375,7 +501,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             await flushToCloud();
             return;
           }
-          // クラウドの方が新しい → 以降でクラウドを適用(ローカル編集は破棄)
+          // クラウドの方が新しい → 以降でクラウドを適用(ローカル編集は破棄)。
+          // 他端末の更新を優先したことをユーザーに知らせる(競合警告)。
+          if (!cancelled) {
+            dirtyRef.current = false;
+            toast.warning("別の端末の更新を反映しました", {
+              description:
+                "この端末のオフライン中の変更は、より新しい更新で置き換えられました",
+            });
+          }
         }
 
         if (Array.isArray(remote)) {
@@ -565,6 +699,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       esEntries: [],
       memo: "",
       steps: [],
+      stages: [],
       createdAt: ts,
       updatedAt: ts,
     };
@@ -653,6 +788,132 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [mutateApp],
   );
 
+  // ---- 段階 ＞ タスク (新モデル) ----
+  // 段階を変更したら全体結果(app.result)を段階から再導出して常に整合させる。
+  const mutateStages = useCallback(
+    (appId: string, fn: (stages: SelectionStage[]) => SelectionStage[]) =>
+      mutateApp(appId, (a) => {
+        const stages = fn(a.stages);
+        return { ...a, stages, result: deriveResult(stages) };
+      }),
+    [mutateApp],
+  );
+
+  const addStage = useCallback<StoreValue["addStage"]>(
+    (appId, kind = "es") => {
+      const stage = makeStage(kind);
+      mutateStages(appId, (stages) => [...stages, stage]);
+      return stage.tasks[0]?.id;
+    },
+    [mutateStages],
+  );
+
+  const deleteStage = useCallback<StoreValue["deleteStage"]>(
+    (appId, stageId) =>
+      mutateStages(appId, (stages) =>
+        stages.filter((s) => s.id !== stageId),
+      ),
+    [mutateStages],
+  );
+
+  const moveStage = useCallback<StoreValue["moveStage"]>(
+    (appId, stageId, dir) =>
+      mutateStages(appId, (stages) => {
+        const idx = stages.findIndex((s) => s.id === stageId);
+        const next = idx + dir;
+        if (idx < 0 || next < 0 || next >= stages.length) return stages;
+        const out = [...stages];
+        [out[idx], out[next]] = [out[next], out[idx]];
+        return out;
+      }),
+    [mutateStages],
+  );
+
+  const setStageResult = useCallback<StoreValue["setStageResult"]>(
+    (appId, stageId, result) =>
+      mutateStages(appId, (stages) =>
+        stages.map((s) => (s.id === stageId ? { ...s, result } : s)),
+      ),
+    [mutateStages],
+  );
+
+  const addTask = useCallback<StoreValue["addTask"]>(
+    (appId, stageId, kind = "es") => {
+      const task = makeTask(kind);
+      mutateStages(appId, (stages) =>
+        stages.map((s) =>
+          s.id === stageId ? { ...s, tasks: [...s.tasks, task] } : s,
+        ),
+      );
+      return task.id;
+    },
+    [mutateStages],
+  );
+
+  const updateTask = useCallback<StoreValue["updateTask"]>(
+    (appId, stageId, taskId, patch) =>
+      mutateStages(appId, (stages) =>
+        stages.map((s) =>
+          s.id === stageId
+            ? {
+                ...s,
+                tasks: s.tasks.map((t) =>
+                  t.id === taskId ? { ...t, ...patch } : t,
+                ),
+              }
+            : s,
+        ),
+      ),
+    [mutateStages],
+  );
+
+  const deleteTask = useCallback<StoreValue["deleteTask"]>(
+    (appId, stageId, taskId) =>
+      mutateStages(appId, (stages) =>
+        // 段階の最後の1タスクを消す場合は段階ごと削除(段階は必ず1タスク以上)
+        stages
+          .map((s) =>
+            s.id === stageId
+              ? { ...s, tasks: s.tasks.filter((t) => t.id !== taskId) }
+              : s,
+          )
+          .filter((s) => s.tasks.length > 0),
+      ),
+    [mutateStages],
+  );
+
+  const toggleTaskDone = useCallback<StoreValue["toggleTaskDone"]>(
+    (appId, stageId, taskId) =>
+      mutateStages(appId, (stages) =>
+        stages.map((s) =>
+          s.id === stageId
+            ? {
+                ...s,
+                tasks: s.tasks.map((t) =>
+                  t.id === taskId ? { ...t, done: !t.done } : t,
+                ),
+              }
+            : s,
+        ),
+      ),
+    [mutateStages],
+  );
+
+  const addStagesBulk = useCallback<StoreValue["addStagesBulk"]>(
+    (appId, kinds) =>
+      mutateStages(appId, (stages) => [
+        ...stages,
+        ...kinds.map((k) => makeStage(k)),
+      ]),
+    [mutateStages],
+  );
+
+  const replaceStages = useCallback<StoreValue["replaceStages"]>(
+    (appId, kinds) =>
+      mutateStages(appId, () => kinds.map((k) => makeStage(k))),
+    [mutateStages],
+  );
+
   const addLink = useCallback<StoreValue["addLink"]>(
     (appId) => {
       const link: RelatedLink = { id: newId(), label: "", url: "" };
@@ -718,6 +979,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setApplications(apps);
   }, []);
 
+  const restoreFromRaw = useCallback<StoreValue["restoreFromRaw"]>((raw) => {
+    try {
+      const parsed = JSON.parse(raw);
+      const apps = Array.isArray(parsed) ? parsed : parsed?.applications;
+      if (!Array.isArray(apps)) return false;
+      // normalizeApps が旧stepsから段階を作り直す(=移行前データもそのまま使える)
+      setApplications(normalizeApps(apps));
+      setEvents(normalizeEvents(parsed?.events));
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const clearAll = useCallback(() => {
     setApplications([]);
     setEvents([]);
@@ -744,7 +1019,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       applyBy: null,
       applyDone: false,
       heldAt: null,
-      url: "",
+      links: [],
       memo: "",
       status: "todo",
       createdAt: ts,
@@ -762,6 +1037,33 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const deleteEvent = useCallback<StoreValue["deleteEvent"]>((id) => {
     setEvents((prev) => prev.filter((e) => e.id !== id));
   }, []);
+
+  const addEventLink = useCallback<StoreValue["addEventLink"]>(
+    (id) => {
+      const link: RelatedLink = { id: newId(), label: "", url: "" };
+      mutateEvent(id, (e) => ({ ...e, links: [...e.links, link] }));
+      return link.id;
+    },
+    [mutateEvent],
+  );
+
+  const updateEventLink = useCallback<StoreValue["updateEventLink"]>(
+    (id, linkId, patch) =>
+      mutateEvent(id, (e) => ({
+        ...e,
+        links: e.links.map((l) => (l.id === linkId ? { ...l, ...patch } : l)),
+      })),
+    [mutateEvent],
+  );
+
+  const deleteEventLink = useCallback<StoreValue["deleteEventLink"]>(
+    (id, linkId) =>
+      mutateEvent(id, (e) => ({
+        ...e,
+        links: e.links.filter((l) => l.id !== linkId),
+      })),
+    [mutateEvent],
+  );
 
   const seedSampleIfEmpty = useCallback((): boolean => {
     // (1) クラウド取得完了まで投入しない
@@ -789,7 +1091,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setApplications((prev) => {
       if (prev.length > 0) return prev;
       didSeed = true;
-      return buildSampleApplications();
+      // サンプルも normalizeApps を通して stages を補完(移行ロジックで生成)
+      return normalizeApps(buildSampleApplications());
     });
     return didSeed;
   }, [loaded, mode, user?.id]);
@@ -799,6 +1102,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     applications,
     saveState,
     lastSavedAt,
+    syncNow,
     theme,
     setTheme,
     font,
@@ -817,6 +1121,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     deleteStep,
     moveStep,
     setStepOrder,
+    addStage,
+    deleteStage,
+    moveStage,
+    setStageResult,
+    addTask,
+    updateTask,
+    deleteTask,
+    toggleTaskDone,
+    addStagesBulk,
+    replaceStages,
     addLink,
     updateLink,
     deleteLink,
@@ -824,12 +1138,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     updateEsEntry,
     deleteEsEntry,
     replaceAll,
+    restoreFromRaw,
     clearAll,
     seedSampleIfEmpty,
     events,
     addEvent,
     updateEvent,
     deleteEvent,
+    addEventLink,
+    updateEventLink,
+    deleteEventLink,
   };
 
   return (

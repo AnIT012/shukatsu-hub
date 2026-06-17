@@ -9,7 +9,7 @@ import type {
   SortDir,
 } from "@/lib/types";
 import { useStore } from "@/lib/store";
-import { focusOf } from "@/lib/next-action";
+import { focusOf, isEventDone } from "@/lib/next-action";
 import {
   dueInstant,
   dueToDate,
@@ -27,9 +27,9 @@ const NO_DATE = Number.MAX_SAFE_INTEGER;
 
 const DEFAULT_FILTERS: EventFilters = { statuses: [], onlyThisWeek: false };
 
-/** イベントの注目日(申込締切優先・消化/超過で開催へ)の絶対時刻。参加済は末尾。 */
+/** イベントの注目日(申込締切優先・消化/超過で開催へ)の絶対時刻。完了(参加済/辞退/開催済)は末尾。 */
 function focusInst(ev: EventItem): number {
-  if (ev.status === "attended") return TERMINAL;
+  if (isEventDone(ev)) return TERMINAL;
   const d = focusOf(ev.applyBy, ev.heldAt, ev.applyDone).date;
   return d ? (dueInstant(d) ?? NO_DATE) : NO_DATE;
 }
@@ -50,13 +50,14 @@ export function EventsView({
     () => ({
       thisWeek: events.filter(
         (ev) =>
-          ev.status !== "attended" &&
+          !isEventDone(ev) &&
           isDueThisWeekOrOverdue(
             focusOf(ev.applyBy, ev.heldAt, ev.applyDone).date,
           ),
       ).length,
       todo: events.filter((ev) => ev.status === "todo").length,
       attended: events.filter((ev) => ev.status === "attended").length,
+      declined: events.filter((ev) => ev.status === "declined").length,
     }),
     [events],
   );
@@ -67,7 +68,7 @@ export function EventsView({
       | { ev: EventItem; date: string; inst: number }
       | null = null;
     for (const ev of events) {
-      if (ev.status === "attended") continue;
+      if (isEventDone(ev)) continue;
       const f = focusOf(ev.applyBy, ev.heldAt, ev.applyDone);
       if (!f.date) continue;
       const inst = dueInstant(f.date);
@@ -84,7 +85,7 @@ export function EventsView({
       if (
         filters.onlyThisWeek &&
         !(
-          ev.status !== "attended" &&
+          !isEventDone(ev) &&
           isDueThisWeekOrOverdue(
             focusOf(ev.applyBy, ev.heldAt, ev.applyDone).date,
           )
@@ -134,44 +135,74 @@ export function EventsView({
 
   return (
     <>
-      <p className="px-0.5 text-[13px] text-muted-foreground">
-        今週 <b className="font-semibold text-danger">{stats.thisWeek}件</b> ·
-        未参加 {stats.todo} · 参加済 {stats.attended}
-      </p>
+      <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-0.5 text-[13px]">
+        <span className="text-muted-foreground">
+          今週 <b className="text-[18px] font-bold text-danger">{stats.thisWeek}</b>
+        </span>
+        <span className="text-muted-foreground">
+          未参加{" "}
+          <b className="text-[16px] font-bold text-foreground">{stats.todo}</b>
+        </span>
+        <span className="text-muted-foreground">
+          参加済{" "}
+          <b className="text-[16px] font-bold text-success">{stats.attended}</b>
+        </span>
+        {stats.declined > 0 && (
+          <span className="text-muted-foreground">
+            辞退{" "}
+            <b className="text-[15px] font-semibold text-foreground">
+              {stats.declined}
+            </b>
+          </span>
+        )}
+      </div>
 
-      {upcoming && d0 && (
-        <div className="mt-3">
-          <div
-            className={cn(
-              "rounded-xl bg-card p-3 shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] ring-1",
-              urgent ? "ring-[hsl(var(--danger)/0.45)]" : "ring-border",
-            )}
-            style={{
-              borderLeft: "3px solid",
-              borderLeftColor: urgent
-                ? "hsl(var(--danger))"
-                : "hsl(var(--primary))",
-            }}
-          >
-            <div className="flex items-center gap-1.5 text-[12px] font-medium">
-              <Bell
-                className={cn(
-                  "h-3.5 w-3.5",
-                  urgent ? "text-danger" : "text-primary",
-                )}
-              />
-              <span className={urgent ? "text-danger" : "text-primary"}>
-                直近の予定
-              </span>
+      {/* 固定枠。今週内(urgent)=「直近の予定」赤枠 / 先=「次の予定」テーマ色枠 / 予定なし=枠のみ */}
+      <div className="mt-3">
+        <div
+          className={cn(
+            "rounded-xl bg-card p-3 shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] ring-2",
+            !upcoming
+              ? "ring-border"
+              : urgent
+                ? "ring-[hsl(var(--danger)/0.6)]"
+                : "ring-[hsl(var(--primary)/0.75)]",
+          )}
+        >
+          <div className="flex items-center gap-1.5 text-[12px] font-medium">
+            <Bell
+              className={cn(
+                "h-3.5 w-3.5",
+                !upcoming
+                  ? "text-muted-foreground"
+                  : urgent
+                    ? "text-danger"
+                    : "text-primary",
+              )}
+            />
+            <span
+              className={
+                !upcoming
+                  ? "text-muted-foreground"
+                  : urgent
+                    ? "text-danger"
+                    : "text-primary"
+              }
+            >
+              {upcoming && !urgent ? "次の予定" : "直近の予定"}
+            </span>
+            {upcoming && d0 && (
               <span className="ml-auto text-[11px] text-muted-foreground">
                 {d0.getMonth() + 1}/{d0.getDate()} ·{" "}
                 {relativeLabel(upcoming.date)}
               </span>
-            </div>
+            )}
+          </div>
+          {upcoming && d0 ? (
             <div className="mt-1.5 flex items-center gap-2 text-[12.5px]">
               <span
                 className={cn(
-                  "h-1 w-1 shrink-0 rounded-full",
+                  "h-1.5 w-1.5 shrink-0 rounded-full",
                   urgent ? "bg-danger" : "bg-primary",
                 )}
               />
@@ -182,9 +213,13 @@ export function EventsView({
                 {upcoming.ev.title || "(イベント名未設定)"}
               </span>
             </div>
-          </div>
+          ) : (
+            <p className="mt-1 text-[12.5px] text-muted-foreground">
+              締切・開催のある予定はまだありません
+            </p>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="mt-3">
         <EventsControlsBar

@@ -54,6 +54,8 @@ export function buildSampleApplications(): Application[] {
       { id: `${SAMPLE_APP_ID}-s4`, kind: "interview", name: "面接", dueAt: dPlus(7), heldAt: dPlus(9), status: "not_started", location: "オンライン", memo: "予約は締切まで／実施は当日" },
       { id: `${SAMPLE_APP_ID}-s5`, kind: "internship", name: "インターン参加", dueAt: dPlus(14), heldAt: null, status: "not_started", location: "", memo: "" },
     ],
+    // normalizeApps が steps から段階を移行生成する(空でよい)
+    stages: [],
     createdAt: now,
     updatedAt: now,
   };

@@ -2,7 +2,9 @@
 // 役割: (1) Web Push の受信/クリック処理 (2) アプリシェルのキャッシュ(オフライン起動・低速回線の体感改善)
 /* eslint-disable no-undef */
 
-const CACHE = "shukatsu-cache-v1";
+// 選考フロー(段階＞タスク)大改修にあわせて版を更新。activate で旧キャッシュを破棄し、
+// 復帰ユーザーに確実に新バージョンを配る。
+const CACHE = "shukatsu-cache-v2";
 // 最低限プリキャッシュ(残りの静的アセットは実行時にキャッシュへ育てる)
 const PRECACHE = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png"];
 

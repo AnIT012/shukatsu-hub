@@ -74,6 +74,43 @@ export interface SelectionStep {
   memo: string;
 }
 
+/** 選考タスク(ES提出・面接など、選考での1アクション)。段階の中に1つ以上持つ */
+export interface SelectionTask {
+  id: string;
+  kind: StepKind;
+  /** 自由記述の補足。例:「一次面接(オンライン)」 */
+  name: string;
+  /** 締切(申請/予約/提出期限)。"YYYY-MM-DD" もしくは "YYYY-MM-DDTHH:mm"。未設定は null */
+  dueAt: string | null;
+  /** 実施日(面接日・GD実施日など。締切とは別軸)。未設定は null */
+  heldAt: string | null;
+  /** 場所(住所/会場名 or "オンライン" 等) */
+  location: string;
+  /** タスク個別メモ */
+  memo: string;
+  /** やった(提出/参加した)か */
+  done: boolean;
+}
+
+/** 段階の結果 */
+export type StageResult =
+  | "pending" // 未(まだ着手していない)
+  | "waiting" // やった・結果待ち
+  | "passed" // 通過
+  | "failed" // 不合格
+  | "declined"; // 辞退
+
+/** 選考段階(書類選考・一次面接など)。並行なら複数タスクを持つ(直列は1タスク) */
+export interface SelectionStage {
+  id: string;
+  /** 段階名(任意。空ならタスク名を表示に使う)。並行時に「書類選考」等 */
+  label: string;
+  /** 1つ以上のタスク(複数 = 並行) */
+  tasks: SelectionTask[];
+  /** この段階の結果 */
+  result: StageResult;
+}
+
 /** 1社の応募 */
 export interface Application {
   id: string;
@@ -91,7 +128,10 @@ export interface Application {
   esEntries: ESEntry[];
   /** 全体メモ(長文OK・改行保持) */
   memo: string;
+  /** 旧モデル(直列ステップ)。新モデルへの移行ソースとして保持 */
   steps: SelectionStep[];
+  /** 新モデル: 選考段階(段階＞タスク)。移行で steps から生成される */
+  stages: SelectionStage[];
   createdAt: string;
   updatedAt: string;
 }
@@ -128,7 +168,7 @@ export interface NotifySettings {
 }
 
 /** イベント(説明会/セミナー/OB訪問など)の状態 */
-export type EventStatus = "todo" | "attended"; // 未参加 / 参加済
+export type EventStatus = "todo" | "attended" | "declined"; // 未参加 / 参加済 / 辞退
 
 /** 説明会・イベント(選考フローとは別の単発イベント管理) */
 export interface EventItem {
@@ -144,7 +184,8 @@ export interface EventItem {
   applyDone?: boolean;
   /** 開催日時 */
   heldAt: string | null;
-  url: string;
+  /** 関連リンク(予約ページ等。選考と同じくラベル付き・ピン留め可)。旧 url から移行 */
+  links: RelatedLink[];
   memo: string;
   status: EventStatus;
   createdAt: string;

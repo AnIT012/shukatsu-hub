@@ -34,6 +34,7 @@ const SORT_LABEL: Record<EventSortKey, string> = {
 const STATUS_OPTIONS: { value: EventStatus; label: string }[] = [
   { value: "todo", label: "未参加" },
   { value: "attended", label: "参加済" },
+  { value: "declined", label: "辞退" },
 ];
 
 function Chip({

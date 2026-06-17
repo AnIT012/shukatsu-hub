@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import type { Priority, SelectionType } from "@/lib/types";
 import { useStore } from "@/lib/store";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -50,17 +55,17 @@ export function AddApplicationDialog({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="rounded-t-2xl px-5 pb-7 pt-4"
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="max-w-sm"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
-        <SheetTitle className="text-base">企業を追加</SheetTitle>
-        <p className="mb-4 mt-0.5 text-xs text-muted-foreground">
-          まずは企業名だけでもOK。選考ステップは追加後に登録できます。
-        </p>
+        <div className="space-y-1">
+          <DialogTitle className="text-base">企業を追加</DialogTitle>
+          <DialogDescription className="text-xs">
+            まずは企業名だけでもOK。選考ステップは追加後に登録できます。
+          </DialogDescription>
+        </div>
         <form onSubmit={submit} className="space-y-3.5">
           <div className="space-y-1.5">
             <Label htmlFor="add-company">
@@ -133,7 +138,7 @@ export function AddApplicationDialog({
             </Button>
           </div>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
