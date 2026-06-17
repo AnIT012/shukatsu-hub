@@ -19,6 +19,7 @@ import type {
   StepStatus,
   Theme,
   FontChoice,
+  NotifySettings,
 } from "./types";
 
 // ---------------- 選択肢 ----------------
@@ -219,3 +220,19 @@ export const LS_LEGAL_KEY = "shukatsu-dashboard:legal-accepted-v2";
 
 /** チュートリアル用サンプル企業の固定ID(自動削除に使う) */
 export const SAMPLE_APP_ID = "sample-anit-co";
+
+// ---------------- 通知(Web Push) ----------------
+
+/** VAPID 公開鍵(クライアントの購読用。秘密鍵は配信側=Edge Function のみが保持) */
+export const VAPID_PUBLIC_KEY =
+  "BKjWhLJJ3cgX3x0UCyoOxHkEVZdV6TiZ_95IOxKyAQk_cb1oyyai0H23hb7AgEPw5GAcG-EI3qKccWmvL7d7D2k";
+
+/** 通知設定の既定値 */
+export const DEFAULT_NOTIFY: NotifySettings = {
+  enabled: false,
+  mode: "morning",
+  leadDays: [1],
+  hour: 8,
+};
+
+export const LS_NOTIFY_KEY = "shukatsu-dashboard:notify";

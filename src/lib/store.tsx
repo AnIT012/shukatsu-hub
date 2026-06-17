@@ -20,8 +20,10 @@ import type {
   SelectionType,
   Theme,
   FontChoice,
+  NotifySettings,
 } from "./types";
 import {
+  DEFAULT_NOTIFY,
   FONT_OPTIONS,
   LS_FONT_KEY,
   LS_KEY,
@@ -69,6 +71,10 @@ interface StoreValue {
   setTheme: (t: Theme) => void;
   font: FontChoice;
   setFont: (f: FontChoice) => void;
+  notify: NotifySettings;
+  setNotify: (patch: Partial<NotifySettings>) => void;
+  pushSubscriptions: PushSubscriptionJSON[];
+  addPushSubscription: (sub: PushSubscriptionJSON) => void;
   addApplication: (input: NewApplicationInput) => string;
   updateApplication: (id: string, patch: AppPatch) => void;
   deleteApplication: (id: string) => void;
@@ -148,6 +154,8 @@ function makeStep(kind: SelectionStep["kind"] = "es"): SelectionStep {
 interface LocalData {
   applications: Application[];
   events: EventItem[];
+  notify: NotifySettings;
+  pushSubscriptions: PushSubscriptionJSON[];
 }
 
 function readLocal(key: string): LocalData | null {
@@ -161,6 +169,10 @@ function readLocal(key: string): LocalData | null {
     return {
       applications: normalizeApps(apps),
       events: normalizeEvents(parsed?.events), // 旧データは events 無し → []
+      notify: { ...DEFAULT_NOTIFY, ...(parsed?.notify ?? {}) },
+      pushSubscriptions: Array.isArray(parsed?.pushSubscriptions)
+        ? parsed.pushSubscriptions
+        : [],
     };
   } catch {
     return null;
@@ -176,6 +188,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [theme, setThemeState] = useState<Theme>("indigo");
   const [font, setFontState] = useState<FontChoice>("system");
+  const [notify, setNotifyState] = useState<NotifySettings>(DEFAULT_NOTIFY);
+  const [pushSubscriptions, setPushSubscriptions] = useState<
+    PushSubscriptionJSON[]
+  >([]);
   const hydratedRef = useRef(false);
   const dirtyRef = useRef(false);
   const seedTriedRef = useRef(false);
@@ -220,6 +236,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const setNotify = useCallback((patch: Partial<NotifySettings>) => {
+    setNotifyState((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const addPushSubscription = useCallback((sub: PushSubscriptionJSON) => {
+    setPushSubscriptions((prev) => {
+      if (prev.some((s) => s.endpoint === sub.endpoint)) return prev;
+      return [...prev, sub];
+    });
+  }, []);
+
   // ---- 初回ロード(モード別) ----
   useEffect(() => {
     let cancelled = false;
@@ -232,6 +259,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (cached && !cancelled) {
         setApplications(cached.applications);
         setEvents(cached.events);
+        setNotifyState(cached.notify);
+        setPushSubscriptions(cached.pushSubscriptions);
       }
 
       if (mode === "local" || !supabase || !user) {
@@ -256,6 +285,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         } else if (remote && typeof remote === "object") {
           setApplications(normalizeApps((remote as any).applications));
           setEvents(normalizeEvents((remote as any).events));
+          setNotifyState({
+            ...DEFAULT_NOTIFY,
+            ...((remote as any).notify ?? {}),
+          });
+          setPushSubscriptions(
+            Array.isArray((remote as any).pushSubscriptions)
+              ? (remote as any).pushSubscriptions
+              : [],
+          );
         } else {
           // クラウドが空 → ローカルのキャッシュ/レガシーを移行
           const legacy = cached ?? readLocal(LS_KEY);
@@ -308,12 +346,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             savedAt: nowISO(),
             applications,
             events,
+            notify,
+            pushSubscriptions,
           }),
         );
         if (mode === "cloud" && supabase && user) {
           const { error } = await supabase.from(DATA_TABLE).upsert({
             user_id: user.id,
-            data: { applications, events },
+            data: { applications, events, notify, pushSubscriptions },
             updated_at: nowISO(),
           });
           if (error) throw error;
@@ -330,7 +370,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }, 600);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applications, events, loaded, mode, user?.id]);
+  }, [applications, events, notify, pushSubscriptions, loaded, mode, user?.id]);
 
   // ---- 他端末の更新を取り込む ----
   useEffect(() => {
@@ -352,6 +392,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       } else if (remote && typeof remote === "object") {
         setApplications(normalizeApps((remote as any).applications));
         setEvents(normalizeEvents((remote as any).events));
+        setNotifyState({
+          ...DEFAULT_NOTIFY,
+          ...((remote as any).notify ?? {}),
+        });
+        setPushSubscriptions(
+          Array.isArray((remote as any).pushSubscriptions)
+            ? (remote as any).pushSubscriptions
+            : [],
+        );
       }
     };
     document.addEventListener("visibilitychange", pull);
@@ -626,6 +675,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setTheme,
     font,
     setFont,
+    notify,
+    setNotify,
+    pushSubscriptions,
+    addPushSubscription,
     addApplication,
     updateApplication,
     deleteApplication,

@@ -4,12 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  Bell,
   ChevronRight,
+  Clock,
   Download,
   FileText,
   HelpCircle,
   LogOut,
   Palette,
+  Smartphone,
   Trash2,
   Type,
   Upload,
@@ -17,6 +20,13 @@ import {
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import { FONT_OPTIONS, THEME_OPTIONS } from "@/lib/constants";
+import {
+  disablePush,
+  enablePush,
+  isIOS,
+  isStandalone,
+  pushSupported,
+} from "@/lib/push";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -123,10 +133,59 @@ function SettingsBody({
   onStartTour: () => void;
   onOpenLegal: () => void;
 }) {
-  const { theme, setTheme, font, setFont, clearAll, applications, events } =
-    useStore();
+  const {
+    theme,
+    setTheme,
+    font,
+    setFont,
+    notify,
+    setNotify,
+    addPushSubscription,
+    clearAll,
+    applications,
+    events,
+  } = useStore();
   const { mode, user, signOut } = useAuth();
   const [confirmClear, setConfirmClear] = useState(false);
+  const [needsHome, setNeedsHome] = useState(false);
+
+  useEffect(() => {
+    setNeedsHome(isIOS() && !isStandalone());
+  }, []);
+
+  const handleToggleNotify = async () => {
+    if (notify.enabled) {
+      setNotify({ enabled: false });
+      await disablePush();
+      toast.success("通知をオフにしました");
+      return;
+    }
+    if (!pushSupported()) {
+      toast.error("この端末は通知に対応していません");
+      return;
+    }
+    const sub = await enablePush();
+    if (!sub) {
+      toast.error("通知をオンにできませんでした", {
+        description:
+          isIOS() && !isStandalone()
+            ? "「ホーム画面に追加」してから再度お試しください"
+            : "通知が許可されませんでした",
+      });
+      return;
+    }
+    addPushSubscription(sub);
+    setNotify({ enabled: true });
+    toast.success("通知をオンにしました");
+  };
+
+  const toggleLead = (d: number) => {
+    const has = notify.leadDays.includes(d);
+    const next = has
+      ? notify.leadDays.filter((x) => x !== d)
+      : [...notify.leadDays, d].sort((a, b) => a - b);
+    setNotify({ leadDays: next.length ? next : [1] });
+  };
 
   // プレビュー用に全フォントを読み込む(設定を開いた時だけ)
   useEffect(() => {
@@ -162,6 +221,83 @@ function SettingsBody({
       </div>
 
       <div className="space-y-6 px-4 py-5">
+        {/* 通知 */}
+        <Section icon={<Bell className="h-4 w-4" />} title="通知">
+          <div className="space-y-3 rounded-xl border p-3">
+            <div className="flex items-center">
+              <span className="text-sm">締切・予定を通知</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={notify.enabled}
+                aria-label="通知のオン/オフ"
+                onClick={handleToggleNotify}
+                className={cn(
+                  "relative ml-auto h-[22px] w-[38px] rounded-full transition-colors",
+                  notify.enabled ? "bg-success" : "bg-muted-foreground/30",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 h-[18px] w-[18px] rounded-full bg-white transition-all",
+                    notify.enabled ? "left-[18px]" : "left-0.5",
+                  )}
+                />
+              </button>
+            </div>
+
+            {needsHome && (
+              <p className="flex items-center gap-1.5 text-[11px] text-warning">
+                <Smartphone className="h-3.5 w-3.5 shrink-0" />
+                iPhoneは「ホーム画面に追加」してから通知をオンにしてね
+              </p>
+            )}
+
+            {notify.enabled && (
+              <div className="space-y-2.5 border-t pt-3">
+                <div className="text-[12px] text-muted-foreground">
+                  タイミング
+                </div>
+                <NotifyRadio
+                  checked={notify.mode === "morning"}
+                  onClick={() => setNotify({ mode: "morning" })}
+                  label="毎朝まとめて"
+                  desc="次の予定を毎朝"
+                />
+                <NotifyRadio
+                  checked={notify.mode === "lead"}
+                  onClick={() => setNotify({ mode: "lead" })}
+                  label="タイミングを指定"
+                />
+                {notify.mode === "lead" && (
+                  <div className="flex gap-2 pl-[26px]">
+                    {[3, 2, 1].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => toggleLead(d)}
+                        className={cn(
+                          "rounded-lg border px-3 py-1 text-[12px] transition-colors",
+                          notify.leadDays.includes(d)
+                            ? "border-primary bg-accent text-accent-foreground"
+                            : "border-border text-muted-foreground",
+                        )}
+                      >
+                        {d === 1 ? "前日" : `${d}日前`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center border-t pt-2.5 text-sm">
+                  <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                  通知する時刻
+                  <span className="ml-auto text-muted-foreground">朝 8:00</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </Section>
+
         {/* テーマ */}
         <Section icon={<Palette className="h-4 w-4" />} title="テーマ">
           <div className="grid grid-cols-4 gap-2.5">
@@ -348,6 +484,39 @@ function Row({
       </span>
       <span className="flex-1">{label}</span>
       <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+    </button>
+  );
+}
+
+function NotifyRadio({
+  checked,
+  onClick,
+  label,
+  desc,
+}: {
+  checked: boolean;
+  onClick: () => void;
+  label: string;
+  desc?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-2.5 text-left"
+    >
+      <span
+        className={cn(
+          "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2",
+          checked ? "border-primary" : "border-muted-foreground/40",
+        )}
+      >
+        {checked && <span className="h-2 w-2 rounded-full bg-primary" />}
+      </span>
+      <span className="text-sm">{label}</span>
+      {desc && (
+        <span className="text-[11px] text-muted-foreground">{desc}</span>
+      )}
     </button>
   );
 }

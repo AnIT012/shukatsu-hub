@@ -114,6 +114,19 @@ export type Theme =
 /** フォント選択 */
 export type FontChoice = "system" | "zenKaku" | "shippori" | "zenMaru";
 
+/** 通知の配信モード。morning=毎朝まとめて / lead=指定日数前にピンポイント */
+export type NotifyMode = "morning" | "lead";
+
+/** 通知設定(アカウント単位・クラウド保存) */
+export interface NotifySettings {
+  enabled: boolean;
+  mode: NotifyMode;
+  /** mode==="lead" のとき通知する「何日前」(複数可)。例:[1,3]=前日と3日前 */
+  leadDays: number[];
+  /** 朝の通知時刻(時)。当面は8固定 */
+  hour: number;
+}
+
 /** イベント(説明会/セミナー/OB訪問など)の状態 */
 export type EventStatus = "todo" | "attended"; // 未参加 / 参加済
 
