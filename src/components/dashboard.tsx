@@ -731,11 +731,14 @@ function SaveIndicator() {
     );
   }
   if (saveState === "offline") {
-    // 端末には保存済み。接続が戻り次第クラウドへ自動同期する。
+    // 端末には保存済み(✓)。接続が戻り次第クラウドへ自動同期する(雲がパルスで待機を表現)。
     return (
       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <CloudOff className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">オフライン・接続後に同期</span>
+        <span className="flex items-center gap-0.5">
+          <Check className="h-3 w-3 text-success" />
+          <CloudOff className="animate-app-pulse h-3.5 w-3.5" />
+        </span>
+        <span className="hidden sm:inline">保存済み・接続後に同期</span>
       </span>
     );
   }
