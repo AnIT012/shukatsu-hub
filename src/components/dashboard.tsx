@@ -504,7 +504,13 @@ export function Dashboard() {
           }}
         >
           {/* 選考 */}
-          <div className="h-full w-1/3 shrink-0 overflow-y-auto overscroll-contain scrollbar-thin">
+          <div
+            className={cn(
+              "h-full w-1/3 shrink-0 overscroll-none scrollbar-thin",
+              // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
+              dragging ? "overflow-hidden" : "overflow-y-auto",
+            )}
+          >
             <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
               <OnboardingPrompts onOpenSettings={() => setView("settings")} />
               {applications.length === 0 ? (
@@ -585,7 +591,13 @@ export function Dashboard() {
             </div>
           </div>
           {/* イベント */}
-          <div className="h-full w-1/3 shrink-0 overflow-y-auto overscroll-contain scrollbar-thin">
+          <div
+            className={cn(
+              "h-full w-1/3 shrink-0 overscroll-none scrollbar-thin",
+              // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
+              dragging ? "overflow-hidden" : "overflow-y-auto",
+            )}
+          >
             <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
               <EventsView
                 onOpenEvent={setSelectedEventId}
@@ -594,7 +606,13 @@ export function Dashboard() {
             </div>
           </div>
           {/* 設定 */}
-          <div className="h-full w-1/3 shrink-0 overflow-y-auto overscroll-contain scrollbar-thin">
+          <div
+            className={cn(
+              "h-full w-1/3 shrink-0 overscroll-none scrollbar-thin",
+              // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
+              dragging ? "overflow-hidden" : "overflow-y-auto",
+            )}
+          >
             <div className="mx-auto max-w-3xl pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
               <SettingsPage
                 onImport={() => fileRef.current?.click()}

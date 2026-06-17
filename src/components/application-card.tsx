@@ -301,10 +301,8 @@ function DateBlock({
 
 function NextLine({ app, next }: { app: Application; next: StageNextAction }) {
   if (next.type === "step") {
-    // 並行なら複数を「・」で連結(取りこぼし防止)
-    const names = next.tasks
-      .map((t) => t.name.trim() || STEP_KIND_LABEL[t.kind])
-      .slice(0, 3);
+    // 種別(選考ステップ名)を表示。サブタイトル(name)ではなく kind を主役に
+    const names = next.tasks.map((t) => STEP_KIND_LABEL[t.kind]).slice(0, 3);
     return (
       <div className="mt-1 truncate text-[12.5px]">
         <span className="text-muted-foreground">次: </span>
