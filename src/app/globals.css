@@ -277,6 +277,9 @@
   }
   body {
     @apply text-foreground;
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
     background-color: hsl(var(--card));
     font-family: var(
       --app-font,
@@ -288,7 +291,7 @@
       Meiryo,
       sans-serif
     );
-    overscroll-behavior-y: none;
+    overscroll-behavior: none;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }

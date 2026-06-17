@@ -400,7 +400,7 @@ export function Dashboard() {
   const dateLabel = `${now.getMonth() + 1}/${now.getDate()} ${WD[now.getDay()]}.`;
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* ヘッダー(白) */}
       <header className="shrink-0 border-b bg-card pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5">
