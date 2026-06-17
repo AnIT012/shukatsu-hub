@@ -26,6 +26,7 @@ import {
 import { dueInstant, dueToDate, relativeLabel, urgencyOf } from "@/lib/date";
 import { exportApplications, parseBackup, readFile } from "@/lib/io";
 import {
+  LS_FEEDBACK_KEY,
   LS_LEGAL_KEY,
   LS_ONBOARDED_KEY,
   SAMPLE_APP_ID,
@@ -49,6 +50,7 @@ import { LegalDialog } from "@/components/legal-dialog";
 import { EventsView } from "@/components/events-view";
 import { EventDetail } from "@/components/event-detail";
 import { SettingsSheet } from "@/components/settings-sheet";
+import { FeedbackPrompt } from "@/components/feedback-prompt";
 
 const DEFAULT_FILTERS: Filters = {
   situations: [],
@@ -87,6 +89,7 @@ export function Dashboard() {
   const [legalOpen, setLegalOpen] = useState(false);
   const [legalConsentMode, setLegalConsentMode] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const swipeRef = useRef<{
@@ -151,6 +154,34 @@ export function Dashboard() {
         setShowOnboard(true);
     } catch {
       // ignore
+    }
+  };
+
+  // ログイン済みユーザーに1回だけ満足度を尋ねる(規約同意後・実データのある既存ユーザー対象)
+  useEffect(() => {
+    if (!loaded || mode !== "cloud" || !user) return;
+    try {
+      if (!localStorage.getItem(flagKey(LS_LEGAL_KEY))) return;
+      if (localStorage.getItem(`${LS_FEEDBACK_KEY}:${user.id}`)) return;
+      const hasReal =
+        applications.filter((a) => a.id !== SAMPLE_APP_ID).length > 0;
+      if (!hasReal) return;
+    } catch {
+      return;
+    }
+    const t = window.setTimeout(() => setFeedbackOpen(true), 800);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, mode, user?.id]);
+
+  const closeFeedback = () => {
+    setFeedbackOpen(false);
+    if (mode === "cloud" && user) {
+      try {
+        localStorage.setItem(`${LS_FEEDBACK_KEY}:${user.id}`, "1");
+      } catch {
+        // ignore
+      }
     }
   };
 
@@ -587,6 +618,14 @@ export function Dashboard() {
           setLegalOpen(true);
         }}
       />
+
+      {mode === "cloud" && user && (
+        <FeedbackPrompt
+          open={feedbackOpen}
+          userId={user.id}
+          onClose={closeFeedback}
+        />
+      )}
 
       {tourIndex >= 0 && (
         <Tutorial

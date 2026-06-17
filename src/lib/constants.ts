@@ -236,3 +236,5 @@ export const DEFAULT_NOTIFY: NotifySettings = {
 };
 
 export const LS_NOTIFY_KEY = "shukatsu-dashboard:notify";
+/** 満足度プロンプトを表示済みか(1回だけ出す) */
+export const LS_FEEDBACK_KEY = "shukatsu-dashboard:feedback-prompted";
