@@ -293,7 +293,7 @@ function SettingsBody({
             {needsHome && (
               <p className="flex items-center gap-1.5 text-[11px] text-warning">
                 <Smartphone className="h-3.5 w-3.5 shrink-0" />
-                iPhoneは「ホーム画面に追加」してから通知をオンにしてね
+                iPhoneは「ホーム画面に追加」してから通知をオンにしてください
               </p>
             )}
 
@@ -548,14 +548,14 @@ function FeedbackForm({ userId }: { userId: string }) {
 
   const submit = async () => {
     if (!message.trim()) {
-      toast.info("内容を入力してね");
+      toast.info("内容を入力してください");
       return;
     }
     setSending(true);
     const ok = await submitFeedback(userId, kind, message);
     setSending(false);
     if (ok) {
-      toast.success("送ってくれてありがとう🙏");
+      toast.success("お送りいただきありがとうございます🙏");
       setMessage("");
     } else {
       toast.error("送信に失敗しました");
@@ -584,7 +584,7 @@ function FeedbackForm({ userId }: { userId: string }) {
       <Textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        placeholder="要望・感想・不具合など、なんでも教えて"
+        placeholder="要望・感想・不具合など、お気軽にどうぞ"
         className="min-h-[72px] resize-y"
       />
       <Button

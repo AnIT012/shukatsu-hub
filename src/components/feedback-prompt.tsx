@@ -29,13 +29,13 @@ export function FeedbackPrompt({
 
   const submit = async () => {
     if (stars === 0) {
-      toast.info("星をタップして評価してね");
+      toast.info("星をタップして評価してください");
       return;
     }
     setSending(true);
     const ok = await submitRating(userId, stars, message);
     setSending(false);
-    if (ok) toast.success("ありがとう！参考にするね🙏");
+    if (ok) toast.success("ありがとうございます！参考にします🙏");
     else toast.error("送信に失敗しました");
     onClose();
   };
@@ -44,10 +44,10 @@ export function FeedbackPrompt({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-sm">
         <DialogTitle className="text-center text-base">
-          就活Hub、使ってみてどう？
+          就活Hub、使ってみていかがですか？
         </DialogTitle>
         <DialogDescription className="text-center text-xs">
-          満足度を教えてくれると嬉しい（コメントは任意）
+          満足度を教えていただけると嬉しいです（コメントは任意）
         </DialogDescription>
 
         <div className="flex justify-center gap-1.5 py-2">
@@ -74,7 +74,7 @@ export function FeedbackPrompt({
         <Textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="あれば教えて（要望・感想・不具合など）"
+          placeholder="あれば教えてください（要望・感想・不具合など）"
           className="min-h-[72px] resize-y"
         />
 
