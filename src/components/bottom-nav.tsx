@@ -5,11 +5,13 @@ import {
   BellRing,
   ClipboardCheck,
   ClipboardList,
+  Flower2,
   Settings,
+  Sprout,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type NavView = "selection" | "events" | "settings";
+export type NavView = "progress" | "selection" | "events" | "settings";
 
 type Anim = "evolve" | "spin";
 
@@ -21,6 +23,13 @@ const TABS: {
   activeIcon: typeof Bell;
   anim: Anim;
 }[] = [
+  {
+    value: "progress",
+    label: "進捗",
+    icon: Sprout, // 芽
+    activeIcon: Flower2, // → 花が咲く
+    anim: "evolve",
+  },
   {
     value: "selection",
     label: "選考",

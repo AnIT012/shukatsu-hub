@@ -26,7 +26,6 @@ import type {
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import {
-  effortSummary,
   getStageNextAction,
   hasThisWeekStageTask,
   passedToday,
@@ -66,6 +65,7 @@ import { FeedbackPrompt } from "@/components/feedback-prompt";
 import { VersionNotice } from "@/components/version-notice";
 import { OnboardingPrompts } from "@/components/onboarding-prompts";
 import { BottomNav, type NavView } from "@/components/bottom-nav";
+import { ProgressView } from "@/components/progress-view";
 import { AppLoader } from "@/components/app-loader";
 
 const DEFAULT_FILTERS: Filters = {
@@ -78,8 +78,8 @@ const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
 
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// 下タブと同じ並び。スワイプ(選考⇄イベント⇄設定)のインデックス算出に使う
-const VIEWS: NavView[] = ["selection", "events", "settings"];
+// 下タブと同じ並び。スワイプ(進捗⇄選考⇄イベント⇄設定)のインデックス算出に使う
+const VIEWS: NavView[] = ["progress", "selection", "events", "settings"];
 
 export function Dashboard() {
   const store = useStore();
@@ -161,7 +161,7 @@ export function Dashboard() {
         x: e.touches[0].clientX,
         y: e.touches[0].clientY,
         axis: "",
-        w: el.getBoundingClientRect().width / 3,
+        w: el.getBoundingClientRect().width / 4,
       };
       dragXRef.current = 0;
     };
@@ -178,7 +178,7 @@ export function Dashboard() {
         let d = dx;
         const vi = viewIdxRef.current;
         if (vi === 0 && d > 0) d *= 0.3;
-        if (vi === 2 && d < 0) d *= 0.3;
+        if (vi === 3 && d < 0) d *= 0.3;
         dragXRef.current = d;
         setDragging(true);
         setDragX(d);
@@ -190,7 +190,7 @@ export function Dashboard() {
         const threshold = swipeRef.current.w * 0.25;
         const vi = viewIdxRef.current;
         const d = dragXRef.current;
-        if (d < -threshold && vi < 2) setView(VIEWS[vi + 1]);
+        if (d < -threshold && vi < 3) setView(VIEWS[vi + 1]);
         else if (d > threshold && vi > 0) setView(VIEWS[vi - 1]);
         setDragX(0);
         dragXRef.current = 0;
@@ -294,17 +294,6 @@ export function Dashboard() {
     }
   };
 
-  // 努力サマリー(積み上げ): 書類/Webテスト/面接GD の「やった」数(伴走コメントの活動量に使用)
-  const effort = useMemo(() => effortSummary(applications), [applications]);
-  // 伴走コメントの段階を決める活動量 = やったタスク総数 ＋ 参加済イベント数
-  const companionScore = useMemo(
-    () =>
-      effort.docs +
-      effort.webtest +
-      effort.interview +
-      events.filter((e) => e.status === "attended").length,
-    [effort, events],
-  );
   // 今日 合格(内定/内々定/参加確定)になった社(終日その日だけ祝う)。サンプルは除外。
   const celebrate = useMemo(
     () => passedToday(applications.filter((a) => a.id !== SAMPLE_APP_ID)),
@@ -512,16 +501,18 @@ export function Dashboard() {
               onChange={handleImportFile}
             />
             <RefreshButton />
-            {/* 設定タブでは ＋ を opacity でふっと収納(レイアウトは保持) */}
+            {/* 選考/イベント以外(進捗・設定)では ＋ を opacity でふっと収納 */}
             <Button
               size="icon"
               className={cn(
                 "h-9 w-9 transition-opacity duration-200",
-                view === "settings" && "pointer-events-none opacity-0",
+                view !== "selection" &&
+                  view !== "events" &&
+                  "pointer-events-none opacity-0",
               )}
               data-tour="add"
-              aria-hidden={view === "settings"}
-              tabIndex={view === "settings" ? -1 : 0}
+              aria-hidden={view !== "selection" && view !== "events"}
+              tabIndex={view === "selection" || view === "events" ? 0 : -1}
               aria-label={view === "events" ? "イベントを追加" : "企業を追加"}
               onClick={() => {
                 setAddSpin(true);
@@ -541,9 +532,9 @@ export function Dashboard() {
         {/* 3ペインを横スライド。各ページは独立スクロール(高さ同期しない=空白せり上がり無し) */}
         <div
           ref={carouselRef}
-          className="flex h-full w-[300%]"
+          className="flex h-full w-[400%]"
           style={{
-            transform: `translateX(calc(${-viewIdx * (100 / 3)}% + ${dragX}px))`,
+            transform: `translateX(calc(${-viewIdx * 25}% + ${dragX}px))`,
             transition: dragging
               ? "none"
               : "transform 0.34s cubic-bezier(0.22, 0.61, 0.36, 1)",
@@ -551,13 +542,26 @@ export function Dashboard() {
             touchAction: "pan-y",
           }}
         >
-          {/* 選考 */}
+          {/* 進捗(積み上げ) */}
           <div
             ref={(el) => {
               paneRefs.current[0] = el;
             }}
             className={cn(
-              "h-full w-1/3 shrink-0 overscroll-none scrollbar-thin",
+              "h-full w-1/4 shrink-0 overscroll-none scrollbar-thin",
+              dragging ? "overflow-hidden" : "overflow-y-auto",
+            )}
+          >
+            <ProgressView />
+          </div>
+
+          {/* 選考 */}
+          <div
+            ref={(el) => {
+              paneRefs.current[1] = el;
+            }}
+            className={cn(
+              "h-full w-1/4 shrink-0 overscroll-none scrollbar-thin",
               // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
               dragging ? "overflow-hidden" : "overflow-y-auto",
             )}
@@ -575,7 +579,10 @@ export function Dashboard() {
                     <CelebrationBanner apps={celebrate} />
                   )}
 
-                  <CompanionComment score={companionScore} />
+                  <CompanionComment
+                    variant="selection"
+                    onClick={() => setView("progress")}
+                  />
 
                   <div className="mt-3">
                     <AnnouncementBanner applications={applications} />
@@ -632,15 +639,23 @@ export function Dashboard() {
           {/* イベント */}
           <div
             ref={(el) => {
-              paneRefs.current[1] = el;
+              paneRefs.current[2] = el;
             }}
             className={cn(
-              "h-full w-1/3 shrink-0 overscroll-none scrollbar-thin",
+              "h-full w-1/4 shrink-0 overscroll-none scrollbar-thin",
               // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
               dragging ? "overflow-hidden" : "overflow-y-auto",
             )}
           >
             <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+              {events.length > 0 && (
+                <div className="mb-3">
+                  <CompanionComment
+                    variant="events"
+                    onClick={() => setView("progress")}
+                  />
+                </div>
+              )}
               <EventsView
                 onOpenEvent={setSelectedEventId}
                 onAddEvent={handleAddEvent}
@@ -652,10 +667,10 @@ export function Dashboard() {
           {/* 設定 */}
           <div
             ref={(el) => {
-              paneRefs.current[2] = el;
+              paneRefs.current[3] = el;
             }}
             className={cn(
-              "h-full w-1/3 shrink-0 overscroll-none scrollbar-thin",
+              "h-full w-1/4 shrink-0 overscroll-none scrollbar-thin",
               // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
               dragging ? "overflow-hidden" : "overflow-y-auto",
             )}
