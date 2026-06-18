@@ -26,7 +26,7 @@ import {
   type StageNextAction,
   type StageSegState,
 } from "@/lib/next-action";
-import { dueToDate, urgencyOf } from "@/lib/date";
+import { dueToDate, splitDue, urgencyOf } from "@/lib/date";
 
 const WD_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -307,7 +307,8 @@ function DateBlock({
   const focus = next.focusDate;
   const kindLabel = next.focusKind === "held" ? "実施" : "締切";
   const d = focus ? dueToDate(focus) : null;
-  // 詰め込みすぎを避けて3行(締切/日付/曜日)に。時刻・残り日数は詳細で見せる。
+  const time = focus ? splitDue(focus).time : "";
+  // 3行(締切/日付/時刻 or 曜日)。時刻があれば時刻、無ければ曜日。残り日数は詳細で。
   return (
     <div
       className={cn(
@@ -339,7 +340,7 @@ function DateBlock({
               urgent ? "text-danger" : "text-muted-foreground",
             )}
           >
-            {WD_EN[d.getDay()]}
+            {time || WD_EN[d.getDay()]}
           </div>
         </>
       ) : (
