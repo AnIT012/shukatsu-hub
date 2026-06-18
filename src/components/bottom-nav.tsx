@@ -47,10 +47,13 @@ const TABS: {
 export function BottomNav({
   view,
   onChange,
+  onReTap,
   hidden = false,
 }: {
   view: NavView;
   onChange: (v: NavView) => void;
+  /** 現在のタブをもう一度タップしたとき(=最上部スクロール等に使う) */
+  onReTap?: (v: NavView) => void;
   /** モーダル表示中は隠す(レイアウトは保持して反転リフローを防ぐ) */
   hidden?: boolean;
 }) {
@@ -74,7 +77,7 @@ export function BottomNav({
               type="button"
               aria-label={t.label}
               aria-current={active ? "page" : undefined}
-              onClick={() => onChange(t.value)}
+              onClick={() => (active ? onReTap?.(t.value) : onChange(t.value))}
               className="group relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-transform active:scale-90"
             >
               <Icon

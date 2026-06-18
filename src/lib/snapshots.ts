@@ -29,7 +29,15 @@ export function pushSnapshot(
     if (applications.length === 0 && events.length === 0) return;
     const payload = JSON.stringify({ applications, events });
     const list = listSnapshots(cacheKey);
-    if (list[0]?.data === payload) return; // 直近と同一ならスキップ
+    // 直近と「中身が同じ」ならスキップ。updatedAt は内容が変わらなくても毎回変わるので
+    // 比較からは除外する(でないと実質的に毎回新規スナップショットになり15枠がすぐ埋まる)。
+    const omitUpdated = (k: string, v: unknown) =>
+      k === "updatedAt" ? undefined : v;
+    const sig = JSON.stringify({ applications, events }, omitUpdated);
+    const prevSig = list[0]
+      ? JSON.stringify(JSON.parse(list[0].data), omitUpdated)
+      : null;
+    if (sig === prevSig) return; // 直近と同一ならスキップ
     const snap: Snapshot = {
       at: new Date().toISOString(),
       apps: applications.length,

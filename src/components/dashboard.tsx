@@ -9,6 +9,7 @@ import {
   CloudOff,
   HelpCircle,
   Inbox,
+  PartyPopper,
   Plus,
   RefreshCw,
   SearchX,
@@ -18,8 +19,10 @@ import type { Application, Filters, Priority, SortDir, SortKey } from "@/lib/typ
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
 import {
+  effortSummary,
   getStageNextAction,
   hasThisWeekStageTask,
+  passedToday,
   situationOf,
   thisWeekStageTaskCount,
 } from "@/lib/next-action";
@@ -29,9 +32,11 @@ import {
   LS_FEEDBACK_KEY,
   LS_LEGAL_KEY,
   LS_ONBOARDED_KEY,
+  PASSED_LABEL,
   SAMPLE_APP_ID,
   STEP_KIND_LABEL,
 } from "@/lib/constants";
+import { CompanionComment } from "@/components/companion-comment";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -108,8 +113,14 @@ export function Dashboard() {
   }>({ x: 0, y: 0, axis: "", w: 0 });
   const fileRef = useRef<HTMLInputElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const paneRefs = useRef<(HTMLDivElement | null)[]>([]);
   const viewIdxRef = useRef(0);
   const dragXRef = useRef(0);
+
+  // 現在のタブをもう一度タップ → そのページを最上部へスムーズスクロール
+  const handleReTap = (v: NavView) => {
+    paneRefs.current[VIEWS.indexOf(v)]?.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   // 横スワイプ中は縦スクロールを完全ロック(非passiveで touchmove を preventDefault)
   useEffect(() => {
@@ -264,6 +275,23 @@ export function Dashboard() {
       passed: applications.filter((a) => a.result === "passed").length,
       thisWeek: applications.reduce((n, a) => n + thisWeekStageTaskCount(a), 0),
     }),
+    [applications],
+  );
+
+  // 努力サマリー(積み上げ): 書類/Webテスト/面接GD の「やった」数
+  const effort = useMemo(() => effortSummary(applications), [applications]);
+  // 伴走コメントの段階を決める活動量 = やったタスク総数 ＋ 参加済イベント数
+  const companionScore = useMemo(
+    () =>
+      effort.docs +
+      effort.webtest +
+      effort.interview +
+      events.filter((e) => e.status === "attended").length,
+    [effort, events],
+  );
+  // 今日 合格(内定/内々定/参加確定)になった社(終日その日だけ祝う)。サンプルは除外。
+  const celebrate = useMemo(
+    () => passedToday(applications.filter((a) => a.id !== SAMPLE_APP_ID)),
     [applications],
   );
 
@@ -468,23 +496,27 @@ export function Dashboard() {
               onChange={handleImportFile}
             />
             <RefreshButton />
-            {view !== "settings" && (
-              <Button
-                size="icon"
-                className="h-9 w-9"
-                data-tour="add"
-                aria-label={view === "events" ? "イベントを追加" : "企業を追加"}
-                onClick={() => {
-                  setAddSpin(true);
-                  window.setTimeout(() => setAddSpin(false), 500);
-                  view === "events" ? handleAddEvent() : setAddOpen(true);
-                }}
-              >
-                <Plus
-                  className={cn("h-4.5 w-4.5", addSpin && "animate-spin-once")}
-                />
-              </Button>
-            )}
+            {/* 設定タブでは ＋ を opacity でふっと収納(レイアウトは保持) */}
+            <Button
+              size="icon"
+              className={cn(
+                "h-9 w-9 transition-opacity duration-200",
+                view === "settings" && "pointer-events-none opacity-0",
+              )}
+              data-tour="add"
+              aria-hidden={view === "settings"}
+              tabIndex={view === "settings" ? -1 : 0}
+              aria-label={view === "events" ? "イベントを追加" : "企業を追加"}
+              onClick={() => {
+                setAddSpin(true);
+                window.setTimeout(() => setAddSpin(false), 500);
+                view === "events" ? handleAddEvent() : setAddOpen(true);
+              }}
+            >
+              <Plus
+                className={cn("h-4.5 w-4.5", addSpin && "animate-spin-once")}
+              />
+            </Button>
           </div>
         </div>
       </header>
@@ -505,6 +537,9 @@ export function Dashboard() {
         >
           {/* 選考 */}
           <div
+            ref={(el) => {
+              paneRefs.current[0] = el;
+            }}
             className={cn(
               "h-full w-1/3 shrink-0 overscroll-none scrollbar-thin",
               // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
@@ -520,7 +555,14 @@ export function Dashboard() {
                 />
               ) : (
                 <>
-                  <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-0.5 text-[13px]">
+                  {celebrate.length > 0 && (
+                    <CelebrationBanner apps={celebrate} />
+                  )}
+
+                  <CompanionComment score={companionScore} />
+
+                  {/* 努力サマリー(積み上げ): 今週やること＋やった数(書類/Webテスト/面接GD) */}
+                  <div className="mt-2.5 flex flex-wrap items-baseline gap-x-5 gap-y-1 px-0.5 text-[13px]">
                     <span className="text-muted-foreground">
                       今週やること{" "}
                       <b className="text-[18px] font-bold text-danger">
@@ -528,15 +570,21 @@ export function Dashboard() {
                       </b>
                     </span>
                     <span className="text-muted-foreground">
-                      進行中{" "}
+                      書類{" "}
                       <b className="text-[16px] font-bold text-foreground">
-                        {stats.inProgress}
+                        {effort.docs}
                       </b>
                     </span>
                     <span className="text-muted-foreground">
-                      合格{" "}
-                      <b className="text-[16px] font-bold text-success">
-                        {stats.passed}
+                      Webテスト{" "}
+                      <b className="text-[16px] font-bold text-foreground">
+                        {effort.webtest}
+                      </b>
+                    </span>
+                    <span className="text-muted-foreground">
+                      面接・GD{" "}
+                      <b className="text-[16px] font-bold text-foreground">
+                        {effort.interview}
                       </b>
                     </span>
                   </div>
@@ -592,6 +640,9 @@ export function Dashboard() {
           </div>
           {/* イベント */}
           <div
+            ref={(el) => {
+              paneRefs.current[1] = el;
+            }}
             className={cn(
               "h-full w-1/3 shrink-0 overscroll-none scrollbar-thin",
               // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
@@ -607,6 +658,9 @@ export function Dashboard() {
           </div>
           {/* 設定 */}
           <div
+            ref={(el) => {
+              paneRefs.current[2] = el;
+            }}
             className={cn(
               "h-full w-1/3 shrink-0 overscroll-none scrollbar-thin",
               // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
@@ -630,7 +684,7 @@ export function Dashboard() {
       </main>
 
       {/* 下タブは常時固定表示(隠さない)。モーダルは中央に出るので競合しない */}
-      <BottomNav view={view} onChange={setView} />
+      <BottomNav view={view} onChange={setView} onReTap={handleReTap} />
 
       <AddApplicationDialog
         open={addOpen}
@@ -776,6 +830,31 @@ function SaveIndicator() {
     );
   }
   return null;
+}
+
+// 今日 合格(内定/内々定/参加確定)になった社を、その日だけ祝う(終日)。
+function CelebrationBanner({ apps }: { apps: Application[] }) {
+  return (
+    <div className="mb-3 overflow-hidden rounded-2xl bg-gradient-to-r from-[hsl(var(--success)/0.16)] to-[hsl(var(--primary)/0.16)] p-3.5 ring-1 ring-[hsl(var(--success)/0.4)]">
+      <div className="flex items-center gap-2">
+        <PartyPopper className="animate-evo-rise h-5 w-5 text-success" />
+        <span className="text-[15px] font-bold">おめでとう！🎉</span>
+      </div>
+      <div className="mt-1.5 space-y-0.5">
+        {apps.map((a) => (
+          <div key={a.id} className="text-[13px]">
+            <b className="font-semibold">{a.company || "(企業)"}</b>
+            <span className="ml-1.5 font-medium text-success">
+              {PASSED_LABEL[a.selectionType]}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-1.5 text-[12px] text-muted-foreground">
+        今日のあなた、本当によく頑張った。
+      </p>
+    </div>
+  );
 }
 
 function AnnouncementBanner({ applications }: { applications: Application[] }) {

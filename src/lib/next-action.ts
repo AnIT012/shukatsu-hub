@@ -6,6 +6,7 @@ import type {
   SelectionStep,
   SelectionTask,
   Situation,
+  StepKind,
 } from "./types";
 import { dueInstant, isDueThisWeekOrOverdue } from "./date";
 
@@ -369,4 +370,61 @@ export function thisWeekStageTaskCount(app: Application): number {
 
 export function hasThisWeekStageTask(app: Application): boolean {
   return thisWeekStageTaskCount(app) > 0;
+}
+
+// ---- 努力サマリー(積み上げ): 全社の「やった」タスクを種別グループで集計 ----
+
+const DOC_KINDS: StepKind[] = ["es"];
+const WEBTEST_KINDS: StepKind[] = ["web_test"];
+const INTERVIEW_KINDS: StepKind[] = [
+  "gd",
+  "interview",
+  "final_interview",
+  "video",
+];
+
+export interface EffortSummary {
+  /** 書類(ES提出)をやった数 */
+  docs: number;
+  /** Webテストをやった数 */
+  webtest: number;
+  /** 面接/GD(録画含む)をやった数 */
+  interview: number;
+}
+
+/** 全社のやったタスクを「書類/Webテスト/面接GD」で数える(結果に関わらず=努力そのもの) */
+export function effortSummary(apps: Application[]): EffortSummary {
+  let docs = 0;
+  let webtest = 0;
+  let interview = 0;
+  for (const app of apps) {
+    for (const st of app.stages) {
+      for (const t of st.tasks) {
+        if (!t.done) continue;
+        if (DOC_KINDS.includes(t.kind)) docs++;
+        else if (WEBTEST_KINDS.includes(t.kind)) webtest++;
+        else if (INTERVIEW_KINDS.includes(t.kind)) interview++;
+      }
+    }
+  }
+  return { docs, webtest, interview };
+}
+
+/** ローカル基準の年月日キー(updatedAt と today を同じ基準で比較する用) */
+function localDayKey(d: Date): number {
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+/**
+ * 「今日 合格(内定/内々定/参加確定)になった社」を返す。終日その日だけ祝う用。
+ * result(段階から導出) と 更新日 から毎回算出する(独立フラグは持たない=取り消しは自動で吸収)。
+ * 途中の段階通過はスルー(全体結果が passed の社のみ)。
+ */
+export function passedToday(apps: Application[]): Application[] {
+  const todayKey = localDayKey(new Date());
+  return apps.filter(
+    (a) =>
+      a.result === "passed" &&
+      localDayKey(new Date(a.updatedAt)) === todayKey,
+  );
 }

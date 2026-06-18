@@ -702,11 +702,12 @@ function TaskRow({
               )}
             >
               {STEP_KIND_LABEL[task.kind]}
-              {task.name && (
-                <span className="ml-1 font-normal text-muted-foreground">
-                  {task.name}
-                </span>
-              )}
+              {task.name.trim() &&
+                task.name.trim() !== STEP_KIND_LABEL[task.kind] && (
+                  <span className="ml-1 font-normal text-muted-foreground">
+                    {task.name}
+                  </span>
+                )}
             </div>
           </button>
           <span className="shrink-0 text-[11px] text-muted-foreground">
