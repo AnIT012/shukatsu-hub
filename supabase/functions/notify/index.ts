@@ -181,8 +181,9 @@ function buildPayload(
   for (const it of selPick) lines.push(fmtItem("選　　考", it));
   for (const it of evPick) lines.push(fmtItem("イベント", it));
 
-  // iOS が上にアプリ名「就活 Hub」を出すので、タイトルに名前は入れない(重複回避)
-  const title = notify.mode === "lead" ? "まもなくの予定" : "直近の予定";
+  // タイトルは「就活Hub｜直近の予定」形式(しょー希望)
+  const title =
+    notify.mode === "lead" ? "就活Hub｜まもなくの予定" : "就活Hub｜直近の予定";
   return { title, body: lines.join("\n"), url: "/" };
 }
 
