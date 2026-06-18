@@ -191,11 +191,15 @@ Deno.serve(async (req) => {
     }
   }
 
-  // body に {"force":true} があれば時刻ゲートを無視して即送信(手動テスト用)
+  // body オプション(手動テスト用):
+  //   {"force":true}      … 時刻ゲートを無視して即送信
+  //   {"userId":"<uuid>"} … その1ユーザーだけに限定(他人に飛ばさない)
   let force = false;
+  let onlyUser: string | null = null;
   try {
     const body = await req.json();
     force = body?.force === true || body?.test === true;
+    if (typeof body?.userId === "string" && body.userId) onlyUser = body.userId;
   } catch {
     // body 無し/JSON でない → 通常実行
   }
@@ -217,12 +221,14 @@ Deno.serve(async (req) => {
   let failed = 0;
 
   for (const row of rows ?? []) {
+    // userId 指定があればその人だけ(手動テストで他人に飛ばさない)
+    if (onlyUser && (row as any).user_id !== onlyUser) continue;
     const d = (row as any).data ?? {};
     const notify = d.notify;
     if (!notify?.enabled) continue;
-    // ユーザーが設定した時刻(JST)の回だけ送る
+    // ユーザーが設定した時刻(JST)の回だけ送る(force 時は無視)
     const userHour = typeof notify.hour === "number" ? notify.hour : 8;
-    if (userHour !== hour) continue;
+    if (!force && userHour !== hour) continue;
     const subs: any[] = d.pushSubscriptions ?? [];
     if (!subs.length) continue;
 
