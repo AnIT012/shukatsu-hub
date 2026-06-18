@@ -76,16 +76,42 @@ interface Item {
 function collectSteps(apps: any[], today: string): Item[] {
   const out: Item[] = [];
   for (const app of apps ?? []) {
-    for (const s of app.steps ?? []) {
-      if (s.status === "done") continue;
-      const fd = focusDate(s.dueAt, s.heldAt, s.dueDone, today);
-      if (!fd) continue;
-      out.push({
-        company: app.company || "(企業未設定)",
-        label: KIND_LABEL[s.kind] ?? "予定",
-        day: dateOnly(fd),
-        date: fd,
-      });
+    const stages = app.stages;
+    if (Array.isArray(stages) && stages.length) {
+      // 新モデル(段階＞タスク)
+      for (const st of stages) {
+        // 決着した段階(通過/不合格/辞退)はスキップ
+        if (
+          st.result === "passed" ||
+          st.result === "failed" ||
+          st.result === "declined"
+        ) {
+          continue;
+        }
+        for (const t of st.tasks ?? []) {
+          const fd = focusDate(t.dueAt, t.heldAt, t.done, today);
+          if (!fd) continue;
+          out.push({
+            company: app.company || "(企業未設定)",
+            label: KIND_LABEL[t.kind] ?? "予定",
+            day: dateOnly(fd),
+            date: fd,
+          });
+        }
+      }
+    } else {
+      // 旧モデル(移行前データ)へのフォールバック
+      for (const s of app.steps ?? []) {
+        if (s.status === "done") continue;
+        const fd = focusDate(s.dueAt, s.heldAt, s.dueDone, today);
+        if (!fd) continue;
+        out.push({
+          company: app.company || "(企業未設定)",
+          label: KIND_LABEL[s.kind] ?? "予定",
+          day: dateOnly(fd),
+          date: fd,
+        });
+      }
     }
   }
   return out;
@@ -94,7 +120,8 @@ function collectSteps(apps: any[], today: string): Item[] {
 function collectEvents(events: any[], today: string): Item[] {
   const out: Item[] = [];
   for (const ev of events ?? []) {
-    if (ev.status === "attended") continue;
+    // 参加済/辞退はスキップ(todo のみ通知)
+    if (ev.status !== "todo") continue;
     const fd = focusDate(ev.applyBy, ev.heldAt, ev.applyDone, today);
     if (!fd) continue;
     out.push({
