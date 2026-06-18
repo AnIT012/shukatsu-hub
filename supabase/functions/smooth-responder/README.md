@@ -1,6 +1,8 @@
-# 通知配信 (notify) のデプロイ手順
+# 通知配信 (smooth-responder) のデプロイ手順
 
-毎朝 cron から叩かれ、通知ONのユーザーへ Web Push を送る Edge Function。
+毎時 cron から叩かれ、通知ONのユーザーへ Web Push を送る Edge Function。
+※Supabase 上の関数 slug は `smooth-responder`（作成時の自動名・rename 不可）。
+このフォルダ名＝デプロイ slug に揃えてある。
 
 ## 1. シークレットを設定
 
@@ -22,13 +24,13 @@ supabase secrets set \
 cron(サーバー間)から叩くので JWT 検証は切る。
 
 ```bash
-supabase functions deploy notify --no-verify-jwt
+supabase functions deploy smooth-responder --no-verify-jwt
 ```
 
 ## 3. 動作確認（手動で1回叩く）
 
 ```bash
-curl -X POST "https://<project-ref>.supabase.co/functions/v1/notify" \
+curl -X POST "https://<project-ref>.supabase.co/functions/v1/smooth-responder" \
   -H "Authorization: Bearer <CRON_SECRET>"
 # => {"today":"2026-06-18","users":N,"sent":M,"failed":0}
 ```
