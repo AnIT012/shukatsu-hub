@@ -37,6 +37,7 @@ import {
 import { newId } from "./utils";
 import { DATA_TABLE, supabase } from "./supabase";
 import { normalizeApps, normalizeEvents } from "./io";
+import { pushSnapshot, listSnapshots, type Snapshot } from "./snapshots";
 import { deriveResult } from "./next-action";
 import { buildSampleApplications } from "./sample";
 import { useAuth } from "./auth";
@@ -144,6 +145,8 @@ interface StoreValue {
   replaceAll: (apps: Application[]) => void;
   /** 移行前バックアップ等の生JSON文字列から applications/events を復元。成功で true */
   restoreFromRaw: (raw: string) => boolean;
+  /** 自動ローカルバックアップ(復元ポイント)の一覧を取得(新しい順) */
+  listLocalSnapshots: () => Snapshot[];
   /** 全データ(選考+イベント)を空にする。設定の「全データ削除」用。 */
   clearAll: () => void;
   /** 新規(空)ユーザーにだけサンプルを投入。投入したら true。既存データは絶対に壊さない。 */
@@ -287,6 +290,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const hydratedRef = useRef(false);
   const dirtyRef = useRef(false);
   const seedTriedRef = useRef(false);
+  // 楽観ロック用: この端末が最後にクラウドから読んだ updated_at。
+  // 書き込み時に「自分の読んだ版のまま」なら上書きOK、変わっていれば別端末が更新したと判断する。
+  const baseUpdatedAtRef = useRef<string>("");
   // saveState の最新値を同期参照(オフライン復帰の検知用・クロージャの陳腐化回避)
   const saveStateRef = useRef<SaveState>("idle");
   useEffect(() => {
@@ -357,21 +363,98 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!cached || !cached.dirty) return false;
     // 直前がオフライン表示なら「復帰して同期できた瞬間」→ 同期完了アニメ(トースト)を1回出す
     const recovering = saveStateRef.current === "offline";
+    const docObj = {
+      applications: cached.applications,
+      events: cached.events,
+      notify: cached.notify,
+      pushSubscriptions: cached.pushSubscriptions,
+      ...(cached.theme ? { theme: cached.theme } : {}),
+      ...(cached.font ? { font: cached.font } : {}),
+    };
+    const newUpdatedAt = nowISO();
+    const base = baseUpdatedAtRef.current;
     try {
-      const { error } = await supabase.from(DATA_TABLE).upsert({
-        user_id: user.id,
-        data: {
-          applications: cached.applications,
-          events: cached.events,
-          notify: cached.notify,
-          pushSubscriptions: cached.pushSubscriptions,
-          ...(cached.theme ? { theme: cached.theme } : {}),
-          ...(cached.font ? { font: cached.font } : {}),
-        },
-        updated_at: cached.savedAt || nowISO(),
-      });
-      if (error) throw error;
-      // 送信済み → 同じ内容で dirty を下ろして記録
+      let wrote = false;
+      // 楽観ロック: 自分が最後に読んだ版(base)のままなら上書きする。
+      if (base) {
+        const { data, error } = await supabase
+          .from(DATA_TABLE)
+          .update({ data: docObj, updated_at: newUpdatedAt })
+          .eq("user_id", user.id)
+          .eq("updated_at", base)
+          .select("updated_at");
+        if (error) throw error;
+        if (data && data.length > 0) {
+          wrote = true;
+          baseUpdatedAtRef.current = (data[0].updated_at as string) || newUpdatedAt;
+        }
+      }
+      if (!wrote) {
+        // base 無し(初回) or 不一致(別端末が更新) → 現状を確認
+        const { data: cur, error: readErr } = await supabase
+          .from(DATA_TABLE)
+          .select("data, updated_at")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (readErr) throw readErr;
+        if (!cur) {
+          // 行が無い → 新規作成
+          const { data: ins, error: insErr } = await supabase
+            .from(DATA_TABLE)
+            .upsert({ user_id: user.id, data: docObj, updated_at: newUpdatedAt })
+            .select("updated_at");
+          if (insErr) throw insErr;
+          baseUpdatedAtRef.current =
+            (ins?.[0]?.updated_at as string) || newUpdatedAt;
+        } else {
+          // 競合: 別端末がクラウドを更新していた。安全側=クラウドを正として取り込む。
+          // ただしこの端末の未送信分は復元ポイントに退避してから取り込む(必ず戻せる)。
+          pushSnapshot(cacheKey, cached.applications, cached.events);
+          const remote = cur.data;
+          const rApps = Array.isArray(remote)
+            ? normalizeApps(remote)
+            : normalizeApps((remote as any)?.applications);
+          const rEvs = Array.isArray(remote)
+            ? []
+            : normalizeEvents((remote as any)?.events);
+          const rNtf = {
+            ...DEFAULT_NOTIFY,
+            ...((remote as any)?.notify ?? {}),
+          };
+          const rSubs = Array.isArray((remote as any)?.pushSubscriptions)
+            ? (remote as any).pushSubscriptions
+            : [];
+          hydratedRef.current = false;
+          setApplications(rApps);
+          setEvents(rEvs);
+          setNotifyState(rNtf);
+          setPushSubscriptions(rSubs);
+          if ((remote as any)?.theme) setTheme((remote as any).theme);
+          if ((remote as any)?.font) setFont((remote as any).font);
+          baseUpdatedAtRef.current = (cur.updated_at as string) || "";
+          writeLocal(
+            cacheKey,
+            {
+              applications: rApps,
+              events: rEvs,
+              notify: rNtf,
+              pushSubscriptions: rSubs,
+              theme: ((remote as any)?.theme as Theme) ?? cached.theme ?? "indigo",
+              font: ((remote as any)?.font as FontChoice) ?? cached.font ?? "system",
+              savedAt: baseUpdatedAtRef.current || newUpdatedAt,
+            },
+            false,
+          );
+          dirtyRef.current = false;
+          setSaveState("saved");
+          setLastSavedAt(Date.now());
+          toast.warning("別の端末の更新を反映しました", {
+            description: "この端末の未送信分は『設定 > 復元』から戻せます",
+          });
+          return false;
+        }
+      }
+      // 送信成功 → 同じ内容で dirty を下ろして記録 + 復元ポイントを退避
       writeLocal(
         cacheKey,
         {
@@ -381,10 +464,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           pushSubscriptions: cached.pushSubscriptions,
           theme: cached.theme ?? "indigo",
           font: cached.font ?? "system",
-          savedAt: cached.savedAt || nowISO(),
+          savedAt: baseUpdatedAtRef.current || newUpdatedAt,
         },
         false,
       );
+      pushSnapshot(cacheKey, cached.applications, cached.events);
       dirtyRef.current = false;
       setSaveState("saved");
       setLastSavedAt(Date.now());
@@ -423,18 +507,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from(DATA_TABLE)
-        .select("data")
+        .select("data, updated_at")
         .eq("user_id", user.id)
         .maybeSingle();
       if (error) throw error;
       const remote = data?.data;
+      baseUpdatedAtRef.current =
+        typeof data?.updated_at === "string" ? data.updated_at : "";
       hydratedRef.current = false;
       if (Array.isArray(remote)) {
         setApplications(normalizeApps(remote));
         setEvents([]);
       } else if (remote && typeof remote === "object") {
-        setApplications(normalizeApps((remote as any).applications));
-        setEvents(normalizeEvents((remote as any).events));
+        const a = normalizeApps((remote as any).applications);
+        const e = normalizeEvents((remote as any).events);
+        setApplications(a);
+        setEvents(e);
         setNotifyState({ ...DEFAULT_NOTIFY, ...((remote as any).notify ?? {}) });
         setPushSubscriptions(
           Array.isArray((remote as any).pushSubscriptions)
@@ -443,6 +531,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         );
         if ((remote as any).theme) setTheme((remote as any).theme);
         if ((remote as any).font) setFont((remote as any).font);
+        pushSnapshot(cacheKey, a, e);
       }
       setSaveState("saved");
       setLastSavedAt(Date.now());
@@ -491,6 +580,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
         // 端末に未送信(dirty)の編集があるなら「新しい方を採用」。
         // ローカルが新しければ表示を保持してクラウドを追従させる(リロード時の巻き戻し防止)。
+        // 楽観ロックの基準: 今読んだクラウドの版を記録
+        baseUpdatedAtRef.current = remoteUpdatedAt;
+
         if (cached?.dirty) {
           const localNewer =
             !remoteUpdatedAt ||
@@ -502,12 +594,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             return;
           }
           // クラウドの方が新しい → 以降でクラウドを適用(ローカル編集は破棄)。
-          // 他端末の更新を優先したことをユーザーに知らせる(競合警告)。
+          // 破棄前に復元ポイントへ退避し、他端末の更新を優先したことを知らせる。
           if (!cancelled) {
+            pushSnapshot(cacheKey, cached.applications, cached.events);
             dirtyRef.current = false;
             toast.warning("別の端末の更新を反映しました", {
               description:
-                "この端末のオフライン中の変更は、より新しい更新で置き換えられました",
+                "この端末の変更は『設定 > 復元』から戻せます",
             });
           }
         }
@@ -543,20 +636,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             },
             false,
           );
+          // 読み込んだクラウド状態を復元ポイントに退避
+          pushSnapshot(cacheKey, apps, evs);
         } else {
           // クラウドが空 → ローカルのキャッシュ/レガシーを移行
           const legacy = cached ?? readLocal(LS_KEY);
           if (legacy && legacy.applications.length > 0) {
             setApplications(legacy.applications);
             setEvents(legacy.events);
-            await supabase.from(DATA_TABLE).upsert({
-              user_id: user.id,
-              data: {
-                applications: legacy.applications,
-                events: legacy.events,
-              },
-              updated_at: nowISO(),
-            });
+            const legacyAt = nowISO();
+            const { data: up } = await supabase
+              .from(DATA_TABLE)
+              .upsert({
+                user_id: user.id,
+                data: {
+                  applications: legacy.applications,
+                  events: legacy.events,
+                },
+                updated_at: legacyAt,
+              })
+              .select("updated_at");
+            baseUpdatedAtRef.current =
+              (up?.[0]?.updated_at as string) || legacyAt;
           } else {
             setApplications([]);
             setEvents([]);
@@ -638,11 +739,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
       const { data, error } = await supabase!
         .from(DATA_TABLE)
-        .select("data")
+        .select("data, updated_at")
         .eq("user_id", user.id)
         .maybeSingle();
       if (error || !data) return;
       const remote = data.data;
+      baseUpdatedAtRef.current =
+        typeof data.updated_at === "string" ? data.updated_at : "";
       hydratedRef.current = false;
       if (Array.isArray(remote)) {
         setApplications(normalizeApps(remote));
@@ -993,6 +1096,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const listLocalSnapshots = useCallback<StoreValue["listLocalSnapshots"]>(
+    () => listSnapshots(cacheKey),
+    [cacheKey],
+  );
+
   const clearAll = useCallback(() => {
     setApplications([]);
     setEvents([]);
@@ -1139,6 +1247,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     deleteEsEntry,
     replaceAll,
     restoreFromRaw,
+    listLocalSnapshots,
     clearAll,
     seedSampleIfEmpty,
     events,

@@ -74,6 +74,30 @@ export async function enablePush(): Promise<PushSubscriptionJSON | null> {
   }
 }
 
+export type TestNotifyResult = "ok" | "unsupported" | "denied" | "nosw";
+
+/**
+ * この端末で即座にテスト通知を表示する(サーバー/cron を介さない)。
+ * 通知の「許可 → Service Worker → 表示」経路が生きているかを一発で確認する用。
+ */
+export async function showTestNotification(): Promise<TestNotifyResult> {
+  if (!pushSupported()) return "unsupported";
+  if (Notification.permission !== "granted") {
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") return "denied";
+  }
+  const reg = await getRegistration();
+  if (!reg) return "nosw";
+  await reg.showNotification("就活Hub｜テスト通知", {
+    body: "この端末で通知が正しく表示されています ✅",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    tag: "shukatsu-test",
+    data: { url: "/" },
+  } as NotificationOptions);
+  return "ok";
+}
+
 /** この端末の購読を解除 */
 export async function disablePush(): Promise<void> {
   if (!pushSupported()) return;

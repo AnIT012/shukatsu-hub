@@ -10,10 +10,12 @@ import {
   Download,
   FileText,
   HelpCircle,
+  History,
   LogOut,
   MessageSquare,
   Palette,
   RotateCcw,
+  Send,
   Smartphone,
   Trash2,
   Type,
@@ -29,7 +31,9 @@ import {
   isIOS,
   isStandalone,
   pushSupported,
+  showTestNotification,
 } from "@/lib/push";
+import type { Snapshot } from "@/lib/snapshots";
 import { submitFeedback } from "@/lib/feedback";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -185,6 +189,7 @@ function SettingsBody({
     addPushSubscription,
     clearAll,
     restoreFromRaw,
+    listLocalSnapshots,
     applications,
     events,
   } = useStore();
@@ -193,6 +198,10 @@ function SettingsBody({
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [hasV2Backup, setHasV2Backup] = useState(false);
   const [needsHome, setNeedsHome] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [showSnapshots, setShowSnapshots] = useState(false);
+  const [confirmSnap, setConfirmSnap] = useState<Snapshot | null>(null);
 
   useEffect(() => {
     setNeedsHome(isIOS() && !isStandalone());
@@ -229,6 +238,37 @@ function SettingsBody({
     addPushSubscription(sub);
     setNotify({ enabled: true });
     toast.success("通知をオンにしました");
+  };
+
+  const handleTestNotify = async () => {
+    setTesting(true);
+    try {
+      const r = await showTestNotification();
+      if (r === "ok") {
+        toast.success("テスト通知を送りました", {
+          description: "数秒以内に届けば、この端末の通知表示は正常です",
+        });
+      } else if (r === "unsupported") {
+        toast.error("この端末は通知に対応していません");
+      } else if (r === "denied") {
+        toast.error("通知が許可されていません", {
+          description:
+            isIOS() && !isStandalone()
+              ? "「ホーム画面に追加」したアプリから許可してください"
+              : "ブラウザ/OSの設定で通知を許可してください",
+        });
+      } else {
+        toast.error("Service Worker を準備できませんでした");
+      }
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const openSnapshots = () => {
+    const list = listLocalSnapshots();
+    setSnapshots(list);
+    setShowSnapshots(true);
   };
 
   const toggleLead = (d: number) => {
@@ -338,6 +378,18 @@ function SettingsBody({
                 <Smartphone className="h-3.5 w-3.5 shrink-0" />
                 iPhoneは「ホーム画面に追加」してから通知をオンにしてください
               </p>
+            )}
+
+            {notify.enabled && (
+              <button
+                type="button"
+                onClick={handleTestNotify}
+                disabled={testing}
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg border py-2 text-[13px] font-medium text-primary transition-colors hover:bg-accent disabled:opacity-50"
+              >
+                <Send className="h-3.5 w-3.5" />
+                {testing ? "送信中…" : "テスト通知を送る"}
+              </button>
             )}
 
             {notify.enabled && (
@@ -517,6 +569,90 @@ function SettingsBody({
                   onClick={() => setConfirmRestore(true)}
                 />
               ))}
+            {showSnapshots ? (
+              <div className="border-t">
+                <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
+                  <span className="text-[12px] font-medium text-muted-foreground">
+                    復元ポイント（新しい順・この端末に自動保存）
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSnapshots(false);
+                      setConfirmSnap(null);
+                    }}
+                    className="text-[12px] font-medium text-primary"
+                  >
+                    閉じる
+                  </button>
+                </div>
+                {snapshots.length === 0 ? (
+                  <p className="px-3 py-3 text-[12px] text-muted-foreground">
+                    まだ復元ポイントがありません（保存のたびに自動で作られます）
+                  </p>
+                ) : (
+                  snapshots.map((s, i) => (
+                    <div key={i} className="border-t px-3 py-2">
+                      {confirmSnap === s ? (
+                        <div className="flex items-center gap-2">
+                          <span className="flex-1 text-[12px]">
+                            この時点に戻す？（現在の表示が置き換わります）
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setConfirmSnap(null)}
+                          >
+                            やめる
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              if (restoreFromRaw(s.data)) {
+                                toast.success("復元しました", {
+                                  description: "内容を確認してください",
+                                });
+                              } else {
+                                toast.error("復元に失敗しました");
+                              }
+                              setConfirmSnap(null);
+                              setShowSnapshots(false);
+                            }}
+                          >
+                            戻す
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmSnap(s)}
+                          className="flex w-full items-center gap-2 text-left"
+                        >
+                          <History className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="flex-1 text-[13px]">
+                            {new Date(s.at).toLocaleString("ja-JP", {
+                              month: "numeric",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            選考{s.apps}・予定{s.events}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <Row
+                icon={<History className="h-4 w-4" />}
+                label="復元ポイント（自動バックアップ）"
+                onClick={openSnapshots}
+              />
+            )}
             {confirmClear ? (
               <div className="flex items-center gap-2 border-t bg-[hsl(var(--danger)/0.06)] px-3 py-2.5">
                 <span className="flex-1 text-[13px]">
