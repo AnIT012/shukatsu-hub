@@ -176,8 +176,8 @@ function buildPayload(
   if (selPick.length) lines.push("【選考】" + selPick.map(fmtItem).join(" / "));
   if (evPick.length) lines.push("【イベント】" + evPick.map(fmtItem).join(" / "));
 
-  const title =
-    notify.mode === "lead" ? "就活Hub｜まもなくの予定" : "就活Hub｜今日の予定";
+  // iOS が上にアプリ名「就活 Hub」を出すので、タイトルに名前は入れない(重複回避)
+  const title = notify.mode === "lead" ? "まもなくの予定" : "今日の予定";
   return { title, body: lines.join("\n"), url: "/" };
 }
 

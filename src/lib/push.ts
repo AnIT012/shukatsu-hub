@@ -88,7 +88,7 @@ export async function showTestNotification(): Promise<TestNotifyResult> {
   }
   const reg = await getRegistration();
   if (!reg) return "nosw";
-  await reg.showNotification("就活Hub｜テスト通知", {
+  await reg.showNotification("テスト通知", {
     body: "この端末で通知が正しく表示されています ✅",
     icon: "/icon-192.png",
     badge: "/icon-192.png",
