@@ -502,16 +502,19 @@ export function Dashboard() {
               onChange={handleImportFile}
             />
             <RefreshButton />
-            {/* 選考/イベント以外(進捗・設定)では ＋ を opacity でふっと収納/復活 */}
-            {/* transition は inline で固定(Button基底の transition に上書きされて効かない問題の回避) */}
+            {/* 選考/イベント以外(進捗・設定)では ＋ を縮んでクルッと収納→ポンと復活 */}
+            {/* transition は inline で固定(Button基底の transition に上書きされる問題の回避) */}
             <Button
               size="icon"
-              style={{ transition: "opacity 0.2s ease" }}
+              style={{
+                transition:
+                  "opacity 0.22s ease, transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              }}
               className={cn(
                 "h-9 w-9",
                 view !== "selection" &&
                   view !== "events" &&
-                  "pointer-events-none opacity-0",
+                  "pointer-events-none -rotate-[30deg] scale-50 opacity-0",
               )}
               data-tour="add"
               aria-hidden={view !== "selection" && view !== "events"}
