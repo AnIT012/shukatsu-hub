@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 
 const TERMINAL = Number.POSITIVE_INFINITY;
 const NO_DATE = Number.MAX_SAFE_INTEGER;
+const WD_JP = ["日", "月", "火", "水", "木", "金", "土"];
 
 const DEFAULT_FILTERS: EventFilters = { statuses: [], onlyThisWeek: false };
 
@@ -173,11 +174,13 @@ export function EventsView({
                 >
                   <span
                     className={cn(
-                      "w-9 shrink-0 font-medium",
+                      "w-14 shrink-0 font-medium",
                       x.urgent ? "text-danger" : "text-primary",
                     )}
                   >
-                    {d ? `${d.getMonth() + 1}/${d.getDate()}` : "未定"}
+                    {d
+                      ? `${d.getMonth() + 1}/${d.getDate()}(${WD_JP[d.getDay()]})`
+                      : "未定"}
                   </span>
                   <span className="min-w-0 flex-1 truncate">
                     <span className="font-medium">

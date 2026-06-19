@@ -77,6 +77,7 @@ const DEFAULT_FILTERS: Filters = {
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
 
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WD_JP = ["日", "月", "火", "水", "木", "金", "土"];
 
 // 下タブと同じ並び。スワイプ(進捗⇄選考⇄イベント⇄設定)のインデックス算出に使う
 const VIEWS: NavView[] = ["progress", "selection", "events", "settings"];
@@ -501,11 +502,13 @@ export function Dashboard() {
               onChange={handleImportFile}
             />
             <RefreshButton />
-            {/* 選考/イベント以外(進捗・設定)では ＋ を opacity でふっと収納 */}
+            {/* 選考/イベント以外(進捗・設定)では ＋ を opacity でふっと収納/復活 */}
+            {/* transition は inline で固定(Button基底の transition に上書きされて効かない問題の回避) */}
             <Button
               size="icon"
+              style={{ transition: "opacity 0.2s ease" }}
               className={cn(
-                "h-9 w-9 transition-opacity duration-200",
+                "h-9 w-9",
                 view !== "selection" &&
                   view !== "events" &&
                   "pointer-events-none opacity-0",
@@ -940,11 +943,13 @@ function AnnouncementBanner({ applications }: { applications: Application[] }) {
               >
                 <span
                   className={cn(
-                    "w-9 shrink-0 font-medium",
+                    "w-14 shrink-0 font-medium",
                     x.urgent ? "text-danger" : "text-primary",
                   )}
                 >
-                  {d ? `${d.getMonth() + 1}/${d.getDate()}` : "未定"}
+                  {d
+                    ? `${d.getMonth() + 1}/${d.getDate()}(${WD_JP[d.getDay()]})`
+                    : "未定"}
                 </span>
                 <span className="min-w-0 flex-1 truncate">
                   <span className="font-medium">
