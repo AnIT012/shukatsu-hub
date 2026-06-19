@@ -34,7 +34,6 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 const dateOnly = (s: string) => s.slice(0, 10);
-const timeOf = (s: string) => (s.includes("T") ? s.slice(11, 16) : "");
 
 function jstToday(): string {
   const now = new Date();
@@ -134,60 +133,55 @@ function collectEvents(events: any[], today: string): Item[] {
   return out;
 }
 
-function nearestDay(items: Item[], today: string): Item[] {
-  const future = items.filter((i) => i.day >= today);
-  if (!future.length) return [];
-  const min = future.reduce((a, b) => (a.day < b.day ? a : b)).day;
-  return future.filter((i) => i.day === min);
-}
-
 const WD_JP = ["日", "月", "火", "水", "木", "金", "土"];
 
-// 「選　　考｜6/21(土) サントリー・Webテスト」形式(カテゴリ｜日付(曜日) 企業・ラベル)
-function fmtItem(cat: string, it: Item): string {
+// 「6/21 土｜サントリー・Webテスト」形式(選考/イベント混在・カテゴリ無し)
+function fmtItem(it: Item): string {
   const mo = Number(it.day.slice(5, 7));
   const da = Number(it.day.slice(8, 10));
   const wd = WD_JP[new Date(it.day + "T00:00:00Z").getUTCDay()];
-  const t = timeOf(it.date);
-  const when = `${mo}/${da}(${wd})${t ? " " + t : ""}`;
-  return `${cat}｜${when} ${it.company}・${it.label}`;
+  return `${mo}/${da} ${wd}｜${it.company}・${it.label}`;
 }
 
-function buildPayload(
+type Payload = { title: string; body: string; url: string };
+
+// 選考・イベントを混ぜて、通知を組み立てる(複数返ることがある=lead で日数ごと)
+function buildPayloads(
   apps: any[],
   events: any[],
   notify: any,
   today: string,
-): { title: string; body: string; url: string } | null {
-  const sel = collectSteps(apps, today);
-  const ev = collectEvents(events, today);
-  let selPick: Item[] = [];
-  let evPick: Item[] = [];
+): Payload[] {
+  // 混ぜて未来分のみ・日付(時刻含む)順に
+  const all = [...collectSteps(apps, today), ...collectEvents(events, today)]
+    .filter((i) => i.day >= today)
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  if (!all.length) return [];
 
   if (notify.mode === "lead") {
-    const days: string[] = (notify.leadDays ?? [1]).map((n: number) =>
-      addDays(today, n),
-    );
-    selPick = sel.filter((i) => days.includes(i.day));
-    evPick = ev.filter((i) => days.includes(i.day));
-  } else {
-    // morning: 各カテゴリの「一番近い日」の全件
-    selPick = nearestDay(sel, today);
-    evPick = nearestDay(ev, today);
+    // N日前ちょうどの予定。日数ごとに別通知(同日複数あれば複数行)
+    const out: Payload[] = [];
+    const leadDays: number[] = notify.leadDays ?? [1];
+    for (const n of [...leadDays].sort((a, b) => a - b)) {
+      const target = addDays(today, n);
+      const items = all.filter((i) => i.day === target);
+      if (!items.length) continue;
+      const title = n === 1 ? "就活Hub｜前日通知" : `就活Hub｜${n}日前通知`;
+      out.push({ title, body: items.map(fmtItem).join("\n"), url: "/" });
+    }
+    return out;
   }
 
-  if (!selPick.length && !evPick.length) return null;
-
-  // 1件1行: 「選　　考｜…」「イベント｜…」
-  // 「選考」を全角空白2つで4文字幅に詰めて、「イベント」(4文字)と｜を縦に揃える
-  const lines: string[] = [];
-  for (const it of selPick) lines.push(fmtItem("選　　考", it));
-  for (const it of evPick) lines.push(fmtItem("イベント", it));
-
-  // タイトルは「就活Hub｜直近の予定」形式(しょー希望)
-  const title =
-    notify.mode === "lead" ? "就活Hub｜まもなくの予定" : "就活Hub｜直近の予定";
-  return { title, body: lines.join("\n"), url: "/" };
+  // morning: 最も近い「2日分」の予定(同日複数OK)
+  const days: string[] = [];
+  for (const i of all) {
+    if (!days.includes(i.day)) days.push(i.day);
+    if (days.length >= 2) break;
+  }
+  const items = all.filter((i) => days.includes(i.day));
+  return [
+    { title: "就活Hub｜直近の予定", body: items.map(fmtItem).join("\n"), url: "/" },
+  ];
 }
 
 Deno.serve(async (req) => {
@@ -241,18 +235,20 @@ Deno.serve(async (req) => {
     const subs: any[] = d.pushSubscriptions ?? [];
     if (!subs.length) continue;
 
-    const payload = buildPayload(d.applications, d.events, notify, today);
-    if (!payload) continue;
+    const payloads = buildPayloads(d.applications, d.events, notify, today);
+    if (!payloads.length) continue;
     users++;
 
     for (const sub of subs) {
-      try {
-        await webpush.sendNotification(sub, JSON.stringify(payload));
-        sent++;
-      } catch (e) {
-        failed++;
-        // 404/410 は失効購読。本番では user_data から取り除くと良い。
-        console.error("push failed:", (e as any)?.statusCode ?? e);
+      for (const payload of payloads) {
+        try {
+          await webpush.sendNotification(sub, JSON.stringify(payload));
+          sent++;
+        } catch (e) {
+          failed++;
+          // 404/410 は失効購読。本番では user_data から取り除くと良い。
+          console.error("push failed:", (e as any)?.statusCode ?? e);
+        }
       }
     }
   }
