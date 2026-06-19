@@ -141,12 +141,15 @@ function nearestDay(items: Item[], today: string): Item[] {
   return future.filter((i) => i.day === min);
 }
 
-// 「選　考｜6/21 サントリー・Webテスト」形式(カテゴリ｜日付 企業・ラベル)
+const WD_JP = ["日", "月", "火", "水", "木", "金", "土"];
+
+// 「選　　考｜6/21(土) サントリー・Webテスト」形式(カテゴリ｜日付(曜日) 企業・ラベル)
 function fmtItem(cat: string, it: Item): string {
   const mo = Number(it.day.slice(5, 7));
   const da = Number(it.day.slice(8, 10));
+  const wd = WD_JP[new Date(it.day + "T00:00:00Z").getUTCDay()];
   const t = timeOf(it.date);
-  const when = `${mo}/${da}${t ? " " + t : ""}`;
+  const when = `${mo}/${da}(${wd})${t ? " " + t : ""}`;
   return `${cat}｜${when} ${it.company}・${it.label}`;
 }
 
