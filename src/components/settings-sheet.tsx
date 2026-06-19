@@ -35,6 +35,7 @@ import {
 } from "@/lib/push";
 import type { Snapshot } from "@/lib/snapshots";
 import { submitFeedback } from "@/lib/feedback";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -193,7 +194,7 @@ function SettingsBody({
     applications,
     events,
   } = useStore();
-  const { mode, user, signOut } = useAuth();
+  const { mode, user, signOut, exitGuest } = useAuth();
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [hasV2Backup, setHasV2Backup] = useState(false);
@@ -317,6 +318,21 @@ function SettingsBody({
       )}
 
       <div className="space-y-6 px-4 py-5">
+        {mode === "local" && isSupabaseConfigured && (
+          <Section icon={<UserCircle className="h-4 w-4" />} title="アカウント">
+            <div className="rounded-xl border border-[hsl(var(--primary)/0.4)] bg-[hsl(var(--primary)/0.05)] p-3">
+              <div className="text-sm font-medium">
+                今は端末内に保存中（ゲスト）
+              </div>
+              <div className="mt-0.5 text-[12px] text-muted-foreground">
+                登録すると、どの端末でも同じデータが見られて、消える心配もなし。今のデータはそのまま引き継がれます。
+              </div>
+              <Button className="mt-3 w-full" onClick={exitGuest}>
+                登録 / ログインして同期
+              </Button>
+            </div>
+          </Section>
+        )}
         {mode === "cloud" && user?.email && (
           <Section icon={<UserCircle className="h-4 w-4" />} title="アカウント">
             <div className="rounded-xl border p-3">
