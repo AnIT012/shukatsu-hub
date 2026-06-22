@@ -31,8 +31,10 @@ export function PrivacyPolicyBody() {
             入力したES・企業名・選考状況は
             <span className="font-medium text-foreground">「あなた専用」</span>
             のデータです。ログイン中の本人だけがアクセスでき、
-            <span className="font-medium text-foreground">他の利用者からは一切見えません</span>
-            （データベースのアクセス制御＝RLSで保護）。
+            <span className="font-medium text-foreground">
+              他の利用者が閲覧することはできません
+            </span>
+            （データベースのアクセス制御＝RLSで技術的に保護）。
           </li>
           <li>
             <span className="font-medium text-foreground">
@@ -52,7 +54,9 @@ export function PrivacyPolicyBody() {
             <span className="font-medium text-foreground">「登録不要で試す」</span>
             を選べば、データは
             <span className="font-medium text-foreground">あなたの端末の中だけ</span>
-            に保存され、どこにも送信されません。
+            に保存され、どこにも送信されないので、
+            <span className="font-medium text-foreground">開発者を含め誰も閲覧できません</span>
+            。
           </li>
         </ul>
       </div>
