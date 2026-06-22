@@ -3,7 +3,7 @@
 
 const CONTACT_URL =
   "https://github.com/annonymousIT/shukatsu-dashboard/issues";
-const UPDATED = "2026年6月16日";
+const UPDATED = "2026年6月20日";
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -23,12 +23,53 @@ export function PrivacyPolicyBody() {
         本ポリシーは本アプリが扱う情報の取り扱いを定めるもので、標準的な雛形をもとに個人が作成・運営しています。
       </p>
 
-      <Block title="1. 取得する情報">
+      {/* 「ESを見られている」という誤解を防ぐための明示ブロック */}
+      <div className="rounded-xl border border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.06)] p-3.5 text-sm leading-relaxed">
+        <p className="font-semibold text-foreground">🔒 あなたのデータについて（大切なこと）</p>
+        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted-foreground">
+          <li>
+            入力したES・企業名・選考状況は
+            <span className="font-medium text-foreground">「あなた専用」</span>
+            のデータです。ログイン中の本人だけがアクセスでき、
+            <span className="font-medium text-foreground">他の利用者からは一切見えません</span>
+            （データベースのアクセス制御＝RLSで保護）。
+          </li>
+          <li>
+            <span className="font-medium text-foreground">
+              開発者があなたのESや選考内容を閲覧することはありません。
+            </span>
+            広告や第三者提供にも一切利用しません。
+          </li>
+          <li>
+            このページの「保存される情報」は
+            <span className="font-medium text-foreground">
+              「あなたが入力・保存する情報」
+            </span>
+            という意味で、開発者が収集・監視するという意味ではありません。
+          </li>
+          <li>
+            さらに安心したい場合は、ログインせず
+            <span className="font-medium text-foreground">「登録不要で試す」</span>
+            を選べば、データは
+            <span className="font-medium text-foreground">あなたの端末の中だけ</span>
+            に保存され、どこにも送信されません。
+          </li>
+        </ul>
+      </div>
+
+      <Block title="1. アプリに保存される情報（あなたが入力した情報）">
+        <p className="mb-1.5">
+          以下は、あなた自身がアプリに入力・保存する情報です。開発者が勝手に収集・閲覧するという意味ではありません。
+        </p>
         <ul className="list-disc space-y-1 pl-5">
           <li>クラウド同期を利用する場合のメールアドレス（ログイン認証のため）</li>
-          <li>利用者が入力した就職活動の情報（企業名・選考ステップ・締切・ES設問と回答・メモ等）</li>
           <li>
-            サービスの維持・改善のための利用状況（アクセス日時・利用頻度・データの更新日時など）
+            あなたが入力した就職活動の情報（企業名・選考ステップ・締切・ES設問と回答・メモ等）。
+            これらは「あなた専用」として保存され、本人だけがアクセスできます
+          </li>
+          <li>
+            サービスの維持・改善のための利用状況（アクセス日時・更新日時など。
+            入力内容そのものではありません）
           </li>
         </ul>
       </Block>
@@ -39,9 +80,10 @@ export function PrivacyPolicyBody() {
       </Block>
 
       <Block title="3. 利用目的">
-        取得した情報は、進捗管理機能の提供、およびサービスの維持・改善や不具合の把握のために利用します。
-        アクセス日時・利用頻度などの利用状況は統計的に把握する場合がありますが、
-        個人を特定する広告目的の解析や、第三者への提供は行いません。
+        保存された情報は、あなたの進捗管理機能を提供するために使われます。
+        アクセス日時・利用頻度などの利用状況は、サービスの維持・改善のために統計的に把握する場合がありますが、
+        開発者が利用者のES・選考内容などの中身を閲覧することはなく、
+        個人を特定する広告目的の解析や、第三者への提供も行いません。
       </Block>
 
       <Block title="4. 第三者サービス">
