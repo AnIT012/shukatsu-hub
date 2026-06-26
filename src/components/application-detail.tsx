@@ -11,7 +11,10 @@ import {
   ChevronRight,
   Clock,
   Copy,
+  Eye,
+  EyeOff,
   ExternalLink,
+  KeyRound,
   Link2,
   ListChecks,
   ListPlus,
@@ -177,6 +180,7 @@ function DetailBody({
   const [editEs, setEditEs] = useState<string | null>(null);
   const [editLinks, setEditLinks] = useState(false);
   const [editMemo, setEditMemo] = useState(false);
+  const [showId, setShowId] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const next = getStageNextAction(app);
   const intern = isInternType(app.selectionType);
@@ -556,6 +560,61 @@ function DetailBody({
           )}
         </Section>
 
+        {/* ログインID・会員番号: 入力＋表示切替＋ピン留め/マスク */}
+        <Section
+          icon={<KeyRound className="h-4 w-4" />}
+          title="ログインID・会員番号"
+        >
+          <div className="flex items-center gap-2">
+            <Input
+              value={app.loginId ?? ""}
+              onChange={(e) =>
+                updateApplication(app.id, { loginId: e.target.value })
+              }
+              type={showId ? "text" : "password"}
+              placeholder="例: 会員番号 / ログインID"
+              className="h-9 flex-1 text-sm"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0 border border-input text-muted-foreground hover:bg-accent"
+              title={showId ? "隠す" : "表示する"}
+              onClick={() => setShowId((v) => !v)}
+            >
+              {showId ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          {(app.loginId ?? "").trim() !== "" && (
+            <div className="mt-3 space-y-1">
+              <ToggleRow
+                label="一覧カードにピン留めする"
+                checked={!!app.loginIdPinned}
+                onClick={() =>
+                  updateApplication(app.id, {
+                    loginIdPinned: !app.loginIdPinned,
+                  })
+                }
+              />
+              <ToggleRow
+                label="IDを隠して表示"
+                hint="（カードで••••・タップでコピー）"
+                checked={!!app.loginIdMasked}
+                onClick={() =>
+                  updateApplication(app.id, {
+                    loginIdMasked: !app.loginIdMasked,
+                  })
+                }
+              />
+            </div>
+          )}
+        </Section>
+
         {/* 関連リンク: 飛ぶボタン表示 / ✎全体編集(飛ぶと編集を分離) */}
         <Section
           icon={<Link2 className="h-4 w-4" />}
@@ -858,6 +917,46 @@ function Section({
       </div>
       {children}
     </section>
+  );
+}
+
+function ToggleRow({
+  label,
+  hint,
+  checked,
+  onClick,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between rounded-lg px-1 py-1.5 text-left"
+    >
+      <span className="text-sm">
+        {label}
+        {hint && (
+          <span className="text-[11.5px] text-muted-foreground"> {hint}</span>
+        )}
+      </span>
+      <span
+        className={cn(
+          "relative h-6 w-10 shrink-0 rounded-full transition-colors",
+          checked ? "bg-primary" : "bg-border",
+        )}
+      >
+        <span
+          className={cn(
+            "absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition-all",
+            checked ? "left-[18px]" : "left-0.5",
+          )}
+        />
+      </span>
+    </button>
   );
 }
 

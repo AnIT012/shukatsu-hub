@@ -9,7 +9,6 @@ import {
   CloudOff,
   HelpCircle,
   Inbox,
-  PartyPopper,
   Plus,
   RefreshCw,
   SearchX,
@@ -28,7 +27,6 @@ import { useAuth } from "@/lib/auth";
 import {
   getStageNextAction,
   hasThisWeekStageTask,
-  passedToday,
   situationOf,
 } from "@/lib/next-action";
 import { dueInstant, dueToDate, urgencyOf } from "@/lib/date";
@@ -38,7 +36,6 @@ import {
   LS_LEGAL_KEY,
   LS_ONBOARDED_KEY,
   LS_VIEWMODE_KEY,
-  PASSED_LABEL,
   SAMPLE_APP_ID,
   STEP_KIND_LABEL,
 } from "@/lib/constants";
@@ -295,11 +292,6 @@ export function Dashboard() {
     }
   };
 
-  // 今日 合格(内定/内々定/参加確定)になった社(終日その日だけ祝う)。サンプルは除外。
-  const celebrate = useMemo(
-    () => passedToday(applications.filter((a) => a.id !== SAMPLE_APP_ID)),
-    [applications],
-  );
 
   // 同名企業が2件以上あるときだけ、カードに職種(role)を出して見分けやすくする
   const dupCompanies = useMemo(() => {
@@ -581,10 +573,6 @@ export function Dashboard() {
                 />
               ) : (
                 <>
-                  {celebrate.length > 0 && (
-                    <CelebrationBanner apps={celebrate} />
-                  )}
-
                   <CompanionComment
                     variant="selection"
                     onClick={() => setView("progress")}
@@ -844,31 +832,6 @@ function SaveIndicator() {
     );
   }
   return null;
-}
-
-// 今日 合格(内定/内々定/参加確定)になった社を、その日だけ祝う(終日)。
-function CelebrationBanner({ apps }: { apps: Application[] }) {
-  return (
-    <div className="mb-3 overflow-hidden rounded-2xl bg-gradient-to-r from-[hsl(var(--success)/0.16)] to-[hsl(var(--primary)/0.16)] p-3.5 ring-1 ring-[hsl(var(--success)/0.4)]">
-      <div className="flex items-center gap-2">
-        <PartyPopper className="animate-evo-rise h-5 w-5 text-success" />
-        <span className="text-[15px] font-bold">おめでとう！🎉</span>
-      </div>
-      <div className="mt-1.5 space-y-0.5">
-        {apps.map((a) => (
-          <div key={a.id} className="text-[13px]">
-            <b className="font-semibold">{a.company || "(企業)"}</b>
-            <span className="ml-1.5 font-medium text-success">
-              {PASSED_LABEL[a.selectionType]}
-            </span>
-          </div>
-        ))}
-      </div>
-      <p className="mt-1.5 text-[12px] text-muted-foreground">
-        今日のあなた、本当によく頑張った。
-      </p>
-    </div>
-  );
 }
 
 // 直近1週間(今日〜+7日、超過分も含む)の各社の次の予定を、日付順に固定表示。

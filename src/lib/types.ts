@@ -130,6 +130,12 @@ export interface Application {
   esEntries: ESEntry[];
   /** 全体メモ(長文OK・改行保持) */
   memo: string;
+  /** マイページ等のログインID・会員番号(任意) */
+  loginId?: string;
+  /** 一覧カードでIDを隠して(••••)表示するか */
+  loginIdMasked?: boolean;
+  /** IDを一覧カードにピン留めするか */
+  loginIdPinned?: boolean;
   /** 旧モデル(直列ステップ)。新モデルへの移行ソースとして保持 */
   steps: SelectionStep[];
   /** 新モデル: 選考段階(段階＞タスク)。移行で steps から生成される */

@@ -63,6 +63,9 @@ type AppPatch = Partial<
     | "venueMode"
     | "venuePlace"
     | "memo"
+    | "loginId"
+    | "loginIdMasked"
+    | "loginIdPinned"
   >
 >;
 

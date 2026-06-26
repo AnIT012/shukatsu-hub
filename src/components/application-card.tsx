@@ -4,11 +4,14 @@ import {
   Award,
   ChevronRight,
   Clock,
+  Copy,
+  KeyRound,
   ListPlus,
   MinusCircle,
   Pin,
   XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { Application, SelectionStage } from "@/lib/types";
 import { cn, safeHref } from "@/lib/utils";
 import {
@@ -82,7 +85,6 @@ export function ApplicationCard({
   const next = getStageNextAction(app);
   const sit = situationOf(app);
   const segs = stageSegments(app);
-  const pinned = app.links.filter((l) => l.pin && l.url).slice(0, 2);
 
   const u =
     next.type === "step" && next.focusDate
@@ -132,25 +134,7 @@ export function ApplicationCard({
           </div>
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/50" />
         </div>
-        {pinned.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            {pinned.map((l) => (
-              <a
-                key={l.id}
-                href={safeHref(l.url)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
-              >
-                <Pin className="h-3 w-3" />
-                <span className="max-w-[8rem] truncate">
-                  {l.label || "リンク"}
-                </span>
-              </a>
-            ))}
-          </div>
-        )}
+        <PinnedChips app={app} className="mt-2" />
       </div>
     );
   }
@@ -236,23 +220,7 @@ export function ApplicationCard({
         </div>
       )}
 
-      {pinned.length > 0 && (
-        <div className="mt-2.5 flex flex-wrap gap-2">
-          {pinned.map((l) => (
-            <a
-              key={l.id}
-              href={safeHref(l.url)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
-            >
-              <Pin className="h-3 w-3" />
-              <span className="max-w-[8rem] truncate">{l.label || "リンク"}</span>
-            </a>
-          ))}
-        </div>
-      )}
+      <PinnedChips app={app} className="mt-2.5" />
     </div>
   );
 }
@@ -377,6 +345,57 @@ function NextLine({ app, next }: { app: Application; next: StageNextAction }) {
         : app.result === "rejected"
           ? "不合格"
           : "辞退"}
+    </div>
+  );
+}
+
+/** カードにピン留めされたチップ列。ID(あれば最左) → ピン留めリンク(最大2)。 */
+function PinnedChips({
+  app,
+  className,
+}: {
+  app: Application;
+  className?: string;
+}) {
+  const pinned = app.links.filter((l) => l.pin && l.url).slice(0, 2);
+  const id = app.loginId?.trim() ?? "";
+  const hasId = !!app.loginIdPinned && id.length > 0;
+  if (pinned.length === 0 && !hasId) return null;
+  return (
+    <div className={cn("flex flex-wrap gap-2", className)}>
+      {hasId && (
+        <button
+          type="button"
+          title="タップでIDをコピー"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigator.clipboard
+              ?.writeText(id)
+              .then(() => toast.success("IDをコピーしました"))
+              .catch(() => {});
+          }}
+          className="inline-flex items-center gap-1 rounded-md border border-dashed border-[hsl(var(--primary)/0.45)] bg-accent px-2 py-1 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
+        >
+          <KeyRound className="h-3 w-3" />
+          <span className="max-w-[8rem] truncate">
+            ID {app.loginIdMasked ? "••••••" : id}
+          </span>
+          <Copy className="h-3 w-3 opacity-70" />
+        </button>
+      )}
+      {pinned.map((l) => (
+        <a
+          key={l.id}
+          href={safeHref(l.url)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
+        >
+          <Pin className="h-3 w-3" />
+          <span className="max-w-[8rem] truncate">{l.label || "リンク"}</span>
+        </a>
+      ))}
     </div>
   );
 }

@@ -215,6 +215,9 @@ function sanitizeApp(raw: any): Application {
       ? raw.esEntries.map(sanitizeEsEntry)
       : [],
     memo: str(raw?.memo),
+    loginId: str(raw?.loginId),
+    loginIdMasked: raw?.loginIdMasked === true,
+    loginIdPinned: raw?.loginIdPinned === true,
     // 旧ステップは保持(復元用バックアップを兼ねる)
     steps,
     stages,
