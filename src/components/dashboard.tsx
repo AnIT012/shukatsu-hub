@@ -60,6 +60,7 @@ import { EventDetail } from "@/components/event-detail";
 import { SettingsPage } from "@/components/settings-sheet";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
 import { VersionNotice } from "@/components/version-notice";
+import { WhatsNew } from "@/components/whats-new";
 import { OnboardingPrompts } from "@/components/onboarding-prompts";
 import { BottomNav, type NavView } from "@/components/bottom-nav";
 import { ProgressView } from "@/components/progress-view";
@@ -754,6 +755,7 @@ export function Dashboard() {
 
       {/* 選考フロー(段階＞タスク)移行の通告(移行ユーザーに1回だけ) */}
       <VersionNotice />
+      <WhatsNew enabled={applications.length > 0} />
 
       {tourIndex >= 0 && (
         <Tutorial

@@ -181,10 +181,13 @@ function DetailBody({
   const [editLinks, setEditLinks] = useState(false);
   const [editMemo, setEditMemo] = useState(false);
   const [showId, setShowId] = useState(false);
+  const [editId, setEditId] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const next = getStageNextAction(app);
   const intern = isInternType(app.selectionType);
   const pinnedCount = app.links.filter((l) => l.pin).length;
+  const hasLoginId = (app.loginId ?? "").trim() !== "";
+  const editingId = editId || !hasLoginId;
 
   return (
     <>
@@ -560,58 +563,112 @@ function DetailBody({
           )}
         </Section>
 
-        {/* ログインID・会員番号: 入力＋表示切替＋ピン留め/マスク */}
+        {/* ログインID・会員番号: ✎編集(入力＋表示切替＋ピン/マスク) / 完了でリンク風の簡易表示＋コピー */}
         <Section
           icon={<KeyRound className="h-4 w-4" />}
           title="ログインID・会員番号"
+          action={
+            hasLoginId ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (editingId) {
+                    toast.success("保存しました");
+                    setEditId(false);
+                  } else {
+                    setEditId(true);
+                  }
+                }}
+              >
+                {editingId ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    完了
+                  </>
+                ) : (
+                  <>
+                    <Pencil className="h-4 w-4" />
+                    編集
+                  </>
+                )}
+              </Button>
+            ) : undefined
+          }
         >
-          <div className="flex items-center gap-2">
-            <Input
-              value={app.loginId ?? ""}
-              onChange={(e) =>
-                updateApplication(app.id, { loginId: e.target.value })
-              }
-              type={showId ? "text" : "password"}
-              placeholder="例: 会員番号 / ログインID"
-              className="h-9 flex-1 text-sm"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 shrink-0 border border-input text-muted-foreground hover:bg-accent"
-              title={showId ? "隠す" : "表示する"}
-              onClick={() => setShowId((v) => !v)}
-            >
-              {showId ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
+          {editingId ? (
+            <>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={app.loginId ?? ""}
+                  onChange={(e) => {
+                    setEditId(true);
+                    updateApplication(app.id, { loginId: e.target.value });
+                  }}
+                  type={showId ? "text" : "password"}
+                  placeholder="例: 会員番号 / ログインID"
+                  className="h-9 flex-1 text-sm"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 border border-input text-muted-foreground hover:bg-accent"
+                  title={showId ? "隠す" : "表示する"}
+                  onClick={() => setShowId((v) => !v)}
+                >
+                  {showId ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              {hasLoginId && (
+                <div className="mt-3 space-y-1">
+                  <ToggleRow
+                    label="一覧カードにピン留めする"
+                    checked={!!app.loginIdPinned}
+                    onClick={() =>
+                      updateApplication(app.id, {
+                        loginIdPinned: !app.loginIdPinned,
+                      })
+                    }
+                  />
+                  <ToggleRow
+                    label="IDを隠して表示"
+                    hint="（カードで••••・タップでコピー）"
+                    checked={!!app.loginIdMasked}
+                    onClick={() =>
+                      updateApplication(app.id, {
+                        loginIdMasked: !app.loginIdMasked,
+                      })
+                    }
+                  />
+                </div>
               )}
-            </Button>
-          </div>
-          {(app.loginId ?? "").trim() !== "" && (
-            <div className="mt-3 space-y-1">
-              <ToggleRow
-                label="一覧カードにピン留めする"
-                checked={!!app.loginIdPinned}
-                onClick={() =>
-                  updateApplication(app.id, {
-                    loginIdPinned: !app.loginIdPinned,
-                  })
-                }
-              />
-              <ToggleRow
-                label="IDを隠して表示"
-                hint="（カードで••••・タップでコピー）"
-                checked={!!app.loginIdMasked}
-                onClick={() =>
-                  updateApplication(app.id, {
-                    loginIdMasked: !app.loginIdMasked,
-                  })
-                }
-              />
-            </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              title="タップでIDをコピー"
+              onClick={() => {
+                navigator.clipboard
+                  ?.writeText((app.loginId ?? "").trim())
+                  .then(() => toast.success("IDをコピーしました"))
+                  .catch(() => {});
+              }}
+              className="inline-flex max-w-full items-center gap-1.5 rounded-lg border bg-card px-3 py-2 text-[13px] font-medium text-primary hover:bg-accent/50"
+            >
+              <KeyRound className="h-3.5 w-3.5" />
+              <span className="max-w-[12rem] truncate">
+                {app.loginIdMasked ? "ID ••••••••" : app.loginId}
+              </span>
+              {app.loginIdPinned && (
+                <Pin className="h-3 w-3 text-muted-foreground/70" />
+              )}
+              <Copy className="h-3.5 w-3.5 opacity-60" />
+            </button>
           )}
         </Section>
 

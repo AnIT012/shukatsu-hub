@@ -43,6 +43,13 @@ export function PrivacyPolicyBody() {
             本アプリには特定個人のデータを覗くための機能がなく、RLSで分離されています。広告や第三者提供にも一切利用しません。
           </li>
           <li>
+            企業ごとに保存できる
+            <span className="font-medium text-foreground">ログインID・会員番号</span>
+            も同様にあなた専用で、
+            <span className="font-medium text-foreground">パスワードは保存しません</span>
+            （一覧では「••••」で隠して表示することもできます）。
+          </li>
+          <li>
             このページの「保存される情報」は
             <span className="font-medium text-foreground">
               「あなたが入力・保存する情報」
@@ -68,8 +75,10 @@ export function PrivacyPolicyBody() {
         <ul className="list-disc space-y-1 pl-5">
           <li>クラウド同期を利用する場合のメールアドレス（ログイン認証のため）</li>
           <li>
-            あなたが入力した就職活動の情報（企業名・選考ステップ・締切・ES設問と回答・メモ等）。
-            これらは「あなた専用」として保存され、本人だけがアクセスできます
+            あなたが入力した就職活動の情報（企業名・選考ステップ・締切・ES設問と回答・メモ、
+            任意のログインID・会員番号 等）。これらは「あなた専用」として保存され、本人だけが
+            アクセスできます（
+            <span className="font-medium text-foreground">パスワードは保存しません</span>）
           </li>
           <li>
             サービスの維持・改善のための利用状況（アクセス日時・更新日時など。
