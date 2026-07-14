@@ -159,7 +159,7 @@ function listApps(now: Date): Application[] {
   return [
     mkApp({
       id: "suntory",
-      company: "サントリー",
+      company: "あおば食品",
       selectionType: "main",
       links: [{ id: "l1", label: "マイページ", url: "https://example.com", pin: true }],
       stages: [
@@ -169,19 +169,19 @@ function listApps(now: Date): Application[] {
     }),
     mkApp({
       id: "rakuten",
-      company: "楽天",
+      company: "さくらネット",
       selectionType: "main",
       stages: [{ id: "s3", label: "", result: "pending", tasks: [tk({ id: "t3", kind: "es", dueAt: ymd(now, 6) })] }],
     }),
     mkApp({
       id: "mercari",
-      company: "メルカリ",
+      company: "そらアプリ",
       selectionType: "main",
       stages: [{ id: "s4", label: "一次面接", result: "pending", tasks: [tk({ id: "t4", kind: "interview", heldAt: ymd(now, 12, "14:00") })] }],
     }),
     mkApp({
       id: "cyber",
-      company: "サイバーエージェント",
+      company: "みなと広告",
       selectionType: "early",
       result: "passed",
       stages: [
@@ -197,7 +197,7 @@ function flowApps(now: Date): Application[] {
   return [
     mkApp({
       id: "recruit",
-      company: "リクルート",
+      company: "あすなろ人材",
       selectionType: "main",
       stages: [
         { id: "f1", label: "書類選考", result: "passed", tasks: [tk({ id: "ft1", kind: "es", done: true })] },
@@ -209,7 +209,7 @@ function flowApps(now: Date): Application[] {
     }),
     mkApp({
       id: "nintendo",
-      company: "任天堂",
+      company: "こだまゲームス",
       selectionType: "main",
       stages: [
         { id: "n1", label: "書類選考", result: "passed", tasks: [tk({ id: "nt1", kind: "es", done: true })] },
@@ -219,7 +219,7 @@ function flowApps(now: Date): Application[] {
     }),
     mkApp({
       id: "shiseido",
-      company: "資生堂",
+      company: "はなやか化粧品",
       selectionType: "main",
       result: "passed",
       stages: [
@@ -230,7 +230,7 @@ function flowApps(now: Date): Application[] {
     }),
     mkApp({
       id: "fujitsu",
-      company: "富士通",
+      company: "やまと電機",
       selectionType: "main",
       result: "rejected",
       stages: [
@@ -264,16 +264,16 @@ function listEvents(now: Date): EventItem[] {
   return [
     evMk({
       id: "e1",
-      company: "リクルート",
+      company: "あすなろ人材",
       title: "OB訪問",
       venueMode: "onsite",
       venuePlace: "東京・丸の内",
       applyBy: ymd(now, 2),
       links: [{ id: "el1", label: "予約ページ", url: "https://example.com", pin: true }],
     }),
-    evMk({ id: "e2", company: "TYPE就活", title: "合同説明会", venueMode: "online", applyBy: ymd(now, 5), heldAt: ymd(now, 8, "13:00") }),
-    evMk({ id: "e3", company: "サイバーエージェント", title: "1day仕事体験", venueMode: "onsite", venuePlace: "渋谷", heldAt: ymd(now, 15, "10:00") }),
-    evMk({ id: "e4", company: "メルカリ", title: "エンジニア説明会", venueMode: "online", heldAt: ymd(now, -3), status: "attended" }),
+    evMk({ id: "e2", company: "就活フェスタ", title: "合同説明会", venueMode: "online", applyBy: ymd(now, 5), heldAt: ymd(now, 8, "13:00") }),
+    evMk({ id: "e3", company: "みなと広告", title: "1day仕事体験", venueMode: "onsite", venuePlace: "渋谷", heldAt: ymd(now, 15, "10:00") }),
+    evMk({ id: "e4", company: "そらアプリ", title: "エンジニア説明会", venueMode: "online", heldAt: ymd(now, -3), status: "attended" }),
   ];
 }
 
@@ -1002,9 +1002,9 @@ export function Landing() {
         />
         <div className="mx-auto mt-9 max-w-[320px] space-y-3">
           {[
-            { tag: "毎朝まとめ", title: "就活Hub｜直近の予定", lines: ["6/21 土｜サントリー・Webテスト", "6/24 水｜TYPE就活・説明会"] },
-            { tag: "前日リマインド", title: "就活Hub｜前日通知", lines: ["6/21 土｜サントリー・Webテスト"] },
-            { tag: "3日前リマインド", title: "就活Hub｜3日前通知", lines: ["6/24 水｜楽天・ES提出"] },
+            { tag: "毎朝まとめ", title: "就活Hub｜直近の予定", lines: ["6/21 土｜あおば食品・Webテスト", "6/24 水｜就活フェスタ・説明会"] },
+            { tag: "前日リマインド", title: "就活Hub｜前日通知", lines: ["6/21 土｜あおば食品・Webテスト"] },
+            { tag: "3日前リマインド", title: "就活Hub｜3日前通知", lines: ["6/24 水｜さくらネット・ES提出"] },
           ].map((n, i) => (
             <div key={n.title}>
               <div className="mb-1 ml-1 text-[11px] font-medium text-primary">{n.tag}</div>
