@@ -214,12 +214,12 @@ function DetailBody({
             onClick={() => setEditBasic(true)}
             className="group block text-left"
           >
-            <h2 className="text-lg font-semibold leading-tight">
+            <h2 className="text-[22px] font-bold leading-tight tracking-tight">
               {app.company || "(名称未設定)"}
-              <Pencil className="ml-1.5 inline h-3.5 w-3.5 align-baseline text-muted-foreground/50" />
+              <Pencil className="ml-1.5 inline h-4 w-4 align-baseline text-muted-foreground/40" />
             </h2>
             {app.role && (
-              <p className="mt-0.5 text-sm text-muted-foreground">{app.role}</p>
+              <p className="mt-1 text-[13px] text-muted-foreground">{app.role}</p>
             )}
           </button>
         )}
@@ -951,18 +951,19 @@ function InfoBadge({
   children: React.ReactNode;
   tone?: "default" | "success" | "danger" | "accent";
 }) {
+  // 印(メタ情報)は「押せる物」と顔が被らないよう、枠を持たせず静かに塗るだけにする
   const cls =
     tone === "success"
-      ? "bg-[hsl(var(--success)/0.14)] text-success ring-[hsl(var(--success)/0.4)]"
+      ? "bg-[hsl(var(--success)/0.13)] text-success"
       : tone === "danger"
-        ? "bg-[hsl(var(--danger)/0.1)] text-danger ring-[hsl(var(--danger)/0.4)]"
+        ? "bg-[hsl(var(--danger)/0.1)] text-danger"
         : tone === "accent"
-          ? "bg-accent text-accent-foreground ring-[hsl(var(--accent-foreground)/0.3)]"
-          : "bg-secondary text-foreground ring-[hsl(var(--muted-foreground)/0.32)]";
+          ? "bg-accent text-accent-foreground"
+          : "bg-secondary text-muted-foreground";
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium ring-1 ring-inset",
+        "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11.5px] font-medium",
         cls,
       )}
     >
@@ -1095,9 +1096,9 @@ function NextBanner({
   return (
     <div
       className={cn(
-        "rounded-2xl px-4 py-3 ring-1 ring-border",
+        "rounded-2xl px-4 py-3.5 shadow-[0_1px_3px_hsl(var(--foreground)/0.05)]",
         urgent
-          ? "bg-[hsl(var(--danger)/0.07)]"
+          ? "bg-[hsl(var(--danger)/0.08)] ring-1 ring-[hsl(var(--danger)/0.25)]"
           : "bg-accent",
       )}
     >
