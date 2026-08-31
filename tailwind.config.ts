@@ -49,6 +49,7 @@ const config: Config = {
           foreground: "hsl(var(--danger-foreground))",
         },
         success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",

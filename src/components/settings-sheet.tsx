@@ -322,7 +322,7 @@ function SettingsBody({
       <div className="space-y-6 px-4 py-5">
         {mode === "local" && isSupabaseConfigured && (
           <Section icon={<UserCircle className="h-4 w-4" />} title="アカウント">
-            <div className="rounded-xl border border-[hsl(var(--primary)/0.4)] bg-[hsl(var(--primary)/0.05)] p-3">
+            <div className="rounded-2xl border border-primary/30 bg-accent/60 p-3">
               <div className="text-sm font-medium">
                 今は端末内に保存中（ゲスト）
               </div>
@@ -337,7 +337,7 @@ function SettingsBody({
         )}
         {mode === "cloud" && user?.email && (
           <Section icon={<UserCircle className="h-4 w-4" />} title="アカウント">
-            <div className="rounded-xl border p-3">
+            <div className="rounded-2xl border border-border p-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-[15px] font-medium text-accent-foreground">
                   {user.email[0]?.toUpperCase()}
@@ -357,7 +357,7 @@ function SettingsBody({
                   await signOut();
                   toast.success("ログアウトしました");
                 }}
-                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border py-2 text-sm font-medium text-danger hover:bg-[hsl(var(--danger)/0.06)]"
+                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-sm font-medium text-danger hover:bg-danger/5"
               >
                 <LogOut className="h-4 w-4" />
                 ログアウト
@@ -368,7 +368,7 @@ function SettingsBody({
 
         {/* 通知 */}
         <Section icon={<Bell className="h-4 w-4" />} title="通知">
-          <div className="space-y-3 rounded-xl border p-3">
+          <div className="space-y-3 rounded-2xl border border-border p-3">
             <div className="flex items-center">
               <span className="text-sm">締切・予定を通知</span>
               <button
@@ -403,7 +403,7 @@ function SettingsBody({
                 type="button"
                 onClick={handleTestNotify}
                 disabled={testing}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg border py-2 text-[13px] font-medium text-primary transition-colors hover:bg-accent disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border py-2 text-[13px] font-medium text-primary transition-colors hover:bg-accent disabled:opacity-50"
               >
                 <Send className="h-3.5 w-3.5" />
                 {testing ? "送信中…" : "テスト通知を送る"}
@@ -488,14 +488,14 @@ function SettingsBody({
                 data-theme={t.value}
                 onClick={() => setTheme(t.value)}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 rounded-xl border bg-card p-2.5 transition-colors",
+                  "flex flex-col items-center gap-1.5 rounded-2xl border bg-card p-2.5 transition-colors",
                   theme === t.value
                     ? "border-primary ring-1 ring-primary"
                     : "border-border hover:border-muted-foreground/40",
                 )}
               >
                 <span
-                  className="h-7 w-7 rounded-full ring-1 ring-inset ring-black/5"
+                  className="h-7 w-7 rounded-full ring-1 ring-inset ring-foreground/10"
                   style={{ background: "hsl(var(--primary))" }}
                 />
                 <span className="text-[11px] leading-none text-foreground">
@@ -516,7 +516,7 @@ function SettingsBody({
                 onClick={() => setFont(o.value)}
                 style={{ fontFamily: o.stack }}
                 className={cn(
-                  "flex flex-col gap-0.5 rounded-xl border bg-card px-3 py-2.5 text-left transition-colors",
+                  "flex flex-col gap-0.5 rounded-2xl border bg-card px-3 py-2.5 text-left transition-colors",
                   font === o.value
                     ? "border-primary ring-1 ring-primary"
                     : "border-border hover:border-muted-foreground/40",
@@ -535,7 +535,7 @@ function SettingsBody({
 
         {/* データ */}
         <Section icon={<Download className="h-4 w-4" />} title="データ">
-          <div className="overflow-hidden rounded-xl border">
+          <div className="overflow-hidden rounded-2xl border border-border">
             <Row
               icon={<Upload className="h-4 w-4" />}
               label="インポート（JSON）"
@@ -548,7 +548,7 @@ function SettingsBody({
             />
             {hasV2Backup &&
               (confirmRestore ? (
-                <div className="flex items-center gap-2 border-t bg-[hsl(var(--warning)/0.08)] px-3 py-2.5">
+                <div className="flex items-center gap-2 border-t border-border bg-warning/10 px-3 py-2.5">
                   <span className="flex-1 text-[13px]">
                     選考管理アップデート前の状態に戻しますか？（以降の変更は失われます）
                   </span>
@@ -672,7 +672,7 @@ function SettingsBody({
               />
             )}
             {confirmClear ? (
-              <div className="flex items-center gap-2 border-t bg-[hsl(var(--danger)/0.06)] px-3 py-2.5">
+              <div className="flex items-center gap-2 border-t border-border bg-danger/5 px-3 py-2.5">
                 <span className="flex-1 text-[13px]">
                   全{totalCount}件を完全に削除しますか？
                 </span>
@@ -717,7 +717,7 @@ function SettingsBody({
 
         {/* その他 */}
         <Section icon={<HelpCircle className="h-4 w-4" />} title="その他">
-          <div className="overflow-hidden rounded-xl border">
+          <div className="overflow-hidden rounded-2xl border border-border">
             <Row
               icon={<HelpCircle className="h-4 w-4" />}
               label="使い方ガイド"
@@ -781,7 +781,7 @@ function Row({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2.5 border-b px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-muted/50",
+        "flex min-h-[44px] w-full items-center gap-2.5 border-b border-border px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-muted/50",
         danger && "text-danger",
       )}
     >
@@ -817,7 +817,7 @@ function FeedbackForm({ userId }: { userId: string }) {
   };
 
   return (
-    <div className="space-y-2.5 rounded-xl border p-3">
+    <div className="space-y-2.5 rounded-2xl border border-border p-3">
       <div className="flex flex-wrap gap-1.5">
         {KINDS.map((k) => (
           <button

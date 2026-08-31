@@ -228,7 +228,7 @@ function DetailBody({
         {editBasic ? (
           <div
             data-tour="type"
-            className="mt-3 space-y-2 rounded-xl border-2 border-[hsl(var(--primary)/0.35)] bg-card p-3"
+            className="mt-3 space-y-2 rounded-2xl border border-border bg-card p-3"
           >
             <div className="flex items-center gap-1.5 text-sm font-medium">
               <Pencil className="h-4 w-4 text-primary" />
@@ -415,7 +415,7 @@ function DetailBody({
                   return (
                     <div
                       key={es.id}
-                      className="space-y-2 rounded-lg border-2 border-[hsl(var(--primary)/0.35)] bg-card p-3"
+                      className="space-y-2 rounded-2xl border border-border bg-card p-3"
                     >
                       <Input
                         value={es.question}
@@ -492,7 +492,7 @@ function DetailBody({
                   );
                 }
                 return (
-                  <div key={es.id} className="rounded-lg border bg-card p-3">
+                  <div key={es.id} className="rounded-2xl border bg-card p-3">
                     <div className="text-sm font-medium">
                       {es.question || "(設問未入力)"}
                     </div>
@@ -844,7 +844,7 @@ function DetailBody({
             <button
               type="button"
               onClick={() => setEditMemo(true)}
-              className="w-full whitespace-pre-wrap rounded-lg border bg-card p-3 text-left text-[13px] leading-relaxed"
+              className="w-full whitespace-pre-wrap rounded-2xl border bg-card p-3 text-left text-[13px] leading-relaxed"
             >
               {app.memo}
             </button>
@@ -880,7 +880,7 @@ function DetailBody({
             作成: {formatStamp(app.createdAt)} / 更新: {formatStamp(app.updatedAt)}
           </div>
           {confirmDelete ? (
-            <div className="flex items-center gap-2 rounded-lg border border-[hsl(var(--danger)/0.3)] bg-[hsl(var(--danger)/0.06)] p-3">
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-[hsl(var(--danger)/0.06)] p-3">
               <span className="flex-1 text-sm">削除しますか？</span>
               <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
                 やめる
@@ -987,7 +987,7 @@ function Section({
   return (
     <section className="mt-5" data-tour={dataTour}>
       <div className="mb-2.5 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-[15px] font-semibold text-foreground [&_svg]:text-muted-foreground">
+        <h3 className="flex items-center gap-1.5 text-[12.5px] font-semibold text-muted-foreground [&_svg]:text-muted-foreground">
           {icon}
           {title}
         </h3>
@@ -1055,7 +1055,7 @@ function NextBanner({
     const r = map[app.result];
     const Icon = r.icon;
     return (
-      <div className="flex items-center gap-2 rounded-xl bg-muted px-4 py-3">
+      <div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-3">
         <Icon className={cn("h-5 w-5", r.cls)} />
         <span className={cn("font-semibold", r.cls)}>{r.label}</span>
       </div>
@@ -1064,7 +1064,7 @@ function NextBanner({
 
   if (next.type !== "step") {
     return (
-      <div className="rounded-xl bg-muted px-4 py-3">
+      <div className="rounded-2xl bg-muted px-4 py-3">
         <div className="flex items-center gap-2 text-muted-foreground">
           {next.type === "waiting" ? (
             <>
@@ -1095,10 +1095,10 @@ function NextBanner({
   return (
     <div
       className={cn(
-        "rounded-xl px-4 py-3 ring-1",
+        "rounded-2xl px-4 py-3 ring-1 ring-border",
         urgent
-          ? "bg-[hsl(var(--danger)/0.07)] ring-[hsl(var(--danger)/0.25)]"
-          : "bg-accent ring-transparent",
+          ? "bg-[hsl(var(--danger)/0.07)]"
+          : "bg-accent",
       )}
     >
       <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">

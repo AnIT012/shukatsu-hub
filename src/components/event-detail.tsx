@@ -137,8 +137,8 @@ function InfoBadge({
 }) {
   const cls =
     tone === "success"
-      ? "bg-[hsl(var(--success)/0.14)] text-success ring-[hsl(var(--success)/0.4)]"
-      : "bg-secondary text-foreground ring-[hsl(var(--muted-foreground)/0.32)]";
+      ? "bg-[hsl(var(--success)/0.14)] text-success ring-border"
+      : "bg-secondary text-foreground ring-border";
   return (
     <span
       className={cn(
@@ -224,7 +224,7 @@ function EventDetailBody({
 
         {/* 基本情報: バッジ表示 / ✎編集(イベント名・企業名もここで編集) */}
         {editBasic ? (
-          <div className="mt-3 space-y-2 rounded-xl border-2 border-[hsl(var(--primary)/0.35)] bg-card p-3">
+          <div className="mt-3 space-y-2 rounded-2xl border border-border bg-card p-3">
             <div className="flex items-center gap-1.5 text-sm font-medium">
               <Pencil className="h-4 w-4 text-primary" />
               基本情報を編集
@@ -329,7 +329,7 @@ function EventDetailBody({
                     !active
                       ? "border-input text-muted-foreground hover:bg-muted"
                       : o.value === "attended"
-                        ? "border-[hsl(var(--success)/0.45)] bg-[hsl(var(--success)/0.12)] text-success"
+                        ? "border-border bg-[hsl(var(--success)/0.12)] text-success"
                         : o.value === "declined"
                           ? "border-input bg-muted text-foreground"
                           : "border-primary bg-accent text-accent-foreground",
@@ -346,10 +346,10 @@ function EventDetailBody({
         {f.date && (
           <div
             className={cn(
-              "mt-4 rounded-xl px-4 py-3 ring-1",
+              "mt-4 rounded-2xl px-4 py-3 ring-1",
               urgent
-                ? "bg-[hsl(var(--danger)/0.07)] ring-[hsl(var(--danger)/0.25)]"
-                : "bg-accent ring-transparent",
+                ? "bg-[hsl(var(--danger)/0.07)] ring-border"
+                : "bg-accent ring-border",
             )}
           >
             <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -411,7 +411,7 @@ function EventDetailBody({
                     className={cn(
                       "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
                       ev.applyDone
-                        ? "border-[hsl(var(--success)/0.4)] bg-[hsl(var(--success)/0.1)] text-success"
+                        ? "border-border bg-[hsl(var(--success)/0.1)] text-success"
                         : "border-input text-muted-foreground hover:bg-muted",
                     )}
                   >
@@ -667,7 +667,7 @@ function EventDetailBody({
 
         <div className="mt-4 border-t pt-4">
           {confirmDelete ? (
-            <div className="flex items-center gap-2 rounded-lg border border-[hsl(var(--danger)/0.3)] bg-[hsl(var(--danger)/0.06)] p-3">
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-[hsl(var(--danger)/0.06)] p-3">
               <span className="flex-1 text-sm">削除しますか？</span>
               <Button
                 variant="ghost"
