@@ -114,9 +114,9 @@ export function ApplicationCard({
         className={cn(
           "group block w-full cursor-pointer rounded-xl bg-card p-3 text-left shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] transition-all duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:translate-y-0",
           sit === "passed"
-            ? "ring-2 ring-[hsl(var(--success)/0.55)]"
+            ? "ring-1 ring-[hsl(var(--success)/0.5)]"
             : urgent
-              ? "ring-1 ring-[hsl(var(--danger)/0.55)]"
+              ? "ring-1 ring-[hsl(var(--danger)/0.5)]"
               : "ring-1 ring-border",
           sit === "rejected" || sit === "declined" ? "opacity-60" : "",
         )}

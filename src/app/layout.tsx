@@ -1,6 +1,16 @@
 import type { Metadata, Viewport } from "next";
+import { Shippori_Mincho } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
+
+// 見出し用の和セリフ(明朝)。本文には使わず、日付や見出しの「印」にだけ効かせる
+const displaySerif = Shippori_Mincho({
+  weight: ["500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+  preload: false,
+});
 import { Toaster } from "@/components/ui/sonner";
 import { SwRegister } from "@/components/sw-register";
 
@@ -45,9 +55,10 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ja" suppressHydrationWarning>
+    <html lang="ja" suppressHydrationWarning className={displaySerif.variable}>
       <body className="antialiased">
         {children}
+        <div className="grain" aria-hidden />
         <SwRegister />
         <Toaster />
         <Analytics />

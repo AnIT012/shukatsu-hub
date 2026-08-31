@@ -481,9 +481,11 @@ export function Dashboard() {
       {/* ヘッダー(白) */}
       <header className="shrink-0 border-b bg-card pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5">
-          <span className="text-[15px] font-semibold tracking-wide text-primary">
-            {now.getMonth() + 1}/{now.getDate()}{" "}
-            <span className="text-muted-foreground">{WD[now.getDay()]}.</span>
+          <span className="font-display text-[20px] font-medium leading-none tracking-wide text-foreground">
+            {now.getMonth() + 1}月{now.getDate()}日{" "}
+            <span className="ml-0.5 text-[15px] text-muted-foreground">
+              {WD_JP[now.getDay()]}
+            </span>
           </span>
           <div className="ml-auto flex items-center gap-1">
             <SaveIndicator />
@@ -565,7 +567,7 @@ export function Dashboard() {
               dragging ? "overflow-hidden" : "overflow-y-auto",
             )}
           >
-            <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+            <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))]">
               <OnboardingPrompts onOpenSettings={() => setView("settings")} />
               {applications.length === 0 ? (
                 <EmptyState
@@ -642,7 +644,7 @@ export function Dashboard() {
               dragging ? "overflow-hidden" : "overflow-y-auto",
             )}
           >
-            <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+            <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))]">
               {events.length > 0 && (
                 <div className="mb-3">
                   <CompanionComment
@@ -670,7 +672,7 @@ export function Dashboard() {
               dragging ? "overflow-hidden" : "overflow-y-auto",
             )}
           >
-            <div className="mx-auto max-w-3xl pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+            <div className="mx-auto max-w-3xl pb-[calc(5.75rem+env(safe-area-inset-bottom))]">
               <SettingsPage
                 onImport={() => fileRef.current?.click()}
                 onExport={handleExport}
@@ -883,12 +885,12 @@ function AnnouncementBanner({ applications }: { applications: Application[] }) {
     <div
       data-tour="banner"
       className={cn(
-        "rounded-xl bg-card p-3 shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] ring-2",
+        "rounded-xl bg-card p-3 shadow-[0_1px_2px_rgba(20,28,55,0.04),0_6px_16px_rgba(20,28,55,0.05)] ring-1",
         items.length === 0
           ? "ring-border"
           : hasUrgent
-            ? "ring-[hsl(var(--danger)/0.6)]"
-            : "ring-[hsl(var(--primary)/0.75)]",
+            ? "ring-[hsl(var(--danger)/0.45)]"
+            : "ring-[hsl(var(--primary)/0.4)]",
       )}
     >
       <div className="flex items-center gap-1.5 text-[12px] font-medium">

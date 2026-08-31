@@ -72,8 +72,9 @@ export function BottomNav({
     <nav
       data-tour="tabs"
       className={cn(
-        // 画面下に固定(flex の子だとキーボードでせり上がるので position:fixed にする)
-        "fixed inset-x-0 bottom-0 z-30 border-t bg-card pb-[env(safe-area-inset-bottom)]",
+        // 紙の上に浮くガラスのピル(下端ベタ付けをやめ、左右下に余白+丸角+blur)
+        "glass-nav fixed inset-x-3 z-30 rounded-[23px]",
+        "bottom-[calc(env(safe-area-inset-bottom)+0.5rem)]",
         // モーダル(キーボード)表示中は完全に消す(iOS でせり上がるのを防ぐ)
         hidden && "hidden",
       )}
