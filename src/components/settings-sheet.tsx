@@ -369,7 +369,7 @@ function SettingsBody({
 
         {/* 通知 */}
         <Section icon={<Bell className="h-4 w-4" />} title="通知">
-          <div className="space-y-3 rounded-2xl border border-border p-3">
+          <div className="space-y-3 rounded-2xl border border-border elevate-sm p-3">
             <div className="flex items-center">
               <span className="text-sm">締切・予定を通知</span>
               <button
@@ -481,7 +481,7 @@ function SettingsBody({
 
         {/* 見た目(テーマ・フォントは行→ピッカーで畳む=場所を取らない) */}
         <Section icon={<Palette className="h-4 w-4" />} title="見た目">
-          <div className="overflow-hidden rounded-2xl border border-border">
+          <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
             <Row
               label="テーマ"
               value={
@@ -574,7 +574,7 @@ function SettingsBody({
 
         {/* データ */}
         <Section icon={<Download className="h-4 w-4" />} title="データ">
-          <div className="overflow-hidden rounded-2xl border border-border">
+          <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
             <Row
               icon={<Upload className="h-4 w-4" />}
               label="インポート（JSON）"
@@ -756,7 +756,7 @@ function SettingsBody({
 
         {/* その他 */}
         <Section icon={<HelpCircle className="h-4 w-4" />} title="その他">
-          <div className="overflow-hidden rounded-2xl border border-border">
+          <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
             <Row
               icon={<HelpCircle className="h-4 w-4" />}
               label="使い方ガイド"

@@ -113,7 +113,7 @@ export function ApplicationCard({
         }}
         className={cn(
           // 純正寄り: 色枠を廃してヘアライン1本、影は囁き、丸みを大きく。緊急/通過は日付と印で示す
-          "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 ring-border shadow-[0_1px_2px_hsl(var(--foreground)/0.04)] transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+          "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 ring-border elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
           sit === "rejected" || sit === "declined" ? "opacity-60" : "",
         )}
       >
@@ -149,7 +149,7 @@ export function ApplicationCard({
         }
       }}
       className={cn(
-        "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 ring-border shadow-[0_1px_2px_hsl(var(--foreground)/0.04)] transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+        "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 ring-border elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
         sit === "rejected" || sit === "declined" ? "opacity-70" : "",
       )}
     >

@@ -373,13 +373,25 @@
       display: none;
     }
   }
-  /* 紙の粒。平らな面に刷った質感を薄く乗せる(強すぎるとノイズに見えるので 0.04) */
+  /* カードを地から浮かせる柔らかい影。近白×近白で平坦(さっぱり)に見えるのを、
+     色でなく「層の深さ」で立てる。ヘアラインだけの器はこれで一段持ち上がる */
+  .elevate {
+    box-shadow:
+      0 1px 2px hsl(var(--foreground) / 0.05),
+      0 8px 22px -10px hsl(var(--foreground) / 0.16);
+  }
+  .elevate-sm {
+    box-shadow:
+      0 1px 2px hsl(var(--foreground) / 0.045),
+      0 4px 12px -6px hsl(var(--foreground) / 0.12);
+  }
+  /* 紙の粒。平らな面に刷った質感を乗せる(近白で平坦に見えるのを材質で救う) */
   .grain {
     position: fixed;
     inset: 0;
     z-index: 60;
     pointer-events: none;
-    opacity: 0.04;
+    opacity: 0.065;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   .scrollbar-thin {

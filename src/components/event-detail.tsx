@@ -367,7 +367,7 @@ function EventDetailBody({
         {f.date && (
           <div
             className={cn(
-              "mt-4 rounded-2xl px-4 py-3.5 shadow-[0_1px_3px_hsl(var(--foreground)/0.05)]",
+              "mt-4 rounded-2xl px-4 py-3.5 elevate",
               urgent
                 ? "bg-[hsl(var(--danger)/0.08)] ring-1 ring-[hsl(var(--danger)/0.25)]"
                 : "bg-accent",

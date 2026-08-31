@@ -1126,7 +1126,7 @@ function NextBanner({
   return (
     <div
       className={cn(
-        "rounded-2xl px-4 py-3.5 shadow-[0_1px_3px_hsl(var(--foreground)/0.05)]",
+        "rounded-2xl px-4 py-3.5 elevate",
         urgent
           ? "bg-[hsl(var(--danger)/0.08)] ring-1 ring-[hsl(var(--danger)/0.25)]"
           : "bg-accent",
