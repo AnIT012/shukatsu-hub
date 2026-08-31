@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   // 地ならし#5: 上部バーの色は上端fixed/sticky(=ヘッダー card)の色から導かれる。
   // 紙の地に合わせる(白のままだと status bar だけ浮く)。地の色は globals の html/body で別途指定済み。
-  themeColor: "#f2f0e9",
+  themeColor: "#fdfbf8",
   width: "device-width",
   initialScale: 1,
   // ⚠ 地ならし#1: maximumScale/userScalable は付けない(拡大を奪う)。

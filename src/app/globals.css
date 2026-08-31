@@ -3,268 +3,268 @@
 @tailwind utilities;
 
 @layer base {
-  /* 紙とガラス(デフォルト) — 値は paper-glass-web の実測(Palette.swift由来)を HSL へ写した物。
-     紙 #F8F6F1 / インク #1E2A3A / 罫 #D8D2C4 / 煉瓦 #8A2F22 / 苔 #2E6B45 / 藍アクセント */
+  /* 紙とガラス(デフォルト)。地は「限りなく白に近い、ごく薄い肌色」= ほぼ白+温かみ。
+     インク #1E2A3A / 藍アクセント / 煉瓦 / 苔。地の値は theme_to_paper と一致させる(全テーマ共通) */
   :root {
-    --background: 43 24% 96%; /* 紙 #F8F6F1 */
+    --background: 32 40% 98%; /* ほぼ白+薄い肌色 #FEFBF7 */
     --foreground: 214 32% 17%; /* インク #1E2A3A */
-    --card: 44 33% 98%; /* 少し持ち上げた紙(器・ヘッダー・シート) */
+    --card: 36 44% 99.3%; /* ほぼ白(器・ヘッダー・シートを僅かに持ち上げ) */
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 230 44% 43%; /* 藍 #3D4E9E */
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%; /* 沈んだ紙 #EFEBE1 */
+    --secondary: 34 26% 94%; /* 沈んだ面 */
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%; /* ink3 #5E6975 */
-    --accent: 228 26% 85%; /* 藍 ramp L1(紙に藍21%) */
+    --accent: 228 34% 92%; /* 藍 ramp L1(地に藍を薄く) */
     --accent-foreground: 228 46% 32%; /* 濃い藍 #2C3A78 */
     --danger: 8 60% 34%; /* 煉瓦 #8A2F22 */
     --danger-foreground: 0 0% 100%;
     --success: 143 40% 30%; /* 苔 #2E6B45 */
-    --warning: 35 84% 31%; /* 琥珀寄りの注意色(復元/バックアップの注記)。AA(on card)を通す濃さ */
-    --border: 42 20% 84%; /* 罫 #D8D2C4 */
-    --input: 42 20% 84%;
+    --warning: 35 84% 31%; /* 琥珀寄りの注意色。AA(on card)を通す濃さ */
+    --border: 36 24% 90%; /* 罫(白地に合わせて薄め) */
+    --input: 36 24% 90%;
     --ring: 230 44% 43%;
-    --radius: 1rem; /* 器の丸みを大きく(純正寄り) */
+    --radius: 1rem;
   }
 
   [data-theme="aiNezu"] {
-    --background: 43 24% 96%;
+    --background: 32 40% 98%;
     --foreground: 214 32% 17%;
-    --card: 44 33% 98%;
+    --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 244 15% 38%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%;
+    --secondary: 34 26% 94%;
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 255 25% 93%;
     --accent-foreground: 244 18% 40%;
     --danger: 346 45% 49%;
-    --border: 42 20% 84%;
-    --input: 42 20% 84%;
+    --border: 36 24% 90%;
+    --input: 36 24% 90%;
     --ring: 244 15% 38%;
   }
 
   [data-theme="sumi"] {
-    --background: 43 24% 96%;
+    --background: 32 40% 98%;
     --foreground: 214 32% 17%;
-    --card: 44 33% 98%;
+    --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 240 5% 24%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%;
+    --secondary: 34 26% 94%;
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 60 8% 91%;
     --accent-foreground: 240 5% 30%;
     --danger: 346 45% 49%;
-    --border: 42 20% 84%;
-    --input: 42 20% 84%;
+    --border: 36 24% 90%;
+    --input: 36 24% 90%;
     --ring: 240 5% 24%;
   }
 
   [data-theme="navy"] {
-    --background: 43 24% 96%;
+    --background: 32 40% 98%;
     --foreground: 214 32% 17%;
-    --card: 44 33% 98%;
+    --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 222 31% 26%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%;
+    --secondary: 34 26% 94%;
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 213 40% 93%;
     --accent-foreground: 222 31% 30%;
     --danger: 346 45% 49%;
-    --border: 42 20% 84%;
-    --input: 42 20% 84%;
+    --border: 36 24% 90%;
+    --input: 36 24% 90%;
     --ring: 222 31% 26%;
   }
 
   [data-theme="greige"] {
-    --background: 43 24% 96%;
+    --background: 32 40% 98%;
     --foreground: 214 32% 17%;
-    --card: 44 33% 98%;
+    --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 24 13% 37%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%;
+    --secondary: 34 26% 94%;
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 36 30% 91%;
     --accent-foreground: 24 14% 40%;
     --danger: 11 44% 48%;
-    --border: 42 20% 84%;
-    --input: 42 20% 84%;
+    --border: 36 24% 90%;
+    --input: 36 24% 90%;
     --ring: 24 13% 37%;
   }
 
   /* 水浅葱(みずあさぎ) — くすみ水色 */
   [data-theme="mizuasagi"] {
-    --background: 43 24% 96%;
+    --background: 32 40% 98%;
     --foreground: 214 32% 17%;
-    --card: 44 33% 98%;
+    --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 191 32% 38%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%;
+    --secondary: 34 26% 94%;
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 190 32% 92%;
     --accent-foreground: 191 32% 34%;
     --danger: 346 45% 49%;
-    --border: 42 20% 84%;
-    --input: 42 20% 84%;
+    --border: 36 24% 90%;
+    --input: 36 24% 90%;
     --ring: 191 32% 38%;
   }
 
   /* 青磁(せいじ) — くすみ青緑 */
   [data-theme="seiji"] {
-    --background: 43 24% 96%;
+    --background: 32 40% 98%;
     --foreground: 214 32% 17%;
-    --card: 44 33% 98%;
+    --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 160 34% 36%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%;
+    --secondary: 34 26% 94%;
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 158 30% 92%;
     --accent-foreground: 160 34% 32%;
     --danger: 346 45% 49%;
-    --border: 42 20% 84%;
-    --input: 42 20% 84%;
+    --border: 36 24% 90%;
+    --input: 36 24% 90%;
     --ring: 160 34% 36%;
   }
 
   /* 藤(ふじ) — くすみ紫 */
   [data-theme="fuji"] {
-    --background: 43 24% 96%;
+    --background: 32 40% 98%;
     --foreground: 214 32% 17%;
-    --card: 44 33% 98%;
+    --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 258 26% 47%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%;
+    --secondary: 34 26% 94%;
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 258 32% 94%;
     --accent-foreground: 258 28% 43%;
     --danger: 346 45% 49%;
-    --border: 42 20% 84%;
-    --input: 42 20% 84%;
+    --border: 36 24% 90%;
+    --input: 36 24% 90%;
     --ring: 258 26% 47%;
   }
 
   /* 桜鼠(さくらねず) — くすみピンク。締切(danger)は朱で区別 */
   [data-theme="sakuraNezu"] {
-    --background: 43 24% 96%;
+    --background: 32 40% 98%;
     --foreground: 214 32% 17%;
-    --card: 44 33% 98%;
+    --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 348 28% 51%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%;
+    --secondary: 34 26% 94%;
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 350 33% 94%;
     --accent-foreground: 348 30% 45%;
     --danger: 6 68% 44%;
-    --border: 42 20% 84%;
-    --input: 42 20% 84%;
+    --border: 36 24% 90%;
+    --input: 36 24% 90%;
     --ring: 348 28% 51%;
   }
 
   /* 茜(あかね) — くすみ赤。締切(danger)は朱橙で区別 */
   [data-theme="akane"] {
-    --background: 43 24% 96%;
+    --background: 32 40% 98%;
     --foreground: 214 32% 17%;
-    --card: 44 33% 98%;
+    --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 2 42% 44%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%;
+    --secondary: 34 26% 94%;
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 6 34% 93%;
     --accent-foreground: 2 42% 40%;
     --danger: 20 82% 36%;
-    --border: 42 20% 84%;
-    --input: 42 20% 84%;
+    --border: 36 24% 90%;
+    --input: 36 24% 90%;
     --ring: 2 42% 44%;
   }
 
   /* 琥珀(こはく) — 金茶 */
   [data-theme="kohaku"] {
-    --background: 43 24% 96%;
+    --background: 32 40% 98%;
     --foreground: 214 32% 17%;
-    --card: 44 33% 98%;
+    --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 34 55% 35%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%;
+    --secondary: 34 26% 94%;
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 36 40% 91%;
     --accent-foreground: 34 56% 31%;
     --danger: 4 62% 46%;
-    --border: 42 20% 84%;
-    --input: 42 20% 84%;
+    --border: 36 24% 90%;
+    --input: 36 24% 90%;
     --ring: 34 55% 35%;
   }
 
   /* 鳩羽鼠(はとばねず) — 紫がかった鼠 */
   [data-theme="hatobaNezu"] {
-    --background: 43 24% 96%;
+    --background: 32 40% 98%;
     --foreground: 214 32% 17%;
-    --card: 44 33% 98%;
+    --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
-    --popover: 44 33% 98%;
+    --popover: 36 44% 99.3%;
     --popover-foreground: 214 32% 17%;
     --primary: 250 13% 44%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 24% 91%;
+    --secondary: 34 26% 94%;
     --secondary-foreground: 214 32% 17%;
-    --muted: 40 24% 91%;
+    --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 250 18% 93%;
     --accent-foreground: 250 14% 40%;
     --danger: 346 45% 49%;
-    --border: 42 20% 84%;
-    --input: 42 20% 84%;
+    --border: 36 24% 90%;
+    --input: 36 24% 90%;
     --ring: 250 13% 44%;
   }
 }
@@ -351,41 +351,8 @@
       inset 0 -1px 0 hsl(var(--foreground) / 0.06),
       0 8px 24px hsl(var(--foreground) / 0.1);
   }
-  /* 5' 色収差 — 背後を歪めず、厚いガラスの縁で光が分かれて見せる。1.5px の縁リング2枚 */
-  .glass-nav::before,
-  .glass-nav::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    padding: 1.5px;
-    mix-blend-mode: plus-lighter;
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-  }
-  .glass-nav::before {
-    background: linear-gradient(
-      155deg,
-      rgb(255 90 0 / 0.55),
-      transparent 38%,
-      transparent 62%,
-      rgb(255 150 0 / 0.28)
-    );
-    transform: translate(0.5px, -0.5px);
-  }
-  .glass-nav::after {
-    background: linear-gradient(
-      155deg,
-      rgb(0 140 255 / 0.5),
-      transparent 38%,
-      transparent 62%,
-      rgb(0 225 255 / 0.3)
-    );
-    transform: translate(-0.5px, 0.5px);
-  }
+  /* (色収差の縁リングは撤去 — 実機で縁が緑/赤に見えて"壊れて"読めるため。
+     ガラスは blur+彩度+明るさ+上光/下影の縁だけで十分成立する) */
   /* 逃げ道: backdrop-filter非対応 or 高コントラスト設定では材質を捨てて読める側へ */
   @supports not (
     (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
