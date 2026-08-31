@@ -5,7 +5,6 @@ import {
   ArrowDown,
   ArrowDownUp,
   ArrowUp,
-  Check,
   LayoutList,
   Rows3,
   RotateCcw,
@@ -24,12 +23,6 @@ import {
   SheetContent,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
   PRIORITY_OPTIONS,
@@ -170,36 +163,33 @@ export function ControlsBar({
         )}
       </Button>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
+      {/* 表示モード = iOSセグメント(選択が紙色で浮く) */}
+      <div
+        role="group"
+        aria-label="表示モード"
+        className="flex h-9 shrink-0 items-center rounded-full bg-secondary p-0.5"
+      >
+        {([
+          ["compact", LayoutList, "コンパクト表示"],
+          ["detail", Rows3, "詳細表示"],
+        ] as const).map(([m, Icon, label]) => (
+          <button
+            key={m}
             type="button"
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 shrink-0 bg-card"
-            aria-label="表示モード"
-            title="表示モード（コンパクト / 詳細）"
-          >
-            {viewMode === "compact" ? (
-              <LayoutList className="h-4 w-4" />
-            ) : (
-              <Rows3 className="h-4 w-4" />
+            aria-label={label}
+            aria-pressed={viewMode === m}
+            onClick={() => onViewModeChange(m)}
+            className={cn(
+              "flex h-8 w-9 items-center justify-center rounded-full transition-all active:scale-95",
+              viewMode === m
+                ? "bg-card text-primary shadow-[0_1px_2px_hsl(var(--foreground)/0.14)]"
+                : "text-muted-foreground",
             )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onViewModeChange("compact")}>
-            <LayoutList className="h-4 w-4" />
-            <span className="flex-1">コンパクト</span>
-            {viewMode === "compact" && <Check className="h-4 w-4 text-primary" />}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onViewModeChange("detail")}>
-            <Rows3 className="h-4 w-4" />
-            <span className="flex-1">詳細</span>
-            {viewMode === "detail" && <Check className="h-4 w-4 text-primary" />}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          >
+            <Icon className="h-4 w-4" />
+          </button>
+        ))}
+      </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
