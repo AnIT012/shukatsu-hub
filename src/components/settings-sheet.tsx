@@ -18,7 +18,6 @@ import {
   Send,
   Smartphone,
   Trash2,
-  Type,
   Upload,
   UserCircle,
 } from "lucide-react";
@@ -205,6 +204,8 @@ function SettingsBody({
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [confirmSnap, setConfirmSnap] = useState<Snapshot | null>(null);
+  const [themePicker, setThemePicker] = useState(false);
+  const [fontPicker, setFontPicker] = useState(false);
 
   useEffect(() => {
     setNeedsHome(isIOS() && !isStandalone());
@@ -478,60 +479,98 @@ function SettingsBody({
           </div>
         </Section>
 
-        {/* テーマ */}
-        <Section icon={<Palette className="h-4 w-4" />} title="テーマ">
-          <div className="grid grid-cols-4 gap-2.5">
-            {THEME_OPTIONS.map((t) => (
-              <button
-                key={t.value}
-                type="button"
-                data-theme={t.value}
-                onClick={() => setTheme(t.value)}
-                className={cn(
-                  "flex flex-col items-center gap-1.5 rounded-2xl border bg-card p-2.5 transition-colors",
-                  theme === t.value
-                    ? "border-primary ring-1 ring-primary"
-                    : "border-border hover:border-muted-foreground/40",
-                )}
-              >
-                <span
-                  className="h-7 w-7 rounded-full ring-1 ring-inset ring-foreground/10"
-                  style={{ background: "hsl(var(--primary))" }}
-                />
-                <span className="text-[11px] leading-none text-foreground">
-                  {t.label}
-                </span>
-              </button>
-            ))}
+        {/* 見た目(テーマ・フォントは行→ピッカーで畳む=場所を取らない) */}
+        <Section icon={<Palette className="h-4 w-4" />} title="見た目">
+          <div className="overflow-hidden rounded-2xl border border-border">
+            <Row
+              label="テーマ"
+              value={
+                <>
+                  <span
+                    className="h-4 w-4 rounded-full ring-1 ring-inset ring-foreground/10"
+                    style={{ background: "hsl(var(--primary))" }}
+                  />
+                  {THEME_OPTIONS.find((t) => t.value === theme)?.label ?? "標準"}
+                </>
+              }
+              onClick={() => setThemePicker(true)}
+            />
+            <Row
+              label="フォント"
+              value={FONT_OPTIONS.find((o) => o.value === font)?.label ?? "標準"}
+              onClick={() => setFontPicker(true)}
+            />
           </div>
         </Section>
 
-        {/* フォント */}
-        <Section icon={<Type className="h-4 w-4" />} title="フォント">
-          <div className="grid grid-cols-2 gap-2.5">
-            {FONT_OPTIONS.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() => setFont(o.value)}
-                style={{ fontFamily: o.stack }}
-                className={cn(
-                  "flex flex-col gap-0.5 rounded-2xl border bg-card px-3 py-2.5 text-left transition-colors",
-                  font === o.value
-                    ? "border-primary ring-1 ring-primary"
-                    : "border-border hover:border-muted-foreground/40",
-                )}
-              >
-                <span className="text-[15px] font-medium leading-snug">
-                  就活Hub
-                </span>
-                <span className="text-[11px] text-muted-foreground">
-                  {o.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </Section>
+        {/* テーマ ピッカー(ボトムシート) */}
+        <Sheet open={themePicker} onOpenChange={setThemePicker}>
+          <SheetContent side="bottom" className="rounded-t-2xl px-5 pb-7 pt-4">
+            <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
+            <SheetTitle className="mb-4 text-base">テーマ</SheetTitle>
+            <div className="grid grid-cols-4 gap-2.5">
+              {THEME_OPTIONS.map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  data-theme={t.value}
+                  onClick={() => {
+                    setTheme(t.value);
+                    setThemePicker(false);
+                  }}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-2xl border bg-card p-2.5 transition-colors",
+                    theme === t.value
+                      ? "border-primary ring-1 ring-primary"
+                      : "border-border",
+                  )}
+                >
+                  <span
+                    className="h-7 w-7 rounded-full ring-1 ring-inset ring-foreground/10"
+                    style={{ background: "hsl(var(--primary))" }}
+                  />
+                  <span className="text-[11px] leading-none text-foreground">
+                    {t.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {/* フォント ピッカー(ボトムシート) */}
+        <Sheet open={fontPicker} onOpenChange={setFontPicker}>
+          <SheetContent side="bottom" className="rounded-t-2xl px-5 pb-7 pt-4">
+            <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
+            <SheetTitle className="mb-4 text-base">フォント</SheetTitle>
+            <div className="grid grid-cols-2 gap-2.5">
+              {FONT_OPTIONS.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => {
+                    setFont(o.value);
+                    setFontPicker(false);
+                  }}
+                  style={{ fontFamily: o.stack }}
+                  className={cn(
+                    "flex flex-col gap-0.5 rounded-2xl border bg-card px-3 py-2.5 text-left transition-colors",
+                    font === o.value
+                      ? "border-primary ring-1 ring-primary"
+                      : "border-border",
+                  )}
+                >
+                  <span className="text-[15px] font-medium leading-snug">
+                    就活Hub
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {o.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </SheetContent>
+        </Sheet>
 
         {/* データ */}
         <Section icon={<Download className="h-4 w-4" />} title="データ">
@@ -768,11 +807,13 @@ function Section({
 function Row({
   icon,
   label,
+  value,
   onClick,
   danger,
 }: {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   label: string;
+  value?: React.ReactNode;
   onClick: () => void;
   danger?: boolean;
 }) {
@@ -781,15 +822,22 @@ function Row({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex min-h-[44px] w-full items-center gap-2.5 border-b border-border px-3 py-2.5 text-left text-sm last:border-b-0 hover:bg-muted/50",
+        "flex min-h-[46px] w-full items-center gap-2.5 border-b border-border px-3.5 py-2.5 text-left text-[15px] last:border-b-0 hover:bg-muted/50",
         danger && "text-danger",
       )}
     >
-      <span className={danger ? "text-danger" : "text-muted-foreground"}>
-        {icon}
-      </span>
+      {icon && (
+        <span className={danger ? "text-danger" : "text-muted-foreground"}>
+          {icon}
+        </span>
+      )}
       <span className="flex-1">{label}</span>
-      <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
+      {value != null && (
+        <span className="flex items-center gap-1.5 text-[15px] text-muted-foreground">
+          {value}
+        </span>
+      )}
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
     </button>
   );
 }
