@@ -4,7 +4,7 @@
 
 // 選考フロー(段階＞タスク)大改修にあわせて版を更新。activate で旧キャッシュを破棄し、
 // 復帰ユーザーに確実に新バージョンを配る。
-const CACHE = "shukatsu-cache-v2";
+const CACHE = "shukatsu-cache-v3";
 // 最低限プリキャッシュ(残りの静的アセットは実行時にキャッシュへ育てる)
 const PRECACHE = ["/", "/manifest.webmanifest", "/icon-192.png", "/icon-512.png"];
 
@@ -43,6 +43,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   // Supabase などの外部ドメインはキャッシュしない(常に最新・認証を壊さない)
   if (url.origin !== self.location.origin) return;
+
+  // 開発(localhost)ではSWを一切介在させない。
+  // dev のチャンクはURLがほぼ固定なので「キャッシュ優先」が古いJSを永久配信し、
+  // 更新が一生反映されない事故になる(本番はハッシュ付きURLなので安全)。
+  if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return;
 
   // ページ遷移: ネット優先 → 失敗時はキャッシュ(オフラインでも起動できる)
   if (req.mode === "navigate") {

@@ -481,9 +481,9 @@ export function Dashboard() {
       {/* ヘッダー(白) */}
       <header className="shrink-0 border-b bg-card pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5">
-          <span className="font-display text-[20px] font-medium leading-none tracking-wide text-foreground">
+          <span className="text-[17px] font-bold tracking-tight text-foreground">
             {now.getMonth() + 1}月{now.getDate()}日{" "}
-            <span className="ml-0.5 text-[15px] text-muted-foreground">
+            <span className="ml-0.5 text-[14px] font-medium text-muted-foreground">
               {WD_JP[now.getDay()]}
             </span>
           </span>

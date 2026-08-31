@@ -274,6 +274,33 @@
   /* オーバースクロールで上端に覗くのは html の背景。ヘッダー(card)と同色にして馴染ませる */
   html {
     background-color: hsl(var(--card));
+    /* 地ならし#3'相当: iOSの自動文字拡大を止める(横向き等で字が勝手に太らない) */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* 地ならし#6: 端まで送った勢いで画面全体が跳ねる/引き下げ更新で浮くタブだけ取り残されるのを止める */
+    overscroll-behavior-y: none;
+  }
+
+  /* 地ならし#2: 「Webらしい反応」を押せる物にだけ止める(灰/青の矩形・ダブルタップ拡大・長押し選択とコールアウト)。
+     ⚠ 地(html/body)に一括では当てない — 本文がコピーできなくなる。押せる物を列挙する。
+     カード等 role="button" も対象(ネイティブの押せる行はテキスト選択させない)。 */
+  button,
+  a,
+  [role="button"],
+  summary,
+  [data-tap] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* 地ならし#2b: 上のuser-selectを、字の側だけ戻す(押せる行の中の入力欄/コピーさせたい値の巻き添え回避) */
+  input,
+  textarea,
+  [data-selectable] {
+    -webkit-user-select: text;
+    user-select: text;
   }
   body {
     @apply text-foreground;
@@ -295,15 +322,19 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+  /* 地ならし#3: 入力欄の字を16px未満にしない。iOS Safariが小さい入力欄にfocusすると
+     画面ごと拡大し、blurしても戻らない事故を潰す(viewportで拡大禁止する代わりにこれで担保)。
+     大きくしたい時は font-size ではなく --input-fs を上げる。指の画面(coarse)だけに掛ける。 */
+  @media (pointer: coarse) {
+    input,
+    select,
+    textarea {
+      font-size: max(16px, var(--input-fs, 1rem)) !important;
+    }
+  }
 }
 
 @layer utilities {
-  /* 見出しの和セリフ(明朝)。本文フォント(--app-font)には触れない */
-  .font-display {
-    font-family: var(--font-display), "Hiragino Mincho ProN", "Yu Mincho",
-      serif;
-    font-feature-settings: "palt" 1;
-  }
   /* 浮くタブ = 殻だけガラス。紙の上に blur+ハイライト縁+影で載る */
   .glass-nav {
     background-color: hsl(var(--card) / 0.6);
