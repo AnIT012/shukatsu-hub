@@ -399,9 +399,14 @@ function DetailBody({
           }
         >
           {app.esEntries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              設問と回答を保存して使い回せます。
-            </p>
+            <EmptyAdd
+              onClick={() => {
+                const id = addEsEntry(app.id);
+                if (id) setEditEs(id);
+              }}
+            >
+              設問と回答を保存して使い回す
+            </EmptyAdd>
           ) : (
             <div className="space-y-2">
               {app.esEntries.map((es) => {
@@ -736,9 +741,14 @@ function DetailBody({
           }
         >
           {app.links.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              マイページ等のURLを登録できます。
-            </p>
+            <EmptyAdd
+              onClick={() => {
+                addLink(app.id);
+                setEditLinks(true);
+              }}
+            >
+              マイページ等のURLを登録する
+            </EmptyAdd>
           ) : editLinks ? (
             <div className="space-y-2">
               {app.links.map((link) => (
@@ -941,6 +951,26 @@ function LabeledSelect({
         </SelectContent>
       </Select>
     </div>
+  );
+}
+
+// 空セクションの一貫した「押せる追加カード」。ベタ文字だとスカスカ/放置に見えるのを防ぐ
+function EmptyAdd({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-2 rounded-2xl border border-dashed border-border px-3.5 py-3 text-left text-[13px] text-muted-foreground transition-colors hover:bg-muted/40 active:scale-[0.99]"
+    >
+      <Plus className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+      <span>{children}</span>
+    </button>
   );
 }
 
