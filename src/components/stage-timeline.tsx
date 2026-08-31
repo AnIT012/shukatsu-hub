@@ -602,14 +602,14 @@ function TaskRow({
 
   if (editing && editMode) {
     return (
-      <div className="space-y-2 rounded-lg border-2 border-[hsl(var(--primary)/0.35)] bg-card p-2.5">
+      <div className="space-y-2.5 rounded-2xl border border-[hsl(var(--primary)/0.3)] bg-card p-3 shadow-[0_1px_3px_hsl(var(--foreground)/0.05)]">
         <div className="flex items-center gap-2">
           <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
           <Select
             value={task.kind}
             onValueChange={(v) => onUpdate({ kind: v as StepKind })}
           >
-            <SelectTrigger className="h-8 flex-1 text-sm">
+            <SelectTrigger className="h-9 flex-1 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -627,25 +627,31 @@ function TaskRow({
           placeholder="補足名(任意) 例: 一次(オンライン)"
           className="h-9"
         />
-        <div className="space-y-3 rounded-lg border bg-muted/40 p-2.5">
+        {/* 締切/実施日: 箱の入れ子をやめ、日付+時刻を1行に。クリアはグループごとに1個 */}
+        <div className="space-y-3">
           <div className="space-y-1.5">
-            <div className="text-[11px] font-medium text-muted-foreground">
+            <div className="text-[12px] font-medium text-muted-foreground">
               締切（申請・予約・提出など）
             </div>
             <div className="flex items-center gap-2">
               <Input
                 type="date"
                 value={date}
-                onChange={(e) =>
-                  onUpdate({ dueAt: joinDue(e.target.value, time) })
-                }
-                className="h-10 min-w-0 flex-1 px-2.5 text-[16px] sm:text-sm"
+                onChange={(e) => onUpdate({ dueAt: joinDue(e.target.value, time) })}
+                className="h-11 min-w-0 flex-1 px-2.5 text-[16px] sm:text-sm"
+              />
+              <Input
+                type="time"
+                value={time}
+                disabled={!date}
+                onChange={(e) => onUpdate({ dueAt: joinDue(date, e.target.value) })}
+                className="h-11 w-[104px] shrink-0 px-2 text-[16px] sm:text-sm"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 shrink-0 text-muted-foreground"
+                className="h-10 w-9 shrink-0 text-muted-foreground"
                 disabled={!date}
                 title="締切をクリア"
                 onClick={() => onUpdate({ dueAt: null })}
@@ -653,70 +659,34 @@ function TaskRow({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <Input
-                type="time"
-                value={time}
-                disabled={!date}
-                onChange={(e) => onUpdate({ dueAt: joinDue(date, e.target.value) })}
-                className="h-10 min-w-0 flex-1 px-2.5 text-[16px] sm:text-sm"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0 text-muted-foreground"
-                disabled={!time}
-                title="時刻をクリア"
-                onClick={() => onUpdate({ dueAt: joinDue(date, "") })}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
           </div>
-          <div className="space-y-1.5 border-t pt-2.5">
-            <div className="text-[11px] font-medium text-muted-foreground">
+          <div className="h-px bg-border" />
+          <div className="space-y-1.5">
+            <div className="text-[12px] font-medium text-muted-foreground">
               実施日（GD・面接など）
             </div>
             <div className="flex items-center gap-2">
               <Input
                 type="date"
                 value={hDate}
-                onChange={(e) =>
-                  onUpdate({ heldAt: joinDue(e.target.value, hTime) })
-                }
-                className="h-10 min-w-0 flex-1 px-2.5 text-[16px] sm:text-sm"
+                onChange={(e) => onUpdate({ heldAt: joinDue(e.target.value, hTime) })}
+                className="h-11 min-w-0 flex-1 px-2.5 text-[16px] sm:text-sm"
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0 text-muted-foreground"
-                disabled={!hDate}
-                title="実施日をクリア"
-                onClick={() => onUpdate({ heldAt: null })}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex items-center gap-2">
               <Input
                 type="time"
                 value={hTime}
                 disabled={!hDate}
-                onChange={(e) =>
-                  onUpdate({ heldAt: joinDue(hDate, e.target.value) })
-                }
-                className="h-10 min-w-0 flex-1 px-2.5 text-[16px] sm:text-sm"
+                onChange={(e) => onUpdate({ heldAt: joinDue(hDate, e.target.value) })}
+                className="h-11 w-[104px] shrink-0 px-2 text-[16px] sm:text-sm"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 shrink-0 text-muted-foreground"
-                disabled={!hTime}
-                title="時刻をクリア"
-                onClick={() => onUpdate({ heldAt: joinDue(hDate, "") })}
+                className="h-10 w-9 shrink-0 text-muted-foreground"
+                disabled={!hDate}
+                title="実施日をクリア"
+                onClick={() => onUpdate({ heldAt: null })}
               >
                 <X className="h-4 w-4" />
               </Button>
