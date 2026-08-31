@@ -135,14 +135,15 @@ function InfoBadge({
   children: React.ReactNode;
   tone?: "default" | "success";
 }) {
+  // 印(メタ情報)は枠を持たせず静かに(押せる物と顔を分ける)
   const cls =
     tone === "success"
-      ? "bg-[hsl(var(--success)/0.14)] text-success ring-border"
-      : "bg-secondary text-foreground ring-border";
+      ? "bg-[hsl(var(--success)/0.13)] text-success"
+      : "bg-secondary text-muted-foreground";
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium ring-1 ring-inset",
+        "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11.5px] font-medium",
         cls,
       )}
     >
@@ -210,12 +211,12 @@ function EventDetailBody({
             onClick={() => setEditBasic(true)}
             className="group block text-left"
           >
-            <h2 className="text-lg font-semibold leading-tight">
+            <h2 className="text-[22px] font-bold leading-tight tracking-tight">
               {ev.title || "(イベント名未設定)"}
-              <Pencil className="ml-1.5 inline h-3.5 w-3.5 align-baseline text-muted-foreground/50" />
+              <Pencil className="ml-1.5 inline h-4 w-4 align-baseline text-muted-foreground/40" />
             </h2>
             {ev.company && (
-              <p className="mt-0.5 text-sm text-muted-foreground">
+              <p className="mt-1 text-[13px] text-muted-foreground">
                 {ev.company}
               </p>
             )}
@@ -346,10 +347,10 @@ function EventDetailBody({
         {f.date && (
           <div
             className={cn(
-              "mt-4 rounded-2xl px-4 py-3 ring-1",
+              "mt-4 rounded-2xl px-4 py-3.5 shadow-[0_1px_3px_hsl(var(--foreground)/0.05)]",
               urgent
-                ? "bg-[hsl(var(--danger)/0.07)] ring-border"
-                : "bg-accent ring-border",
+                ? "bg-[hsl(var(--danger)/0.08)] ring-1 ring-[hsl(var(--danger)/0.25)]"
+                : "bg-accent",
             )}
           >
             <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -722,48 +723,35 @@ function DateRow({
   onClearTime: () => void;
   clearLabel: string;
 }) {
+  // 日付+時刻+クリアを1行に(別行にしない)。時刻のクリアは日付クリアに集約
+  void onClearTime;
   return (
-    <>
-      <div className="flex items-center gap-2">
-        <Input
-          type="date"
-          value={date}
-          onChange={(e) => onDate(e.target.value)}
-          className="h-10 min-w-0 flex-1 px-2.5 text-[16px] sm:text-sm"
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 shrink-0 text-muted-foreground"
-          disabled={!date}
-          title={`${clearLabel}をクリア`}
-          onClick={onClearDate}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      <div className="flex items-center gap-2">
-        <Input
-          type="time"
-          value={time}
-          disabled={!date}
-          onChange={(e) => onTime(e.target.value)}
-          className="h-10 min-w-0 flex-1 px-2.5 text-[16px] sm:text-sm"
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 shrink-0 text-muted-foreground"
-          disabled={!time}
-          title="時刻をクリア"
-          onClick={onClearTime}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-    </>
+    <div className="flex items-center gap-2">
+      <Input
+        type="date"
+        value={date}
+        onChange={(e) => onDate(e.target.value)}
+        className="h-11 min-w-0 flex-1 px-2.5 text-[16px] sm:text-sm"
+      />
+      <Input
+        type="time"
+        value={time}
+        disabled={!date}
+        onChange={(e) => onTime(e.target.value)}
+        className="h-11 w-[104px] shrink-0 px-2 text-[16px] sm:text-sm"
+      />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-10 w-9 shrink-0 text-muted-foreground"
+        disabled={!date}
+        title={`${clearLabel}をクリア`}
+        onClick={onClearDate}
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
   );
 }
 
@@ -781,7 +769,7 @@ function Section({
   return (
     <section className="mt-5">
       <div className="mb-2.5 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-[15px] font-semibold text-foreground [&_svg]:text-muted-foreground">
+        <h3 className="flex items-center gap-1.5 text-[12.5px] font-semibold text-muted-foreground [&_svg]:text-muted-foreground">
           {icon}
           {title}
         </h3>
