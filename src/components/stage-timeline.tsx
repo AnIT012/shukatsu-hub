@@ -197,7 +197,6 @@ export function StageTimeline({ app }: { app: Application }) {
         <div className="flex flex-col">
           {app.stages.map((stage, i) => (
             <div key={stage.id} data-tour={i === 0 ? "step" : undefined}>
-              {i > 0 && <div className="ml-[19px] h-2.5 w-px bg-border" />}
               <StageBlock
                 app={app}
                 stage={stage}
@@ -315,6 +314,36 @@ const RESULT_META: Record<
   },
 };
 
+// 段階の状態を示す小さなスパイン印(押せない)。通過=苔/不合格=煉瓦/辞退=鼠/結果待ち=琥珀/現在=藍/未来=罫
+function StageSpineDot({
+  result,
+  isCurrent,
+}: {
+  result: StageResult;
+  isCurrent: boolean;
+}) {
+  const base = "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full";
+  if (result === "passed")
+    return (
+      <div className={cn(base, "bg-success text-white")}>
+        <Check className="h-3 w-3" strokeWidth={3} />
+      </div>
+    );
+  if (result === "failed")
+    return (
+      <div className={cn(base, "bg-danger text-white")}>
+        <X className="h-3 w-3" strokeWidth={3} />
+      </div>
+    );
+  if (result === "declined")
+    return <div className={cn(base, "border-2 border-border bg-muted")} />;
+  if (result === "waiting")
+    return <div className={cn(base, "border-[3px] border-amber-400 bg-card")} />;
+  if (isCurrent)
+    return <div className={cn(base, "border-[3px] border-primary bg-card")} />;
+  return <div className={cn(base, "border-2 border-border bg-card")} />;
+}
+
 function StageBlock({
   app,
   stage,
@@ -358,20 +387,23 @@ function StageBlock({
   const meta = stage.result !== "pending" ? RESULT_META[stage.result] : null;
 
   return (
-    <div
-      className={cn(
-        // 段階＝実線ブロック(独立性を明示)。現在地は primary リング、結果が出たら結果色リング
-        "rounded-xl border-2 bg-card p-2.5 shadow-[0_1px_2px_rgba(20,28,55,0.04)]",
-        meta
-          ? cn("ring-1", meta.ring, "border-border")
-          : isCurrent
-            ? "border-[hsl(var(--primary)/0.45)]"
-            : "border-border",
-        settled && "opacity-90",
-      )}
-    >
+    <div className="flex gap-3">
+      {/* 縦のスパイン: 段階の状態印 + つなぎ線(囲いをやめて動線を1本に) */}
+      <div className="flex flex-col items-center">
+        <StageSpineDot result={stage.result} isCurrent={isCurrent} />
+        {!isLast && <div className="mt-1 w-px flex-1 bg-border" />}
+      </div>
+
+      {/* 中身 */}
+      <div
+        className={cn(
+          "min-w-0 flex-1",
+          isLast ? "pb-1" : "pb-5",
+          settled && "opacity-80",
+        )}
+      >
       {/* 段階ヘッダー: 並行バッジ / 段階名(任意) / 現在地 */}
-      <div className="mb-1.5 flex items-center gap-1.5 px-0.5">
+      <div className="flex items-center gap-1.5">
         <span className="text-[11px] font-semibold text-muted-foreground">
           段階 {index + 1}
         </span>
@@ -437,7 +469,7 @@ function StageBlock({
       </div>
 
       {/* タスク群 */}
-      <div className="space-y-1.5">
+      <div className="mt-1.5 space-y-1.5">
         {stage.tasks.map((task, ti) => (
           <TaskRow
             key={task.id}
@@ -468,39 +500,39 @@ function StageBlock({
         </button>
       )}
 
-      {/* 結果(結果待ち=結果ボタン / 決着後の「取り消す」は編集モードのみ) */}
-      {(!settled || editMode) && (
-      <div className="mt-2 border-t pt-2">
-        {settled ? (
-          <button
-            type="button"
-            onClick={() => onSetResult("pending")}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium text-muted-foreground hover:bg-muted"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            結果を取り消す
-          </button>
-        ) : (
-          <div className="flex items-center gap-1.5">
-            <ResultBtn
-              label="通過"
-              tone="success"
-              onClick={() => onSetResult("passed")}
-            />
-            <ResultBtn
-              label="不合格"
-              tone="danger"
-              onClick={() => onSetResult("failed")}
-            />
-            <ResultBtn
-              label="辞退"
-              tone="muted"
-              onClick={() => onSetResult("declined")}
-            />
-          </div>
-        )}
+      {/* 結果: 見るモードでは「今の段階」だけに出す(全段階に3枠を並べない=どこを触るか明確に)。
+          編集モードは全段階で操作可。決着後の取り消しは編集モードのみ。 */}
+      {settled
+        ? editMode && (
+            <button
+              type="button"
+              onClick={() => onSetResult("pending")}
+              className="mt-2 inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium text-muted-foreground hover:bg-muted"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              結果を取り消す
+            </button>
+          )
+        : (isCurrent || editMode) && (
+            <div className="mt-2 flex items-center gap-1.5">
+              <ResultBtn
+                label="通過"
+                tone="success"
+                onClick={() => onSetResult("passed")}
+              />
+              <ResultBtn
+                label="不合格"
+                tone="danger"
+                onClick={() => onSetResult("failed")}
+              />
+              <ResultBtn
+                label="辞退"
+                tone="muted"
+                onClick={() => onSetResult("declined")}
+              />
+            </div>
+          )}
       </div>
-      )}
     </div>
   );
 }
