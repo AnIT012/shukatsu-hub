@@ -128,6 +128,26 @@ export function EventDetail({
   );
 }
 
+// 空セクションの一貫した押せる追加カード(企業詳細と同じ)
+function EmptyAdd({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-2 rounded-2xl border border-dashed border-border px-3.5 py-3 text-left text-[13px] text-muted-foreground transition-colors hover:bg-muted/40 active:scale-[0.99]"
+    >
+      <Plus className="h-4 w-4 shrink-0 text-muted-foreground/50" />
+      <span>{children}</span>
+    </button>
+  );
+}
+
 function InfoBadge({
   children,
   tone = "default",
@@ -528,9 +548,14 @@ function EventDetailBody({
           }
         >
           {ev.links.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              予約ページ・マイページ等のURLを登録できます。
-            </p>
+            <EmptyAdd
+              onClick={() => {
+                addEventLink(ev.id);
+                setEditLinks(true);
+              }}
+            >
+              予約ページ・マイページ等のURLを登録する
+            </EmptyAdd>
           ) : editLinks ? (
             <div className="space-y-2">
               {ev.links.map((link) => (
