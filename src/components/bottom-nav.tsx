@@ -72,9 +72,9 @@ export function BottomNav({
     <nav
       data-tour="tabs"
       className={cn(
-        // 紙の上に浮くガラスのピル(下端ベタ付けをやめ、左右下に余白+丸角+blur)
-        "glass-nav fixed inset-x-3 z-30 rounded-[23px]",
-        "bottom-[calc(env(safe-area-inset-bottom)+0.5rem)]",
+        // 紙の上に浮くガラスの完全カプセル(iOS 26 の素の TabView に合わせ pill/左右12px)
+        "glass-nav fixed inset-x-3 z-30 rounded-full",
+        "bottom-[max(0.625rem,env(safe-area-inset-bottom))]",
         // モーダル(キーボード)表示中は完全に消す(iOS でせり上がるのを防ぐ)
         hidden && "hidden",
       )}

@@ -112,12 +112,8 @@ export function ApplicationCard({
           }
         }}
         className={cn(
-          "group block w-full cursor-pointer rounded-xl bg-card p-3 text-left shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] transition-all duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:translate-y-0",
-          sit === "passed"
-            ? "ring-1 ring-[hsl(var(--success)/0.5)]"
-            : urgent
-              ? "ring-1 ring-[hsl(var(--danger)/0.5)]"
-              : "ring-1 ring-border",
+          // 純正寄り: 色枠を廃してヘアライン1本、影は囁き、丸みを大きく。緊急/通過は日付と印で示す
+          "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 ring-border shadow-[0_1px_2px_hsl(var(--foreground)/0.04)] transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
           sit === "rejected" || sit === "declined" ? "opacity-60" : "",
         )}
       >
@@ -153,8 +149,7 @@ export function ApplicationCard({
         }
       }}
       className={cn(
-        "group block w-full cursor-pointer rounded-xl bg-card p-3 text-left shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] ring-1 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgba(20,28,55,0.06),0_10px_22px_rgba(20,28,55,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:translate-y-0",
-        urgent ? "ring-[hsl(var(--danger)/0.55)]" : "ring-border",
+        "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 ring-border shadow-[0_1px_2px_hsl(var(--foreground)/0.04)] transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
         sit === "rejected" || sit === "declined" ? "opacity-70" : "",
       )}
     >
@@ -236,6 +231,9 @@ function DateBlock({
   next: StageNextAction;
   urgent: boolean;
 }) {
+  // 純正寄り: 締切ブロックは箱で囲わず、右側の縦ヘアライン1本で本文と分ける
+  const wrap = "flex w-[52px] shrink-0 items-center justify-center self-stretch border-r border-border pr-3";
+
   if (next.type === "result") {
     const map = {
       passed: { icon: Award, cls: "text-success" },
@@ -246,7 +244,7 @@ function DateBlock({
     const r = map[app.result];
     const Icon = r.icon;
     return (
-      <div className="flex w-14 shrink-0 items-center justify-center rounded-lg border bg-muted">
+      <div className={wrap}>
         <Icon className={cn("h-5 w-5", r.cls)} />
       </div>
     );
@@ -254,7 +252,7 @@ function DateBlock({
 
   if (next.type === "waiting") {
     return (
-      <div className="flex w-14 shrink-0 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
+      <div className={cn(wrap, "text-muted-foreground")}>
         <Clock className="h-5 w-5" />
       </div>
     );
@@ -262,7 +260,7 @@ function DateBlock({
 
   if (next.type === "empty") {
     return (
-      <div className="flex w-14 shrink-0 items-center justify-center rounded-lg border border-dashed text-muted-foreground">
+      <div className={cn(wrap, "text-muted-foreground")}>
         <ListPlus className="h-4 w-4" />
       </div>
     );
@@ -274,14 +272,9 @@ function DateBlock({
   const time = focus ? splitDue(focus).time : "";
   // 3行(締切/日付/時刻 or 曜日)。時刻があれば時刻、無ければ曜日。残り日数は詳細で。
   return (
-    <div
-      className={cn(
-        "flex w-14 shrink-0 flex-col items-center justify-center rounded-lg border px-1 py-1.5 text-center",
-        urgent ? "border-[hsl(var(--danger)/0.3)] bg-[hsl(var(--danger)/0.08)]" : "bg-muted",
-      )}
-    >
+    <div className={cn(wrap, "flex-col")}>
       {d ? (
-        <>
+        <div className="text-center">
           <div
             className={cn(
               "text-[9px] font-medium leading-none",
@@ -292,7 +285,7 @@ function DateBlock({
           </div>
           <div
             className={cn(
-              "mt-1 text-[16px] font-semibold leading-none",
+              "mt-1 text-[17px] font-bold leading-none tracking-tight",
               urgent ? "text-danger" : "text-foreground",
             )}
           >
@@ -306,7 +299,7 @@ function DateBlock({
           >
             {time || WD_EN[d.getDay()]}
           </div>
-        </>
+        </div>
       ) : (
         <div className="text-[11px] text-muted-foreground">未定</div>
       )}
