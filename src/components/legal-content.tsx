@@ -23,47 +23,23 @@ export function PrivacyPolicyBody() {
         本ポリシーは、本アプリにおけるユーザー情報の取り扱いを定めたものです。
       </p>
 
-      {/* 「ESを見られている」という誤解を防ぐための明示ブロック */}
-      <div className="rounded-xl border border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.06)] p-3.5 text-sm leading-relaxed">
-        <p className="font-semibold text-foreground">🔒 あなたのデータについて（大切なこと）</p>
-        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-muted-foreground">
+      {/* 「ESを見られている」という誤解を防ぐ要点(3行に凝縮) */}
+      <div className="rounded-2xl border border-primary/25 bg-accent/50 p-4 text-sm leading-relaxed">
+        <p className="font-semibold text-foreground">🔒 あなたのデータについて</p>
+        <ul className="mt-2.5 space-y-2.5 text-muted-foreground">
           <li>
-            入力したES・企業名・選考状況は
-            <span className="font-medium text-foreground">「あなた専用」</span>
-            のデータです。ログイン中の本人だけがアクセスでき、
-            <span className="font-medium text-foreground">
-              他の利用者が閲覧することはできません
-            </span>
-            （データベースのアクセス制御＝RLSで技術的に保護）。
+            入力したES・企業・選考は
+            <span className="font-semibold text-foreground">あなた専用</span>。
+            本人だけがアクセスでき、開発者も他の利用者も中身を見られません（RLSで技術的に分離）。
           </li>
           <li>
-            <span className="font-medium text-foreground">
-              開発者があなたのESや選考内容を閲覧することはありません。
-            </span>
-            本アプリには特定個人のデータを覗くための機能がなく、RLSで分離されています。広告や第三者提供にも一切利用しません。
+            ログインID・会員番号も本人だけ。
+            <span className="font-semibold text-foreground">パスワードは保存しません</span>。
           </li>
           <li>
-            企業ごとに保存できる
-            <span className="font-medium text-foreground">ログインID・会員番号</span>
-            も同様にあなた専用で、
-            <span className="font-medium text-foreground">パスワードは保存しません</span>
-            （一覧では「••••」で隠して表示することもできます）。
-          </li>
-          <li>
-            このページの「保存される情報」は
-            <span className="font-medium text-foreground">
-              「あなたが入力・保存する情報」
-            </span>
-            という意味で、開発者が収集・監視するという意味ではありません。
-          </li>
-          <li>
-            さらに安心したい場合は、ログインせず
-            <span className="font-medium text-foreground">「登録不要で試す」</span>
-            を選べば、データは
-            <span className="font-medium text-foreground">あなたの端末の中だけ</span>
-            に保存され、どこにも送信されないので、
-            <span className="font-medium text-foreground">開発者を含め誰も閲覧できません</span>
-            。
+            「登録不要で試す」なら、データは
+            <span className="font-semibold text-foreground">端末の中だけ</span>
+            に保存され、どこにも送信されません。
           </li>
         </ul>
       </div>
