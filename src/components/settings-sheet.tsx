@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
-  Bell,
   ChevronRight,
   Clock,
   Download,
@@ -12,14 +11,13 @@ import {
   HelpCircle,
   History,
   LogOut,
-  MessageSquare,
   Palette,
   RotateCcw,
   Send,
   Smartphone,
   Trash2,
+  Type,
   Upload,
-  UserCircle,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
@@ -322,7 +320,7 @@ function SettingsBody({
 
       <div className="space-y-6 px-4 py-5">
         {mode === "local" && isSupabaseConfigured && (
-          <Section icon={<UserCircle className="h-4 w-4" />} title="アカウント">
+          <Section title="アカウント">
             <div className="rounded-2xl border border-primary/30 bg-accent/60 p-3">
               <div className="text-sm font-medium">
                 今は端末内に保存中（ゲスト）
@@ -337,7 +335,7 @@ function SettingsBody({
           </Section>
         )}
         {mode === "cloud" && user?.email && (
-          <Section icon={<UserCircle className="h-4 w-4" />} title="アカウント">
+          <Section title="アカウント">
             <div className="rounded-2xl border border-border p-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-[15px] font-medium text-accent-foreground">
@@ -368,7 +366,7 @@ function SettingsBody({
         )}
 
         {/* 通知 */}
-        <Section icon={<Bell className="h-4 w-4" />} title="通知">
+        <Section title="通知">
           <div className="space-y-3 rounded-2xl border border-border elevate-sm p-3">
             <div className="flex items-center">
               <span className="text-sm">締切・予定を通知</span>
@@ -480,9 +478,10 @@ function SettingsBody({
         </Section>
 
         {/* 見た目(テーマ・フォントは行→ピッカーで畳む=場所を取らない) */}
-        <Section icon={<Palette className="h-4 w-4" />} title="見た目">
+        <Section title="見た目">
           <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
             <Row
+              icon={<Palette className="h-4 w-4" />}
               label="テーマ"
               value={
                 <>
@@ -496,6 +495,7 @@ function SettingsBody({
               onClick={() => setThemePicker(true)}
             />
             <Row
+              icon={<Type className="h-4 w-4" />}
               label="フォント"
               value={FONT_OPTIONS.find((o) => o.value === font)?.label ?? "標準"}
               onClick={() => setFontPicker(true)}
@@ -503,77 +503,77 @@ function SettingsBody({
           </div>
         </Section>
 
-        {/* テーマ ピッカー(ボトムシート) */}
-        <Sheet open={themePicker} onOpenChange={setThemePicker}>
-          <SheetContent side="bottom" className="rounded-t-2xl px-5 pb-7 pt-4">
-            <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
-            <SheetTitle className="mb-4 text-base">テーマ</SheetTitle>
-            <div className="grid grid-cols-4 gap-2.5">
-              {THEME_OPTIONS.map((t) => (
-                <button
-                  key={t.value}
-                  type="button"
-                  data-theme={t.value}
-                  onClick={() => {
-                    setTheme(t.value);
-                    setThemePicker(false);
-                  }}
-                  className={cn(
-                    "flex flex-col items-center gap-1.5 rounded-2xl border bg-card p-2.5 transition-colors",
-                    theme === t.value
-                      ? "border-primary ring-1 ring-primary"
-                      : "border-border",
-                  )}
-                >
-                  <span
-                    className="h-7 w-7 rounded-full ring-1 ring-inset ring-foreground/10"
-                    style={{ background: "hsl(var(--primary))" }}
-                  />
-                  <span className="text-[11px] leading-none text-foreground">
-                    {t.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </SheetContent>
-        </Sheet>
+        {/* テーマ(右からスライドするサブページ) */}
+        <SettingsSubPage
+          open={themePicker}
+          onClose={() => setThemePicker(false)}
+          title="テーマ"
+        >
+          <div className="grid grid-cols-4 gap-2.5">
+            {THEME_OPTIONS.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                data-theme={t.value}
+                onClick={() => {
+                  setTheme(t.value);
+                  setThemePicker(false);
+                }}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 rounded-2xl border bg-card p-2.5 transition-colors",
+                  theme === t.value
+                    ? "border-primary ring-1 ring-primary"
+                    : "border-border",
+                )}
+              >
+                <span
+                  className="h-7 w-7 rounded-full ring-1 ring-inset ring-foreground/10"
+                  style={{ background: "hsl(var(--primary))" }}
+                />
+                <span className="text-[11px] leading-none text-foreground">
+                  {t.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </SettingsSubPage>
 
-        {/* フォント ピッカー(ボトムシート) */}
-        <Sheet open={fontPicker} onOpenChange={setFontPicker}>
-          <SheetContent side="bottom" className="rounded-t-2xl px-5 pb-7 pt-4">
-            <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
-            <SheetTitle className="mb-4 text-base">フォント</SheetTitle>
-            <div className="grid grid-cols-2 gap-2.5">
-              {FONT_OPTIONS.map((o) => (
-                <button
-                  key={o.value}
-                  type="button"
-                  onClick={() => {
-                    setFont(o.value);
-                    setFontPicker(false);
-                  }}
-                  style={{ fontFamily: o.stack }}
-                  className={cn(
-                    "flex flex-col gap-0.5 rounded-2xl border bg-card px-3 py-2.5 text-left transition-colors",
-                    font === o.value
-                      ? "border-primary ring-1 ring-primary"
-                      : "border-border",
-                  )}
-                >
-                  <span className="text-[15px] font-medium leading-snug">
-                    就活Hub
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {o.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </SheetContent>
-        </Sheet>
+        {/* フォント(右からスライドするサブページ) */}
+        <SettingsSubPage
+          open={fontPicker}
+          onClose={() => setFontPicker(false)}
+          title="フォント"
+        >
+          <div className="grid grid-cols-2 gap-2.5">
+            {FONT_OPTIONS.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => {
+                  setFont(o.value);
+                  setFontPicker(false);
+                }}
+                style={{ fontFamily: o.stack }}
+                className={cn(
+                  "flex flex-col gap-0.5 rounded-2xl border bg-card px-3 py-2.5 text-left transition-colors",
+                  font === o.value
+                    ? "border-primary ring-1 ring-primary"
+                    : "border-border",
+                )}
+              >
+                <span className="text-[15px] font-medium leading-snug">
+                  就活Hub
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  {o.label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </SettingsSubPage>
 
         {/* データ */}
-        <Section icon={<Download className="h-4 w-4" />} title="データ">
+        <Section title="データ">
           <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
             <Row
               icon={<Upload className="h-4 w-4" />}
@@ -746,16 +746,13 @@ function SettingsBody({
         </Section>
 
         {mode === "cloud" && user && (
-          <Section
-            icon={<MessageSquare className="h-4 w-4" />}
-            title="フィードバック"
-          >
+          <Section title="フィードバック">
             <FeedbackForm userId={user.id} />
           </Section>
         )}
 
         {/* その他 */}
-        <Section icon={<HelpCircle className="h-4 w-4" />} title="その他">
+        <Section title="その他">
           <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
             <Row
               icon={<HelpCircle className="h-4 w-4" />}
@@ -784,19 +781,109 @@ function SettingsBody({
   );
 }
 
-function Section({
-  icon,
+/** 設定内の子ページ。iOSの設定みたいに右から差し込み、右スワイプで戻れる。 */
+function SettingsSubPage({
+  open,
+  onClose,
   title,
   children,
 }: {
-  icon: React.ReactNode;
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startRef = useRef<{ x: number; y: number; axis: "" | "x" | "y" }>({
+    x: 0,
+    y: 0,
+    axis: "",
+  });
+  const widthRef = useRef(0);
+
+  useEffect(() => {
+    if (open) {
+      setDragX(0);
+      setDragging(false);
+    }
+  }, [open]);
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="right"
+        onTouchStart={(e) => {
+          startRef.current = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY,
+            axis: "",
+          };
+          widthRef.current = e.currentTarget.getBoundingClientRect().width;
+        }}
+        onTouchMove={(e) => {
+          const dx = e.touches[0].clientX - startRef.current.x;
+          const dy = e.touches[0].clientY - startRef.current.y;
+          if (!startRef.current.axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+            startRef.current.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+          }
+          if (startRef.current.axis === "x") {
+            if (!dragging) setDragging(true);
+            setDragX(Math.max(0, dx));
+          }
+        }}
+        onTouchEnd={() => {
+          if (startRef.current.axis === "x") {
+            setDragging(false);
+            const threshold = Math.min(120, widthRef.current * 0.33);
+            if (dragX > threshold) {
+              setDragX(widthRef.current || 420);
+              window.setTimeout(onClose, 220);
+            } else {
+              setDragX(0);
+            }
+          }
+          startRef.current.axis = "";
+        }}
+        style={{
+          transform: dragX ? `translateX(${dragX}px)` : undefined,
+          transition: dragging ? "none" : "transform 0.22s ease-out",
+        }}
+        className="flex w-full flex-col gap-0 p-0 sm:max-w-md"
+      >
+        <SheetTitle className="sr-only">{title}</SheetTitle>
+        <div className="sticky top-0 z-20 flex items-center border-b bg-card px-3 py-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex items-center gap-1 text-sm font-medium text-primary"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            設定
+          </button>
+          <span className="absolute left-1/2 -translate-x-1/2 text-sm font-semibold">
+            {title}
+          </span>
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 py-5 scrollbar-thin">
+          {children}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function Section({
+  title,
+  children,
+}: {
   title: string;
   children: React.ReactNode;
 }) {
   return (
     <section>
-      <h3 className="mb-2 flex items-center gap-1.5 px-0.5 text-[12px] font-medium text-muted-foreground">
-        {icon}
+      {/* セクション名にアイコンは付けない(項目名に付ける方針) */}
+      <h3 className="mb-2 px-1 text-[12px] font-medium text-muted-foreground">
         {title}
       </h3>
       {children}
