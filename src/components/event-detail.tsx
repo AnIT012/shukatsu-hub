@@ -148,6 +148,35 @@ function EmptyAdd({
   );
 }
 
+// 副次操作(編集/追加)の共通ボタン(企業詳細と同一)。枠で囲い、濃淡は静かなグレーで統一
+function SectionAction({
+  onClick,
+  icon,
+  children,
+  active,
+}: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  active?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors active:scale-95",
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+      )}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
 function InfoBadge({
   children,
   tone = "default",
@@ -395,26 +424,22 @@ function EventDetailBody({
         <Section
           title="日程"
           action={
-            <Button
-              variant="ghost"
-              size="sm"
+            <SectionAction
+              active={editSchedule}
+              icon={
+                editSchedule ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Pencil className="h-3.5 w-3.5" />
+                )
+              }
               onClick={() => {
                 if (editSchedule) toast.success("保存しました");
                 setEditSchedule((v) => !v);
               }}
             >
-              {editSchedule ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  完了
-                </>
-              ) : (
-                <>
-                  <Pencil className="h-4 w-4" />
-                  編集
-                </>
-              )}
-            </Button>
+              {editSchedule ? "完了" : "編集"}
+            </SectionAction>
           }
         >
           {editSchedule ? (
@@ -510,40 +535,34 @@ function EventDetailBody({
           icon={<Link2 className="h-4 w-4" />}
           title="関連リンク"
           action={
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {ev.links.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <SectionAction
+                  active={editLinks}
+                  icon={
+                    editLinks ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <Pencil className="h-3.5 w-3.5" />
+                    )
+                  }
                   onClick={() => {
                     if (editLinks) toast.success("保存しました");
                     setEditLinks((v) => !v);
                   }}
                 >
-                  {editLinks ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      完了
-                    </>
-                  ) : (
-                    <>
-                      <Pencil className="h-4 w-4" />
-                      編集
-                    </>
-                  )}
-                </Button>
+                  {editLinks ? "完了" : "編集"}
+                </SectionAction>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
+              <SectionAction
+                icon={<Plus className="h-3.5 w-3.5" />}
                 onClick={() => {
                   addEventLink(ev.id);
                   setEditLinks(true);
                 }}
               >
-                <Plus className="h-4 w-4" />
                 追加
-              </Button>
+              </SectionAction>
             </div>
           }
         >
@@ -648,14 +667,12 @@ function EventDetailBody({
           icon={<StickyNote className="h-4 w-4" />}
           action={
             ev.memo && !editMemo ? (
-              <Button
-                variant="ghost"
-                size="sm"
+              <SectionAction
+                icon={<Pencil className="h-3.5 w-3.5" />}
                 onClick={() => setEditMemo(true)}
               >
-                <Pencil className="h-4 w-4" />
                 編集
-              </Button>
+              </SectionAction>
             ) : null
           }
         >
@@ -794,7 +811,7 @@ function Section({
   return (
     <section className="mt-5">
       <div className="mb-2.5 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-[12.5px] font-semibold text-muted-foreground [&_svg]:text-muted-foreground">
+        <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground/85 [&_svg]:text-muted-foreground">
           {icon}
           {title}
         </h3>

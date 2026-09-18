@@ -385,17 +385,15 @@ function DetailBody({
           title="ES設問・回答"
           dataTour="es"
           action={
-            <Button
-              variant="ghost"
-              size="sm"
+            <SectionAction
+              icon={<Plus className="h-3.5 w-3.5" />}
               onClick={() => {
                 const id = addEsEntry(app.id);
                 if (id) setEditEs(id);
               }}
             >
-              <Plus className="h-4 w-4" />
               追加
-            </Button>
+            </SectionAction>
           }
         >
           {app.esEntries.length === 0 ? (
@@ -518,7 +516,7 @@ function DetailBody({
                           type="button"
                           className={cn(
                             "flex items-center gap-1 font-medium",
-                            copiedId === es.id ? "text-success" : "text-primary",
+                            copiedId === es.id ? "text-success" : "text-muted-foreground",
                           )}
                           onClick={() => {
                             navigator.clipboard
@@ -574,9 +572,15 @@ function DetailBody({
           title="ログインID・会員番号"
           action={
             hasLoginId ? (
-              <Button
-                variant="ghost"
-                size="sm"
+              <SectionAction
+                active={editingId}
+                icon={
+                  editingId ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <Pencil className="h-3.5 w-3.5" />
+                  )
+                }
                 onClick={() => {
                   if (editingId) {
                     toast.success("保存しました");
@@ -586,18 +590,8 @@ function DetailBody({
                   }
                 }}
               >
-                {editingId ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    完了
-                  </>
-                ) : (
-                  <>
-                    <Pencil className="h-4 w-4" />
-                    編集
-                  </>
-                )}
-              </Button>
+                {editingId ? "完了" : "編集"}
+              </SectionAction>
             ) : undefined
           }
         >
@@ -703,40 +697,34 @@ function DetailBody({
           icon={<Link2 className="h-4 w-4" />}
           title="関連リンク"
           action={
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {app.links.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <SectionAction
+                  active={editLinks}
+                  icon={
+                    editLinks ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <Pencil className="h-3.5 w-3.5" />
+                    )
+                  }
                   onClick={() => {
                     if (editLinks) toast.success("保存しました");
                     setEditLinks((v) => !v);
                   }}
                 >
-                  {editLinks ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      完了
-                    </>
-                  ) : (
-                    <>
-                      <Pencil className="h-4 w-4" />
-                      編集
-                    </>
-                  )}
-                </Button>
+                  {editLinks ? "完了" : "編集"}
+                </SectionAction>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
+              <SectionAction
+                icon={<Plus className="h-3.5 w-3.5" />}
                 onClick={() => {
                   addLink(app.id);
                   setEditLinks(true);
                 }}
               >
-                <Plus className="h-4 w-4" />
                 追加
-              </Button>
+              </SectionAction>
             </div>
           }
         >
@@ -839,14 +827,12 @@ function DetailBody({
           title="全体メモ"
           action={
             app.memo && !editMemo ? (
-              <Button
-                variant="ghost"
-                size="sm"
+              <SectionAction
+                icon={<Pencil className="h-3.5 w-3.5" />}
                 onClick={() => setEditMemo(true)}
               >
-                <Pencil className="h-4 w-4" />
                 編集
-              </Button>
+              </SectionAction>
             ) : null
           }
         >
@@ -974,6 +960,36 @@ function EmptyAdd({
   );
 }
 
+// 副次操作(編集/追加)の共通ボタン。枠で囲って「押せる」と分かるようにし、濃淡は静かなグレーで統一。
+// active(=編集中の完了)のときだけ塗る。藍は主たる操作にだけ使うルール。
+function SectionAction({
+  onClick,
+  icon,
+  children,
+  active,
+}: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  active?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors active:scale-95",
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+      )}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
 function InfoBadge({
   children,
   tone = "default",
@@ -1018,7 +1034,7 @@ function Section({
   return (
     <section className="mt-5" data-tour={dataTour}>
       <div className="mb-2.5 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-[12.5px] font-semibold text-muted-foreground [&_svg]:text-muted-foreground">
+        <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground/85 [&_svg]:text-muted-foreground">
           {icon}
           {title}
         </h3>
@@ -1126,20 +1142,44 @@ function NextBanner({
   return (
     <div
       className={cn(
-        "rounded-2xl px-4 py-3.5 elevate",
+        "rounded-2xl px-4 py-3 elevate",
         urgent
           ? "bg-[hsl(var(--danger)/0.08)] ring-1 ring-[hsl(var(--danger)/0.25)]"
           : "bg-accent",
       )}
     >
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        <Target className="h-3.5 w-3.5" />
-        次にやること{parallel && "（並行）"}
+      {/* 上段: NEXT と 締切を横並び(縦に積まない=枠の高さが締切有無で変わらない) */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+          <Target className="h-3.5 w-3.5" />
+          NEXT{parallel && "（並行）"}
+        </div>
+        <div
+          className={cn(
+            "flex shrink-0 items-center gap-1 text-[12.5px] font-medium",
+            focus
+              ? urgent
+                ? "text-danger"
+                : "text-foreground/70"
+              : "text-muted-foreground",
+          )}
+        >
+          <CalendarDays className="h-3.5 w-3.5" />
+          {focus ? (
+            <span>
+              <span className="text-[10px] opacity-70">{kindLabel}</span>{" "}
+              {formatDue(focus)}
+              <span className="mx-1 opacity-40">·</span>
+              <span className="font-bold">{relativeLabel(focus)}</span>
+            </span>
+          ) : (
+            <span>日程未設定</span>
+          )}
+        </div>
       </div>
-      <div className="mt-0.5 text-base font-bold leading-tight">
+      <div className="mt-1.5 text-[17px] font-bold leading-tight">
         {next.tasks.map((t) => STEP_KIND_LABEL[t.kind]).join(" ・ ")}
       </div>
-      {/* 補足名(サブタイトル)だけ一段下に薄く。メモはここには出さない */}
       {next.tasks.map((t) =>
         t.name.trim() ? (
           <div key={t.id} className="mt-0.5 text-[12.5px] text-muted-foreground">
@@ -1147,28 +1187,6 @@ function NextBanner({
           </div>
         ) : null,
       )}
-      <div
-        className={cn(
-          "mt-1 flex items-center gap-1.5 text-sm font-medium",
-          focus
-            ? urgent
-              ? "text-danger"
-              : "text-foreground/70"
-            : "text-muted-foreground",
-        )}
-      >
-        <CalendarDays className="h-4 w-4" />
-        {focus ? (
-          <span>
-            <span className="text-[11px] opacity-70">{kindLabel}</span>{" "}
-            {formatDue(focus)}
-            <span className="mx-1 opacity-40">·</span>
-            <span className="font-bold">{relativeLabel(focus)}</span>
-          </span>
-        ) : (
-          <span>日程未設定</span>
-        )}
-      </div>
     </div>
   );
 }

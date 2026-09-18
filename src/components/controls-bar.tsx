@@ -3,9 +3,9 @@
 import { useState } from "react";
 import {
   ArrowDown,
-  ArrowDownUp,
   ArrowUp,
   Check,
+  ChevronDown,
   LayoutList,
   Rows3,
   RotateCcw,
@@ -112,19 +112,36 @@ export function ControlsBar({
 
   return (
     <div className="flex items-center gap-2">
-      {/* 並べ替え = 1つのピルに統合。左=種別を選ぶ / 右=昇順降順をその場で切り替え */}
+      {/* 並べ替え = 1つのピル。左=単一方向の矢印(押すと昇順⇄降順) / 右=種別メニュー */}
       <div
         data-tour="sort"
         className="flex min-w-0 flex-1 items-center rounded-full bg-card ring-1 ring-border"
       >
+        <button
+          type="button"
+          aria-label={dir === "asc" ? "昇順（タップで降順に）" : "降順（タップで昇順に）"}
+          title={
+            dir === "asc"
+              ? "昇順 — 締切なら近い順 / 優先度なら高い順"
+              : "降順 — 締切なら遠い順 / 優先度なら低い順"
+          }
+          onClick={() => onDirChange(dir === "asc" ? "desc" : "asc")}
+          className="flex h-9 w-10 shrink-0 items-center justify-center rounded-l-full border-r border-border text-muted-foreground active:scale-95"
+        >
+          {dir === "asc" ? (
+            <ArrowUp className="h-4 w-4" />
+          ) : (
+            <ArrowDown className="h-4 w-4" />
+          )}
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex min-w-0 flex-1 items-center gap-1.5 rounded-l-full py-2 pl-3 pr-2 text-sm active:scale-[0.98]"
+              className="flex min-w-0 flex-1 items-center gap-1.5 rounded-r-full py-2 pl-2.5 pr-3 text-sm active:scale-[0.98]"
             >
-              <ArrowDownUp className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="truncate">{SORT_LABEL[sort]}</span>
+              <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -136,23 +153,6 @@ export function ControlsBar({
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <button
-          type="button"
-          aria-label={dir === "asc" ? "昇順（タップで降順に）" : "降順（タップで昇順に）"}
-          title={
-            dir === "asc"
-              ? "昇順 — 締切なら近い順 / 優先度なら高い順"
-              : "降順 — 締切なら遠い順 / 優先度なら低い順"
-          }
-          onClick={() => onDirChange(dir === "asc" ? "desc" : "asc")}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-r-full border-l border-border text-muted-foreground active:scale-95"
-        >
-          {dir === "asc" ? (
-            <ArrowUp className="h-4 w-4" />
-          ) : (
-            <ArrowDown className="h-4 w-4" />
-          )}
-        </button>
       </div>
 
       <Button

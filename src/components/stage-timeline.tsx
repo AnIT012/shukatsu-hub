@@ -148,6 +148,14 @@ export function StageTimeline({ app }: { app: Application }) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => setHelpOpen(true)}
+          className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <HelpCircle className="h-3.5 w-3.5" />
+          使い方
+        </button>
         {app.stages.length > 0 ? (
           <button
             type="button"
@@ -156,10 +164,10 @@ export function StageTimeline({ app }: { app: Application }) {
               setEditingId(null);
             }}
             className={cn(
-              "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-medium",
+              "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors active:scale-95",
               editMode
-                ? "bg-primary text-primary-foreground"
-                : "border text-primary hover:bg-accent",
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             {editMode ? (
@@ -177,14 +185,6 @@ export function StageTimeline({ app }: { app: Application }) {
         ) : (
           <span />
         )}
-        <button
-          type="button"
-          onClick={() => setHelpOpen(true)}
-          className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <HelpCircle className="h-3.5 w-3.5" />
-          使い方
-        </button>
       </div>
       <HelpDialog open={helpOpen} onOpenChange={setHelpOpen} />
 
