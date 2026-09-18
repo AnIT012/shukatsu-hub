@@ -11,7 +11,6 @@ import {
   Copy,
   KeyRound,
   ListPlus,
-  Pin,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Application, SelectionStage } from "@/lib/types";
@@ -114,7 +113,9 @@ export function ApplicationCard({
         className={cn(
           // 純正寄り: 色枠を廃してヘアライン1本、影は囁き、丸みを大きく。緊急/通過は日付と印で示す
           "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 ring-border elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
-          sit === "rejected" || sit === "declined" ? "opacity-60" : "",
+          sit === "rejected" || sit === "declined"
+            ? "opacity-45 grayscale"
+            : "",
         )}
       >
         <div className="flex items-center gap-3">
@@ -150,7 +151,9 @@ export function ApplicationCard({
       }}
       className={cn(
         "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 ring-border elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
-        sit === "rejected" || sit === "declined" ? "opacity-70" : "",
+        sit === "rejected" || sit === "declined"
+          ? "opacity-45 grayscale"
+          : "",
       )}
     >
       <div className="flex items-center gap-2">
@@ -406,7 +409,6 @@ function PinnedChips({
           onClick={(e) => e.stopPropagation()}
           className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
         >
-          <Pin className="h-3 w-3" />
           <span className="max-w-[8rem] truncate">{l.label || "リンク"}</span>
         </a>
       ))}

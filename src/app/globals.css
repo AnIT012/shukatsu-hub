@@ -7,15 +7,15 @@
      インク #1E2A3A / 藍アクセント / 煉瓦 / 苔。地の値は theme_to_paper と一致させる(全テーマ共通) */
   :root {
     --background: 38 22% 95.5%; /* ほぼ白+薄い肌色 #FEFBF7 */
-    --foreground: 214 32% 17%; /* インク #1E2A3A */
+    --foreground: 216 38% 12%; /* インク #1E2A3A */
     --card: 36 44% 99.3%; /* ほぼ白(器・ヘッダー・シートを僅かに持ち上げ) */
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 230 44% 43%; /* 藍 #3D4E9E */
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%; /* 沈んだ面 */
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%; /* ink3 #5E6975 */
     --accent: 228 34% 92%; /* 藍 ramp L1(地に藍を薄く) */
@@ -32,15 +32,15 @@
 
   [data-theme="aiNezu"] {
     --background: 38 22% 95.5%;
-    --foreground: 214 32% 17%;
+    --foreground: 216 38% 12%;
     --card: 36 44% 99.3%;
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 244 15% 38%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 255 25% 93%;
@@ -53,15 +53,15 @@
 
   [data-theme="sumi"] {
     --background: 38 22% 95.5%;
-    --foreground: 214 32% 17%;
+    --foreground: 216 38% 12%;
     --card: 36 44% 99.3%;
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 240 5% 24%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 60 8% 91%;
@@ -74,15 +74,15 @@
 
   [data-theme="navy"] {
     --background: 38 22% 95.5%;
-    --foreground: 214 32% 17%;
+    --foreground: 216 38% 12%;
     --card: 36 44% 99.3%;
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 222 31% 26%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 213 40% 93%;
@@ -95,15 +95,15 @@
 
   [data-theme="greige"] {
     --background: 38 22% 95.5%;
-    --foreground: 214 32% 17%;
+    --foreground: 216 38% 12%;
     --card: 36 44% 99.3%;
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 24 13% 37%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 36 30% 91%;
@@ -117,15 +117,15 @@
   /* 水浅葱(みずあさぎ) — くすみ水色 */
   [data-theme="mizuasagi"] {
     --background: 38 22% 95.5%;
-    --foreground: 214 32% 17%;
+    --foreground: 216 38% 12%;
     --card: 36 44% 99.3%;
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 191 32% 38%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 190 32% 92%;
@@ -139,15 +139,15 @@
   /* 青磁(せいじ) — くすみ青緑 */
   [data-theme="seiji"] {
     --background: 38 22% 95.5%;
-    --foreground: 214 32% 17%;
+    --foreground: 216 38% 12%;
     --card: 36 44% 99.3%;
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 160 34% 36%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 158 30% 92%;
@@ -161,15 +161,15 @@
   /* 藤(ふじ) — くすみ紫 */
   [data-theme="fuji"] {
     --background: 38 22% 95.5%;
-    --foreground: 214 32% 17%;
+    --foreground: 216 38% 12%;
     --card: 36 44% 99.3%;
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 258 26% 47%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 258 32% 94%;
@@ -183,15 +183,15 @@
   /* 桜鼠(さくらねず) — くすみピンク。締切(danger)は朱で区別 */
   [data-theme="sakuraNezu"] {
     --background: 38 22% 95.5%;
-    --foreground: 214 32% 17%;
+    --foreground: 216 38% 12%;
     --card: 36 44% 99.3%;
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 348 28% 51%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 350 33% 94%;
@@ -205,15 +205,15 @@
   /* 茜(あかね) — くすみ赤。締切(danger)は朱橙で区別 */
   [data-theme="akane"] {
     --background: 38 22% 95.5%;
-    --foreground: 214 32% 17%;
+    --foreground: 216 38% 12%;
     --card: 36 44% 99.3%;
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 2 42% 44%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 6 34% 93%;
@@ -227,15 +227,15 @@
   /* 琥珀(こはく) — 金茶 */
   [data-theme="kohaku"] {
     --background: 38 22% 95.5%;
-    --foreground: 214 32% 17%;
+    --foreground: 216 38% 12%;
     --card: 36 44% 99.3%;
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 34 55% 35%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 36 40% 91%;
@@ -249,15 +249,15 @@
   /* 鳩羽鼠(はとばねず) — 紫がかった鼠 */
   [data-theme="hatobaNezu"] {
     --background: 38 22% 95.5%;
-    --foreground: 214 32% 17%;
+    --foreground: 216 38% 12%;
     --card: 36 44% 99.3%;
-    --card-foreground: 214 32% 17%;
+    --card-foreground: 216 38% 12%;
     --popover: 36 44% 99.3%;
-    --popover-foreground: 214 32% 17%;
+    --popover-foreground: 216 38% 12%;
     --primary: 250 13% 44%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
-    --secondary-foreground: 214 32% 17%;
+    --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
     --accent: 250 18% 93%;

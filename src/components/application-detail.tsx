@@ -1034,7 +1034,7 @@ function Section({
   return (
     <section className="mt-5" data-tour={dataTour}>
       <div className="mb-2.5 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground/85 [&_svg]:text-muted-foreground">
+        <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground [&_svg]:text-muted-foreground">
           {icon}
           {title}
         </h3>
