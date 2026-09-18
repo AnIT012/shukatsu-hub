@@ -4,21 +4,17 @@ import { useEffect, useState } from "react";
 import type { Priority, SelectionType } from "@/lib/types";
 import { useStore } from "@/lib/store";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AddDialogShell,
+  AddField,
+  AddTextField,
+} from "@/components/add-dialog-shell";
 import { PRIORITY_OPTIONS, SELECTION_TYPE_OPTIONS } from "@/lib/constants";
 
 export function AddApplicationDialog({
@@ -55,90 +51,65 @@ export function AddApplicationDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="max-w-sm"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <div className="space-y-1">
-          <DialogTitle className="text-base">企業を追加</DialogTitle>
-          <DialogDescription className="text-xs">
-            まずは企業名だけでもOK。選考ステップは追加後に登録できます。
-          </DialogDescription>
-        </div>
-        <form onSubmit={submit} className="space-y-3.5">
-          <div className="space-y-1.5">
-            <Label htmlFor="add-company">
-              企業名 <span className="text-danger">*</span>
-            </Label>
-            <Input
-              id="add-company"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              placeholder="例: 株式会社サンプル"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="add-role">職種 / コース名</Label>
-            <Input
-              id="add-role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              placeholder="例: 総合職サマーインターン"
-            />
-          </div>
-          <div className="flex gap-2">
-            <div className="flex-1 space-y-1.5">
-              <Label>選考種別</Label>
-              <Select
-                value={selectionType}
-                onValueChange={(v) => setSelectionType(v as SelectionType)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SELECTION_TYPE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex-1 space-y-1.5">
-              <Label>優先度</Label>
-              <Select
-                value={priority}
-                onValueChange={(v) => setPriority(v as Priority)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITY_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-            >
-              キャンセル
-            </Button>
-            <Button type="submit" disabled={!company.trim()}>
-              追加して編集
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <AddDialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      title="企業を追加"
+      description="まずは企業名だけでもOK。選考ステップは追加後に登録できます。"
+      onSubmit={submit}
+      submitDisabled={!company.trim()}
+    >
+      <AddTextField
+        id="add-company"
+        label="企業名"
+        required
+        value={company}
+        onChange={setCompany}
+        placeholder="例: 株式会社サンプル"
+      />
+      <AddTextField
+        id="add-role"
+        label="職種 / コース名"
+        value={role}
+        onChange={setRole}
+        placeholder="例: 総合職サマーインターン"
+      />
+      <div className="flex gap-2">
+        <AddField label="選考種別">
+          <Select
+            value={selectionType}
+            onValueChange={(v) => setSelectionType(v as SelectionType)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SELECTION_TYPE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </AddField>
+        <AddField label="優先度">
+          <Select
+            value={priority}
+            onValueChange={(v) => setPriority(v as Priority)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PRIORITY_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </AddField>
+      </div>
+    </AddDialogShell>
   );
 }
