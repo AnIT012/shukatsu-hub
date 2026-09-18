@@ -5,18 +5,18 @@ import {
   ArrowDown,
   ArrowDownUp,
   ArrowUp,
+  Check,
   LayoutList,
   Rows3,
   RotateCcw,
   SlidersHorizontal,
 } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -112,39 +112,47 @@ export function ControlsBar({
 
   return (
     <div className="flex items-center gap-2">
-      <div data-tour="sort" className="flex min-w-0 flex-1 items-center gap-2">
-        <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
-          <SelectTrigger className="h-9 min-w-0 flex-1 bg-card text-sm">
-            <ArrowDownUp className="mr-1 h-4 w-4 shrink-0 text-muted-foreground" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
+      {/* 並べ替え = 1つのピルに統合。左=種別を選ぶ / 右=昇順降順をその場で切り替え */}
+      <div
+        data-tour="sort"
+        className="flex min-w-0 flex-1 items-center rounded-full bg-card ring-1 ring-border"
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-1.5 rounded-l-full py-2 pl-3 pr-2 text-sm active:scale-[0.98]"
+            >
+              <ArrowDownUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="truncate">{SORT_LABEL[sort]}</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
             {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
-              <SelectItem key={k} value={k}>
-                {SORT_LABEL[k]}
-              </SelectItem>
+              <DropdownMenuItem key={k} onClick={() => onSortChange(k)}>
+                <span className="flex-1">{SORT_LABEL[k]}</span>
+                {sort === k && <Check className="h-4 w-4 text-primary" />}
+              </DropdownMenuItem>
             ))}
-          </SelectContent>
-        </Select>
-        <Button
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <button
           type="button"
-          variant="outline"
-          size="icon"
-          className="h-9 w-9 shrink-0 bg-card"
           aria-label={dir === "asc" ? "昇順（タップで降順に）" : "降順（タップで昇順に）"}
           title={
             dir === "asc"
-              ? "昇順 — 締切順なら近い順 / 優先度なら高い順"
-              : "降順 — 締切順なら遠い順 / 優先度なら低い順"
+              ? "昇順 — 締切なら近い順 / 優先度なら高い順"
+              : "降順 — 締切なら遠い順 / 優先度なら低い順"
           }
           onClick={() => onDirChange(dir === "asc" ? "desc" : "asc")}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-r-full border-l border-border text-muted-foreground active:scale-95"
         >
           {dir === "asc" ? (
             <ArrowUp className="h-4 w-4" />
           ) : (
             <ArrowDown className="h-4 w-4" />
           )}
-        </Button>
+        </button>
       </div>
 
       <Button

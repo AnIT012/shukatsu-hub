@@ -2,23 +2,24 @@
 
 import { useState } from "react";
 import {
-  Award,
   CalendarClock,
   CalendarDays,
   Check,
   ChevronDown,
   ChevronUp,
+  CircleCheckBig,
+  CircleSlash,
+  CircleX,
   GitBranch,
   HelpCircle,
+  Hourglass,
   LayoutTemplate,
   ListPlus,
-  MinusCircle,
   Pencil,
   Plus,
   RotateCcw,
   Trash2,
   X,
-  XCircle,
 } from "lucide-react";
 import type {
   Application,
@@ -286,29 +287,29 @@ export function StageTimeline({ app }: { app: Application }) {
 
 const RESULT_META: Record<
   Exclude<StageResult, "pending">,
-  { label: string; icon: typeof Award; cls: string; ring: string }
+  { label: string; icon: typeof CircleCheckBig; cls: string; ring: string }
 > = {
   waiting: {
     label: "結果待ち",
-    icon: Award,
+    icon: Hourglass,
     cls: "text-amber-600",
     ring: "ring-amber-400/50",
   },
   passed: {
     label: "通過",
-    icon: Award,
+    icon: CircleCheckBig,
     cls: "text-success",
     ring: "ring-[hsl(var(--success)/0.45)]",
   },
   failed: {
     label: "不合格",
-    icon: XCircle,
+    icon: CircleX,
     cls: "text-danger",
     ring: "ring-[hsl(var(--danger)/0.4)]",
   },
   declined: {
     label: "辞退",
-    icon: MinusCircle,
+    icon: CircleSlash,
     cls: "text-muted-foreground",
     ring: "ring-border",
   },
@@ -862,15 +863,15 @@ function HelpDialog({
             </p>
             <div className="flex flex-wrap gap-1.5">
               <span className="inline-flex items-center gap-1 rounded-md border border-[hsl(var(--success)/0.4)] px-2 py-0.5 text-[12px] font-medium text-success">
-                <Award className="h-3.5 w-3.5" />
+                <CircleCheckBig className="h-3.5 w-3.5" />
                 通過
               </span>
               <span className="inline-flex items-center gap-1 rounded-md border border-[hsl(var(--danger)/0.4)] px-2 py-0.5 text-[12px] font-medium text-danger">
-                <XCircle className="h-3.5 w-3.5" />
+                <CircleX className="h-3.5 w-3.5" />
                 不合格
               </span>
               <span className="inline-flex items-center gap-1 rounded-md border border-input px-2 py-0.5 text-[12px] font-medium text-muted-foreground">
-                <MinusCircle className="h-3.5 w-3.5" />
+                <CircleSlash className="h-3.5 w-3.5" />
                 辞退
               </span>
             </div>

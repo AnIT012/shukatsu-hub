@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import {
-  Award,
   Check,
   ChevronRight,
+  CircleCheckBig,
+  CircleSlash,
+  CircleX,
   Clock,
   Copy,
   KeyRound,
   ListPlus,
-  MinusCircle,
   Pin,
-  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Application, SelectionStage } from "@/lib/types";
@@ -236,9 +236,9 @@ function DateBlock({
 
   if (next.type === "result") {
     const map = {
-      passed: { icon: Award, cls: "text-success" },
-      rejected: { icon: XCircle, cls: "text-danger" },
-      declined: { icon: MinusCircle, cls: "text-muted-foreground" },
+      passed: { icon: CircleCheckBig, cls: "text-success" },
+      rejected: { icon: CircleX, cls: "text-danger" },
+      declined: { icon: CircleSlash, cls: "text-muted-foreground" },
       in_progress: { icon: Clock, cls: "" },
     } as const;
     const r = map[app.result];

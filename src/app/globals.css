@@ -6,7 +6,7 @@
   /* 紙とガラス(デフォルト)。地は「限りなく白に近い、ごく薄い肌色」= ほぼ白+温かみ。
      インク #1E2A3A / 藍アクセント / 煉瓦 / 苔。地の値は theme_to_paper と一致させる(全テーマ共通) */
   :root {
-    --background: 32 40% 98%; /* ほぼ白+薄い肌色 #FEFBF7 */
+    --background: 38 22% 95.5%; /* ほぼ白+薄い肌色 #FEFBF7 */
     --foreground: 214 32% 17%; /* インク #1E2A3A */
     --card: 36 44% 99.3%; /* ほぼ白(器・ヘッダー・シートを僅かに持ち上げ) */
     --card-foreground: 214 32% 17%;
@@ -31,7 +31,7 @@
   }
 
   [data-theme="aiNezu"] {
-    --background: 32 40% 98%;
+    --background: 38 22% 95.5%;
     --foreground: 214 32% 17%;
     --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
@@ -52,7 +52,7 @@
   }
 
   [data-theme="sumi"] {
-    --background: 32 40% 98%;
+    --background: 38 22% 95.5%;
     --foreground: 214 32% 17%;
     --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
@@ -73,7 +73,7 @@
   }
 
   [data-theme="navy"] {
-    --background: 32 40% 98%;
+    --background: 38 22% 95.5%;
     --foreground: 214 32% 17%;
     --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
@@ -94,7 +94,7 @@
   }
 
   [data-theme="greige"] {
-    --background: 32 40% 98%;
+    --background: 38 22% 95.5%;
     --foreground: 214 32% 17%;
     --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
@@ -116,7 +116,7 @@
 
   /* 水浅葱(みずあさぎ) — くすみ水色 */
   [data-theme="mizuasagi"] {
-    --background: 32 40% 98%;
+    --background: 38 22% 95.5%;
     --foreground: 214 32% 17%;
     --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
@@ -138,7 +138,7 @@
 
   /* 青磁(せいじ) — くすみ青緑 */
   [data-theme="seiji"] {
-    --background: 32 40% 98%;
+    --background: 38 22% 95.5%;
     --foreground: 214 32% 17%;
     --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
@@ -160,7 +160,7 @@
 
   /* 藤(ふじ) — くすみ紫 */
   [data-theme="fuji"] {
-    --background: 32 40% 98%;
+    --background: 38 22% 95.5%;
     --foreground: 214 32% 17%;
     --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
@@ -182,7 +182,7 @@
 
   /* 桜鼠(さくらねず) — くすみピンク。締切(danger)は朱で区別 */
   [data-theme="sakuraNezu"] {
-    --background: 32 40% 98%;
+    --background: 38 22% 95.5%;
     --foreground: 214 32% 17%;
     --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
@@ -204,7 +204,7 @@
 
   /* 茜(あかね) — くすみ赤。締切(danger)は朱橙で区別 */
   [data-theme="akane"] {
-    --background: 32 40% 98%;
+    --background: 38 22% 95.5%;
     --foreground: 214 32% 17%;
     --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
@@ -226,7 +226,7 @@
 
   /* 琥珀(こはく) — 金茶 */
   [data-theme="kohaku"] {
-    --background: 32 40% 98%;
+    --background: 38 22% 95.5%;
     --foreground: 214 32% 17%;
     --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;
@@ -248,7 +248,7 @@
 
   /* 鳩羽鼠(はとばねず) — 紫がかった鼠 */
   [data-theme="hatobaNezu"] {
-    --background: 32 40% 98%;
+    --background: 38 22% 95.5%;
     --foreground: 214 32% 17%;
     --card: 36 44% 99.3%;
     --card-foreground: 214 32% 17%;

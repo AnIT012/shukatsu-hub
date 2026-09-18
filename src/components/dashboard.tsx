@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowRight,
-  Bell,
   Check,
   CloudOff,
   HelpCircle,
@@ -576,14 +575,7 @@ export function Dashboard() {
                 />
               ) : (
                 <>
-                  <CompanionComment
-                    variant="selection"
-                    onClick={() => setView("progress")}
-                  />
-
-                  <div className="mt-3">
-                    <AnnouncementBanner applications={applications} />
-                  </div>
+                  <AnnouncementBanner applications={applications} />
 
                   <div className="mt-3">
                     <ControlsBar
@@ -874,18 +866,12 @@ function AnnouncementBanner({ applications }: { applications: Application[] }) {
   const hasUrgent = items.some((x) => x.urgent);
   const shown = items.slice(0, 6);
   const rest = items.length - shown.length;
-  const accent =
-    items.length === 0
-      ? "text-muted-foreground"
-      : hasUrgent
-        ? "text-danger"
-        : "text-primary";
 
   return (
     <div
       data-tour="banner"
       className={cn(
-        "rounded-xl bg-card p-3 shadow-[0_1px_2px_rgba(20,28,55,0.04),0_6px_16px_rgba(20,28,55,0.05)] ring-1",
+        "rounded-2xl bg-card p-3 elevate-sm ring-1",
         items.length === 0
           ? "ring-border"
           : hasUrgent
@@ -893,17 +879,8 @@ function AnnouncementBanner({ applications }: { applications: Application[] }) {
             : "ring-[hsl(var(--primary)/0.4)]",
       )}
     >
-      <div className="flex items-center gap-1.5 text-[12px] font-medium">
-        <Bell className={cn("h-3.5 w-3.5", accent)} />
-        <span className={accent}>直近1週間の予定</span>
-        {items.length > 0 && (
-          <span className="ml-auto text-[11px] text-muted-foreground">
-            {items.length}件
-          </span>
-        )}
-      </div>
       {items.length > 0 ? (
-        <div className="mt-1.5 space-y-1">
+        <div className="space-y-1">
           {shown.map((x) => {
             const d = dueToDate(x.dueAt);
             return (
@@ -940,7 +917,7 @@ function AnnouncementBanner({ applications }: { applications: Application[] }) {
         </div>
       ) : (
         <p className="mt-1 text-[12.5px] text-muted-foreground">
-          直近1週間の予定はありません
+          近く予定はありません
         </p>
       )}
     </div>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
-  Award,
+  CircleCheckBig,
   CalendarDays,
   Check,
   ChevronDown,
@@ -19,14 +19,14 @@ import {
   ListChecks,
   ListPlus,
   MapPin,
-  MinusCircle,
+  CircleSlash,
   Pencil,
   Pin,
   Plus,
   StickyNote,
   Target,
   Trash2,
-  XCircle,
+  CircleX,
 } from "lucide-react";
 import type { Application, VenueMode } from "@/lib/types";
 import { useStore } from "@/lib/store";
@@ -1078,9 +1078,9 @@ function NextBanner({
 }) {
   if (next.type === "result") {
     const map = {
-      passed: { icon: Award, cls: "text-success", label: PASSED_LABEL[app.selectionType] },
-      rejected: { icon: XCircle, cls: "text-danger", label: "不合格" },
-      declined: { icon: MinusCircle, cls: "text-muted-foreground", label: "辞退" },
+      passed: { icon: CircleCheckBig, cls: "text-success", label: PASSED_LABEL[app.selectionType] },
+      rejected: { icon: CircleX, cls: "text-danger", label: "不合格" },
+      declined: { icon: CircleSlash, cls: "text-muted-foreground", label: "辞退" },
       in_progress: { icon: Clock, cls: "", label: "" },
     } as const;
     const r = map[app.result];
