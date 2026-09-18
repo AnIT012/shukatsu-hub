@@ -29,7 +29,7 @@ import {
   situationOf,
 } from "@/lib/next-action";
 import { dueInstant, dueToDate, urgencyOf } from "@/lib/date";
-import { exportApplications, parseBackup, readFile } from "@/lib/io";
+import { exportApplications } from "@/lib/io";
 import {
   LS_FEEDBACK_KEY,
   LS_LEGAL_KEY,
@@ -57,6 +57,7 @@ import { LegalDialog } from "@/components/legal-dialog";
 import { EventsView } from "@/components/events-view";
 import { EventDetail } from "@/components/event-detail";
 import { SettingsPage } from "@/components/settings-sheet";
+import { ImportDialog } from "@/components/import-dialog";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
 import { VersionNotice } from "@/components/version-notice";
 import { WhatsNew } from "@/components/whats-new";
@@ -85,7 +86,6 @@ export function Dashboard() {
     applications,
     events,
     loaded,
-    replaceAll,
     seedSampleIfEmpty,
     deleteApplication,
   } = store;
@@ -102,6 +102,7 @@ export function Dashboard() {
   const [viewMode, setViewModeState] = useState<ViewMode>("compact");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [addSpin, setAddSpin] = useState(false);
   const [showOnboard, setShowOnboard] = useState(false);
@@ -117,7 +118,6 @@ export function Dashboard() {
     axis: "" | "x" | "y";
     w: number;
   }>({ x: 0, y: 0, axis: "", w: 0 });
-  const fileRef = useRef<HTMLInputElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const paneRefs = useRef<(HTMLDivElement | null)[]>([]);
   const viewIdxRef = useRef(0);
@@ -444,29 +444,6 @@ export function Dashboard() {
     toast.success("バックアップを書き出しました");
   };
 
-  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    try {
-      const text = await readFile(file);
-      const apps = parseBackup(text);
-      if (
-        applications.length > 0 &&
-        !window.confirm(
-          `現在の${applications.length}件を置き換えて ${apps.length}件 を読み込みます。続けますか？`,
-        )
-      )
-        return;
-      replaceAll(apps);
-      toast.success(`${apps.length}社を読み込みました`);
-    } catch (err) {
-      toast.error("読み込みに失敗しました", {
-        description: err instanceof Error ? err.message : undefined,
-      });
-    }
-  };
-
   if (!loaded) {
     return <AppLoader />;
   }
@@ -488,13 +465,6 @@ export function Dashboard() {
           </span>
           <div className="ml-auto flex items-center gap-1">
             <SaveIndicator />
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={handleImportFile}
-            />
             <RefreshButton />
             {/* 選考/イベント以外(進捗・設定)では ＋ を縮んでクルッと収納→ポンと復活 */}
             {/* transition は inline で固定(Button基底の transition に上書きされる問題の回避) */}
@@ -571,7 +541,7 @@ export function Dashboard() {
               {applications.length === 0 ? (
                 <EmptyState
                   onAdd={() => setAddOpen(true)}
-                  onImport={() => fileRef.current?.click()}
+                  onImport={() => setImportOpen(true)}
                 />
               ) : (
                 <>
@@ -666,7 +636,7 @@ export function Dashboard() {
           >
             <div className="mx-auto max-w-3xl pb-[calc(5.75rem+env(safe-area-inset-bottom))]">
               <SettingsPage
-                onImport={() => fileRef.current?.click()}
+                onImport={() => setImportOpen(true)}
                 onExport={handleExport}
                 onStartTour={startTour}
                 onOpenLegal={() => {
@@ -682,6 +652,8 @@ export function Dashboard() {
 
       {/* 下タブは常時固定表示(隠さない)。モーダルは中央に出るので競合しない */}
       <BottomNav view={view} onChange={setView} onReTap={handleReTap} />
+
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
 
       <AddApplicationDialog
         open={addOpen}
@@ -947,7 +919,7 @@ function EmptyState({
         </Button>
         <Button variant="outline" onClick={onImport}>
           <Upload className="h-4 w-4" />
-          JSONから復元
+          取り込み
         </Button>
       </div>
     </div>

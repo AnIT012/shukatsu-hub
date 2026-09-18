@@ -577,7 +577,7 @@ function SettingsBody({
           <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
             <Row
               icon={<Upload className="h-4 w-4" />}
-              label="インポート（JSON）"
+              label="取り込み（JSON / AI）"
               onClick={onImport}
             />
             <Row

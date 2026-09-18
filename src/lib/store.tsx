@@ -146,6 +146,8 @@ interface StoreValue {
   ) => void;
   deleteEsEntry: (appId: string, entryId: string) => void;
   replaceAll: (apps: Application[]) => void;
+  /** 取り込み: 既存を消さず、選考/イベントを先頭に追加(idは振り直して衝突回避)。 */
+  mergeImport: (apps: Application[], events: EventItem[]) => void;
   /** 移行前バックアップ等の生JSON文字列から applications/events を復元。成功で true */
   restoreFromRaw: (raw: string) => boolean;
   /** 自動ローカルバックアップ(復元ポイント)の一覧を取得(新しい順) */
@@ -1119,6 +1121,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setApplications(apps);
   }, []);
 
+  const mergeImport = useCallback<StoreValue["mergeImport"]>((apps, evs) => {
+    // 先頭id(選考/イベント)は振り直し、再取り込みでも既存keyと衝突させない
+    if (apps.length) {
+      setApplications((prev) => [
+        ...apps.map((a) => ({ ...a, id: newId() })),
+        ...prev,
+      ]);
+    }
+    if (evs.length) {
+      setEvents((prev) => [...evs.map((e) => ({ ...e, id: newId() })), ...prev]);
+    }
+  }, []);
+
   const restoreFromRaw = useCallback<StoreValue["restoreFromRaw"]>((raw) => {
     try {
       const parsed = JSON.parse(raw);
@@ -1283,6 +1298,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     updateEsEntry,
     deleteEsEntry,
     replaceAll,
+    mergeImport,
     restoreFromRaw,
     listLocalSnapshots,
     clearAll,

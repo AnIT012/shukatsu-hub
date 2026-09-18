@@ -285,6 +285,32 @@ export function parseBackup(text: string): Application[] {
   return apps.map(sanitizeApp);
 }
 
+/**
+ * 取り込み用: JSON文字列を {applications, events} に正規化。
+ * 配列(旧backup) / {applications} / {applications, events}(現行backup・AI生成) の
+ * いずれも受ける。旧stepsからの段階移行も normalizeApps が面倒を見る。不正なら例外。
+ */
+export function parseImport(text: string): {
+  applications: Application[];
+  events: EventItem[];
+} {
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("JSON として読み取れませんでした");
+  }
+  const appsRaw = Array.isArray(data) ? data : (data as any)?.applications;
+  const eventsRaw = Array.isArray(data) ? undefined : (data as any)?.events;
+  if (!Array.isArray(appsRaw) && !Array.isArray(eventsRaw)) {
+    throw new Error("applications / events が見つかりませんでした");
+  }
+  return {
+    applications: normalizeApps(appsRaw),
+    events: normalizeEvents(eventsRaw),
+  };
+}
+
 export function readFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
