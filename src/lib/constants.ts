@@ -210,6 +210,11 @@ export const LS_THEME_KEY = "shukatsu-dashboard:theme";
 export const LS_FONT_KEY = "shukatsu-dashboard:font";
 /** よく使うサイト(外部就活サイトへの動線)。端末ごとに記憶 */
 export const LS_QUICKLINKS_KEY = "shukatsu-dashboard:quicklinks";
+/** 文字サイズ倍率(端末ごと)。1.0=標準。 */
+export const LS_FONTSCALE_KEY = "shukatsu-dashboard:fontscale";
+export const FONT_SCALE_MIN = 0.9;
+export const FONT_SCALE_MAX = 1.25;
+export const FONT_SCALE_DEFAULT = 1;
 /** 一覧の表示モード(compact / detail)。端末ごとに記憶 */
 export const LS_VIEWMODE_KEY = "shukatsu-dashboard:viewmode";
 export const LS_ONBOARDED_KEY = "shukatsu-dashboard:onboarded";

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Clock, Pin } from "lucide-react";
+import { ChevronRight, Clock } from "lucide-react";
 import type { EventItem } from "@/lib/types";
 import { cn, safeHref } from "@/lib/utils";
 import { dueInstant, dueToDate, splitDue, urgencyOf } from "@/lib/date";
@@ -56,13 +56,13 @@ export function EventCard({
           }
         }}
         className={cn(
-          "group block w-full cursor-pointer rounded-xl bg-card p-3 text-left shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] transition-all duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:translate-y-0",
+          "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
           attended
-            ? "ring-2 ring-[hsl(var(--success)/0.55)]"
+            ? "ring-[hsl(var(--success)/0.55)]"
             : urgent
-              ? "ring-1 ring-[hsl(var(--danger)/0.55)]"
-              : "ring-1 ring-border",
-          declined || ended ? "opacity-60" : "",
+              ? "ring-[hsl(var(--danger)/0.55)]"
+              : "ring-border",
+          declined || ended ? "opacity-45 grayscale" : "",
         )}
       >
         <div className="flex items-center gap-3">
@@ -71,14 +71,14 @@ export function EventCard({
             <div className="truncate text-[15px] font-semibold leading-tight">
               {ev.title || "(イベント名未設定)"}
             </div>
-            <div className="truncate text-[11.5px] text-muted-foreground">
+            <div className="truncate text-[11px] text-muted-foreground">
               {ev.company || "(企業未設定)"}
               {venue ? ` · ${venue}` : ""}
             </div>
             {statusLabel && (
               <div
                 className={cn(
-                  "text-[12px]",
+                  "mt-1 truncate text-[12.5px]",
                   attended
                     ? "font-medium text-success"
                     : "text-muted-foreground",
@@ -101,7 +101,6 @@ export function EventCard({
                 onClick={(e) => e.stopPropagation()}
                 className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
               >
-                <Pin className="h-3 w-3" />
                 <span className="max-w-[8rem] truncate">
                   {l.label || "リンク"}
                 </span>
@@ -125,9 +124,13 @@ export function EventCard({
         }
       }}
       className={cn(
-        "group block w-full cursor-pointer rounded-xl bg-card p-3 text-left shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] ring-1 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgba(20,28,55,0.06),0_10px_22px_rgba(20,28,55,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:translate-y-0",
-        urgent ? "ring-[hsl(var(--danger)/0.55)]" : "ring-border",
-        done ? "opacity-70" : "",
+        "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+        attended
+          ? "ring-[hsl(var(--success)/0.55)]"
+          : urgent
+            ? "ring-[hsl(var(--danger)/0.55)]"
+            : "ring-border",
+        done ? "opacity-45 grayscale" : "",
       )}
     >
       <div className="flex items-center gap-2">
@@ -148,17 +151,21 @@ export function EventCard({
             {focusKind}間近
           </span>
         )}
+        {venue && (
+          <span className="ml-auto truncate text-[11px] text-muted-foreground">
+            {venue}
+          </span>
+        )}
       </div>
 
       <div className="mt-2 flex items-stretch gap-3">
         <EventDateBlock d={d} kind={focusKind} focus={focus} urgent={urgent} />
         <div className="min-w-0 flex-1 self-center">
-          <div className="truncate text-[14px] font-semibold leading-tight">
+          <div className="truncate text-[15px] font-semibold leading-tight">
             {ev.title || "(イベント名未設定)"}
           </div>
-          <div className="truncate text-[11.5px] text-muted-foreground">
+          <div className="truncate text-[11px] text-muted-foreground">
             {ev.company || "(企業未設定)"}
-            {venue ? ` · ${venue}` : ""}
           </div>
         </div>
       </div>
@@ -174,7 +181,6 @@ export function EventCard({
               onClick={(e) => e.stopPropagation()}
               className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
             >
-              <Pin className="h-3 w-3" />
               <span className="max-w-[8rem] truncate">{l.label || "リンク"}</span>
             </a>
           ))}
@@ -184,6 +190,7 @@ export function EventCard({
   );
 }
 
+// 選考カード(DateBlock)と完全に同じ作法: 箱で囲わず右側の縦ヘアライン1本。
 function EventDateBlock({
   d,
   kind,
@@ -196,45 +203,42 @@ function EventDateBlock({
   urgent: boolean;
 }) {
   const time = focus ? splitDue(focus).time : "";
+  const wrap =
+    "flex w-[52px] shrink-0 items-center justify-center self-stretch border-r border-border pr-3";
   if (!d) {
     return (
-      <div className="flex w-14 shrink-0 items-center justify-center rounded-lg border border-dashed text-muted-foreground">
-        <Clock className="h-4 w-4" />
+      <div className={cn(wrap, "text-muted-foreground")}>
+        <Clock className="h-5 w-5" />
       </div>
     );
   }
   return (
-    <div
-      className={cn(
-        "flex w-14 shrink-0 flex-col items-center justify-center rounded-lg border px-1 py-1.5 text-center",
-        urgent
-          ? "border-[hsl(var(--danger)/0.3)] bg-[hsl(var(--danger)/0.08)]"
-          : "bg-muted",
-      )}
-    >
-      <div
-        className={cn(
-          "text-[9px] font-medium leading-none",
-          urgent ? "text-danger" : "text-muted-foreground",
-        )}
-      >
-        {kind}
-      </div>
-      <div
-        className={cn(
-          "mt-1 text-[16px] font-semibold leading-none",
-          urgent ? "text-danger" : "text-foreground",
-        )}
-      >
-        {d.getMonth() + 1}/{d.getDate()}
-      </div>
-      <div
-        className={cn(
-          "mt-1 text-[10px] font-medium leading-none",
-          urgent ? "text-danger" : "text-muted-foreground",
-        )}
-      >
-        {time || WD_EN[d.getDay()]}
+    <div className={cn(wrap, "flex-col")}>
+      <div className="text-center">
+        <div
+          className={cn(
+            "text-[9px] font-medium leading-none",
+            urgent ? "text-danger" : "text-muted-foreground",
+          )}
+        >
+          {kind}
+        </div>
+        <div
+          className={cn(
+            "mt-1 text-[17px] font-bold leading-none tracking-tight",
+            urgent ? "text-danger" : "text-foreground",
+          )}
+        >
+          {d.getMonth() + 1}/{d.getDate()}
+        </div>
+        <div
+          className={cn(
+            "mt-1 text-[10px] font-medium leading-none",
+            urgent ? "text-danger" : "text-muted-foreground",
+          )}
+        >
+          {time || WD_EN[d.getDay()]}
+        </div>
       </div>
     </div>
   );

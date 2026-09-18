@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Bell, CalendarPlus, Plus, SearchX } from "lucide-react";
+import { CalendarPlus, Plus, SearchX } from "lucide-react";
 import type {
   EventFilters,
   EventItem,
@@ -134,37 +134,22 @@ export function EventsView({
   const hasUrgent = weekItems.some((x) => x.urgent);
   const shown = weekItems.slice(0, 6);
   const rest = weekItems.length - shown.length;
-  const accent =
-    weekItems.length === 0
-      ? "text-muted-foreground"
-      : hasUrgent
-        ? "text-danger"
-        : "text-primary";
 
   return (
     <>
-      {/* 直近1週間の予定(固定枠) */}
+      {/* 直近の予定(固定枠・選考画面と同じ処方) */}
       <div
         className={cn(
-          "rounded-xl bg-card p-3 shadow-[0_1px_2px_rgba(20,28,55,0.05),0_6px_16px_rgba(20,28,55,0.05)] ring-2",
+          "rounded-2xl bg-card p-3 elevate-sm ring-1",
           weekItems.length === 0
             ? "ring-border"
             : hasUrgent
-              ? "ring-[hsl(var(--danger)/0.6)]"
-              : "ring-[hsl(var(--primary)/0.75)]",
+              ? "ring-[hsl(var(--danger)/0.45)]"
+              : "ring-[hsl(var(--primary)/0.4)]",
         )}
       >
-        <div className="flex items-center gap-1.5 text-[12px] font-medium">
-          <Bell className={cn("h-3.5 w-3.5", accent)} />
-          <span className={accent}>直近1週間の予定</span>
-          {weekItems.length > 0 && (
-            <span className="ml-auto text-[11px] text-muted-foreground">
-              {weekItems.length}件
-            </span>
-          )}
-        </div>
         {weekItems.length > 0 ? (
-          <div className="mt-1.5 space-y-1">
+          <div className="space-y-1">
             {shown.map((x) => {
               const d = dueToDate(x.date);
               return (
@@ -200,8 +185,8 @@ export function EventsView({
             )}
           </div>
         ) : (
-          <p className="mt-1 text-[12.5px] text-muted-foreground">
-            直近1週間の予定はありません
+          <p className="text-[12.5px] text-muted-foreground">
+            近く予定はありません
           </p>
         )}
       </div>

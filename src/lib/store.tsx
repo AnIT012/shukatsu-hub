@@ -30,7 +30,11 @@ import type {
 import {
   DEFAULT_NOTIFY,
   FONT_OPTIONS,
+  FONT_SCALE_DEFAULT,
+  FONT_SCALE_MAX,
+  FONT_SCALE_MIN,
   LS_FONT_KEY,
+  LS_FONTSCALE_KEY,
   LS_KEY,
   LS_QUICKLINKS_KEY,
   LS_SEEDED_KEY,
@@ -89,6 +93,9 @@ interface StoreValue {
   /** よく使うサイト(端末ローカル)。 */
   quickLinks: QuickLink[];
   setQuickLinks: (next: QuickLink[]) => void;
+  /** 文字サイズ倍率(端末ローカル・1.0=標準)。 */
+  fontScale: number;
+  setFontScale: (scale: number) => void;
   pushSubscriptions: PushSubscriptionJSON[];
   addPushSubscription: (sub: PushSubscriptionJSON) => void;
   addApplication: (input: NewApplicationInput) => string;
@@ -309,6 +316,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [font, setFontState] = useState<FontChoice>("system");
   const [notify, setNotifyState] = useState<NotifySettings>(DEFAULT_NOTIFY);
   const [quickLinks, setQuickLinksState] = useState<QuickLink[]>([]);
+  const [fontScale, setFontScaleState] = useState<number>(FONT_SCALE_DEFAULT);
   const [pushSubscriptions, setPushSubscriptions] = useState<
     PushSubscriptionJSON[]
   >([]);
@@ -338,10 +346,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const arr = JSON.parse(ql);
         if (Array.isArray(arr)) setQuickLinksState(arr as QuickLink[]);
       }
+      const fs = Number(localStorage.getItem(LS_FONTSCALE_KEY));
+      if (fs >= FONT_SCALE_MIN && fs <= FONT_SCALE_MAX) setFontScaleState(fs);
     } catch {
       // ignore
     }
   }, []);
+
+  // 文字サイズ: html に zoom を当てて全体を拡大/縮小(px指定にも効く)
+  useEffect(() => {
+    document.documentElement.style.zoom =
+      fontScale === 1 ? "" : String(fontScale);
+  }, [fontScale]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -377,6 +393,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setQuickLinksState(next);
     try {
       localStorage.setItem(LS_QUICKLINKS_KEY, JSON.stringify(next));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const setFontScale = useCallback((scale: number) => {
+    const clamped = Math.min(
+      FONT_SCALE_MAX,
+      Math.max(FONT_SCALE_MIN, Math.round(scale * 100) / 100),
+    );
+    setFontScaleState(clamped);
+    try {
+      localStorage.setItem(LS_FONTSCALE_KEY, String(clamped));
     } catch {
       // ignore
     }
@@ -1291,6 +1320,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setNotify,
     quickLinks,
     setQuickLinks,
+    fontScale,
+    setFontScale,
     pushSubscriptions,
     addPushSubscription,
     addApplication,

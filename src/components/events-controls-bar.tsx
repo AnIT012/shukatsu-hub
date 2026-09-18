@@ -3,20 +3,20 @@
 import { useState } from "react";
 import {
   ArrowDown,
-  ArrowDownUp,
   ArrowUp,
+  Check,
+  ChevronDown,
   LayoutList,
   Rows3,
   RotateCcw,
   SlidersHorizontal,
 } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -97,28 +97,10 @@ export function EventsControlsBar({
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <Select
-          value={sort}
-          onValueChange={(v) => onSortChange(v as EventSortKey)}
-        >
-          <SelectTrigger className="h-9 min-w-0 flex-1 bg-card text-sm">
-            <ArrowDownUp className="mr-1 h-4 w-4 shrink-0 text-muted-foreground" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(SORT_LABEL) as EventSortKey[]).map((k) => (
-              <SelectItem key={k} value={k}>
-                {SORT_LABEL[k]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
+      {/* 並べ替え = 1つのピル。左=単一方向の矢印(押すと昇順⇄降順) / 右=種別メニュー */}
+      <div className="flex min-w-0 flex-1 items-center rounded-full bg-card ring-1 ring-border">
+        <button
           type="button"
-          variant="outline"
-          size="icon"
-          className="h-9 w-9 shrink-0 bg-card"
           aria-label={dir === "asc" ? "昇順（タップで降順に）" : "降順（タップで昇順に）"}
           title={
             dir === "asc"
@@ -126,13 +108,33 @@ export function EventsControlsBar({
               : "降順 — 締切順なら遠い順"
           }
           onClick={() => onDirChange(dir === "asc" ? "desc" : "asc")}
+          className="flex h-9 w-10 shrink-0 items-center justify-center rounded-l-full border-r border-border text-muted-foreground active:scale-95"
         >
           {dir === "asc" ? (
             <ArrowUp className="h-4 w-4" />
           ) : (
             <ArrowDown className="h-4 w-4" />
           )}
-        </Button>
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex min-w-0 flex-1 items-center gap-1.5 rounded-r-full py-2 pl-2.5 pr-3 text-sm active:scale-[0.98]"
+            >
+              <span className="truncate">{SORT_LABEL[sort]}</span>
+              <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {(Object.keys(SORT_LABEL) as EventSortKey[]).map((k) => (
+              <DropdownMenuItem key={k} onClick={() => onSortChange(k)}>
+                <span className="flex-1">{SORT_LABEL[k]}</span>
+                {sort === k && <Check className="h-4 w-4 text-primary" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <Button

@@ -134,34 +134,40 @@ export function QuickLinksManager({
         </div>
       ) : (
         <div className="space-y-2.5">
-          {links.map((l) => (
+          {links.map((l, i) => (
             <div
               key={l.id}
-              className="space-y-2 rounded-2xl border border-border bg-card p-3"
+              className="rounded-2xl border border-border bg-card p-3"
             >
-              <div className="flex items-center gap-2">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  サイト{i + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => remove(l.id)}
+                  aria-label="このサイトを削除"
+                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-danger/5 hover:text-danger active:scale-95"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  削除
+                </button>
+              </div>
+              <div className="space-y-2">
                 <Input
                   value={l.label}
                   onChange={(e) => update(l.id, { label: e.target.value })}
                   placeholder="名前（例: 外資就活）"
-                  className="h-9 flex-1"
+                  className="h-9"
                 />
-                <button
-                  type="button"
-                  onClick={() => remove(l.id)}
-                  aria-label="削除"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-danger/5 hover:text-danger active:scale-95"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <Input
+                  value={l.url}
+                  onChange={(e) => update(l.id, { url: e.target.value })}
+                  placeholder="URL（例: gaishishukatsu.com）"
+                  inputMode="url"
+                  className="h-9"
+                />
               </div>
-              <Input
-                value={l.url}
-                onChange={(e) => update(l.id, { url: e.target.value })}
-                placeholder="URL（例: gaishishukatsu.com）"
-                inputMode="url"
-                className="h-9"
-              />
             </div>
           ))}
         </div>

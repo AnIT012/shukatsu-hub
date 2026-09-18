@@ -39,7 +39,6 @@ import {
   SAMPLE_APP_ID,
   STEP_KIND_LABEL,
 } from "@/lib/constants";
-import { CompanionComment } from "@/components/companion-comment";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -629,14 +628,6 @@ export function Dashboard() {
             )}
           >
             <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))]">
-              {events.length > 0 && (
-                <div className="mb-3">
-                  <CompanionComment
-                    variant="events"
-                    onClick={() => setView("progress")}
-                  />
-                </div>
-              )}
               <EventsView
                 onOpenEvent={setSelectedEventId}
                 onAddEvent={handleAddEvent}
@@ -671,6 +662,21 @@ export function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* 下タブの外周をやわらげる: 画面下端に向かって薄くブラー＋地色フェード。
+          浮くカプセルの背後で中身がボヤけ、背景とタブが被って見にくくなるのを防ぐ。 */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-20 h-[calc(4.75rem+env(safe-area-inset-bottom))]"
+        style={{
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          maskImage: "linear-gradient(to top, black 42%, transparent)",
+          WebkitMaskImage: "linear-gradient(to top, black 42%, transparent)",
+          background:
+            "linear-gradient(to top, hsl(var(--background)/0.72), transparent)",
+        }}
+      />
 
       {/* 下タブは常時固定表示(隠さない)。モーダルは中央に出るので競合しない */}
       <BottomNav view={view} onChange={setView} onReTap={handleReTap} />
@@ -917,7 +923,7 @@ function AnnouncementBanner({ applications }: { applications: Application[] }) {
           )}
         </div>
       ) : (
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
+        <p className="text-[12.5px] text-muted-foreground">
           近く予定はありません
         </p>
       )}

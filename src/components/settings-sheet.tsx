@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
+  ALargeSmall,
   ArrowLeft,
   Bell,
   ChevronRight,
@@ -14,7 +15,9 @@ import {
   History,
   LogOut,
   MessageSquare,
+  Minus,
   Palette,
+  Plus,
   RotateCcw,
   Send,
   Smartphone,
@@ -24,7 +27,13 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
-import { FONT_OPTIONS, THEME_OPTIONS } from "@/lib/constants";
+import {
+  FONT_OPTIONS,
+  FONT_SCALE_DEFAULT,
+  FONT_SCALE_MAX,
+  FONT_SCALE_MIN,
+  THEME_OPTIONS,
+} from "@/lib/constants";
 import {
   disablePush,
   enablePush,
@@ -191,6 +200,8 @@ function SettingsBody({
     setNotify,
     quickLinks,
     setQuickLinks,
+    fontScale,
+    setFontScale,
     addPushSubscription,
     clearAll,
     restoreFromRaw,
@@ -213,6 +224,7 @@ function SettingsBody({
   const [notifyPage, setNotifyPage] = useState(false);
   const [feedbackPage, setFeedbackPage] = useState(false);
   const [linksPage, setLinksPage] = useState(false);
+  const [fontSizePage, setFontSizePage] = useState(false);
 
   useEffect(() => {
     setNeedsHome(isIOS() && !isStandalone());
@@ -525,8 +537,23 @@ function SettingsBody({
               value={FONT_OPTIONS.find((o) => o.value === font)?.label ?? "標準"}
               onClick={() => setFontPicker(true)}
             />
+            <Row
+              icon={<ALargeSmall className="h-4 w-4" />}
+              label="文字サイズ"
+              value={`${Math.round(fontScale * 100)}%`}
+              onClick={() => setFontSizePage(true)}
+            />
           </div>
         </Section>
+
+        {/* 文字サイズ(右スライドのサブページ) */}
+        <SettingsSubPage
+          open={fontSizePage}
+          onClose={() => setFontSizePage(false)}
+          title="文字サイズ"
+        >
+          <FontSizePanel scale={fontScale} onChange={setFontScale} />
+        </SettingsSubPage>
 
         {/* テーマ(右からスライドするサブページ) */}
         <SettingsSubPage
@@ -845,6 +872,99 @@ function SettingsBody({
         </SettingsSubPage>
       </div>
     </>
+  );
+}
+
+/** 文字サイズ: スライダーで倍率を変え、見本で確かめる。全体に即反映(html zoom)。 */
+function FontSizePanel({
+  scale,
+  onChange,
+}: {
+  scale: number;
+  onChange: (s: number) => void;
+}) {
+  const pct = Math.round(scale * 100);
+  const step = 0.05;
+  return (
+    <div className="space-y-5">
+      <p className="text-[12px] leading-relaxed text-muted-foreground">
+        バーをドラッグして、読みやすい大きさに。−＋で微調整もできます。画面全体にすぐ反映されます。
+      </p>
+
+      {/* スライダー + 微調整 */}
+      <div className="rounded-2xl border border-border elevate-sm p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-[13px] font-semibold text-foreground">
+            文字サイズ
+          </span>
+          <span className="text-[13px] font-semibold text-primary">{pct}%</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label="小さく"
+            onClick={() => onChange(scale - step)}
+            disabled={scale <= FONT_SCALE_MIN + 0.001}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted active:scale-95 disabled:opacity-40"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <input
+            type="range"
+            min={FONT_SCALE_MIN}
+            max={FONT_SCALE_MAX}
+            step={0.01}
+            value={scale}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-muted"
+            style={{ accentColor: "hsl(var(--primary))" }}
+          />
+          <button
+            type="button"
+            aria-label="大きく"
+            onClick={() => onChange(scale + step)}
+            disabled={scale >= FONT_SCALE_MAX - 0.001}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted active:scale-95 disabled:opacity-40"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="mt-1 flex justify-between px-9 text-[10px] text-muted-foreground">
+          <span>小</span>
+          <span>大</span>
+        </div>
+        {scale !== FONT_SCALE_DEFAULT && (
+          <button
+            type="button"
+            onClick={() => onChange(FONT_SCALE_DEFAULT)}
+            className="mt-3 w-full rounded-lg border border-border py-2 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted active:scale-[0.99]"
+          >
+            標準（100%）に戻す
+          </button>
+        )}
+      </div>
+
+      {/* 見本 */}
+      <div>
+        <div className="mb-2 px-1 text-[12px] font-medium text-muted-foreground">
+          見本
+        </div>
+        <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
+          <div className="text-[17px] font-bold text-foreground">
+            株式会社サンプル
+          </div>
+          <div className="text-[13px] font-semibold text-foreground">
+            セクション名（ES設問・選考フロー）
+          </div>
+          <p className="text-[15px] leading-relaxed text-foreground">
+            本文のテキストです。メモや説明はこの大きさで表示されます。読みやすさの目安にどうぞ。
+          </p>
+          <p className="text-[12px] leading-relaxed text-muted-foreground">
+            補足・締切などの小さな文字（8/31まで・あと3日）
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
