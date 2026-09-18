@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  Bell,
   ChevronRight,
   Clock,
   Download,
@@ -11,6 +12,7 @@ import {
   HelpCircle,
   History,
   LogOut,
+  MessageSquare,
   Palette,
   RotateCcw,
   Send,
@@ -204,6 +206,8 @@ function SettingsBody({
   const [confirmSnap, setConfirmSnap] = useState<Snapshot | null>(null);
   const [themePicker, setThemePicker] = useState(false);
   const [fontPicker, setFontPicker] = useState(false);
+  const [notifyPage, setNotifyPage] = useState(false);
+  const [feedbackPage, setFeedbackPage] = useState(false);
 
   useEffect(() => {
     setNeedsHome(isIOS() && !isStandalone());
@@ -365,8 +369,24 @@ function SettingsBody({
           </Section>
         )}
 
-        {/* 通知 */}
+        {/* 通知(行→右スライドのサブページ) */}
         <Section title="通知">
+          <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
+            <Row
+              icon={<Bell className="h-4 w-4" />}
+              label="締切・予定を通知"
+              value={notify.enabled ? "オン" : "オフ"}
+              onClick={() => setNotifyPage(true)}
+            />
+          </div>
+        </Section>
+
+        {/* 通知(サブページ本体) */}
+        <SettingsSubPage
+          open={notifyPage}
+          onClose={() => setNotifyPage(false)}
+          title="通知"
+        >
           <div className="space-y-3 rounded-2xl border border-border elevate-sm p-3">
             <div className="flex items-center">
               <span className="text-sm">締切・予定を通知</span>
@@ -475,7 +495,7 @@ function SettingsBody({
               </div>
             )}
           </div>
-        </Section>
+        </SettingsSubPage>
 
         {/* 見た目(テーマ・フォントは行→ピッカーで畳む=場所を取らない) */}
         <Section title="見た目">
@@ -626,90 +646,11 @@ function SettingsBody({
                   onClick={() => setConfirmRestore(true)}
                 />
               ))}
-            {showSnapshots ? (
-              <div className="border-t">
-                <div className="flex items-center justify-between bg-muted/40 px-3 py-2">
-                  <span className="text-[12px] font-medium text-muted-foreground">
-                    復元ポイント（新しい順・この端末に自動保存）
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSnapshots(false);
-                      setConfirmSnap(null);
-                    }}
-                    className="text-[12px] font-medium text-primary"
-                  >
-                    閉じる
-                  </button>
-                </div>
-                {snapshots.length === 0 ? (
-                  <p className="px-3 py-3 text-[12px] text-muted-foreground">
-                    まだ復元ポイントがありません（保存のたびに自動で作られます）
-                  </p>
-                ) : (
-                  snapshots.map((s, i) => (
-                    <div key={i} className="border-t px-3 py-2">
-                      {confirmSnap === s ? (
-                        <div className="flex items-center gap-2">
-                          <span className="flex-1 text-[12px]">
-                            この時点に戻す？（現在の表示が置き換わります）
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setConfirmSnap(null)}
-                          >
-                            やめる
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              if (restoreFromRaw(s.data)) {
-                                toast.success("復元しました", {
-                                  description: "内容を確認してください",
-                                });
-                              } else {
-                                toast.error("復元に失敗しました");
-                              }
-                              setConfirmSnap(null);
-                              setShowSnapshots(false);
-                            }}
-                          >
-                            戻す
-                          </Button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setConfirmSnap(s)}
-                          className="flex w-full items-center gap-2 text-left"
-                        >
-                          <History className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          <span className="flex-1 text-[13px]">
-                            {new Date(s.at).toLocaleString("ja-JP", {
-                              month: "numeric",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground">
-                            選考{s.apps}・予定{s.events}
-                          </span>
-                        </button>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            ) : (
-              <Row
-                icon={<History className="h-4 w-4" />}
-                label="復元ポイント（自動バックアップ）"
-                onClick={openSnapshots}
-              />
-            )}
+            <Row
+              icon={<History className="h-4 w-4" />}
+              label="復元ポイント（自動バックアップ）"
+              onClick={openSnapshots}
+            />
             {confirmClear ? (
               <div className="flex items-center gap-2 border-t border-border bg-danger/5 px-3 py-2.5">
                 <span className="flex-1 text-[13px]">
@@ -747,7 +688,13 @@ function SettingsBody({
 
         {mode === "cloud" && user && (
           <Section title="フィードバック">
-            <FeedbackForm userId={user.id} />
+            <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
+              <Row
+                icon={<MessageSquare className="h-4 w-4" />}
+                label="感想・要望を送る"
+                onClick={() => setFeedbackPage(true)}
+              />
+            </div>
           </Section>
         )}
 
@@ -774,6 +721,92 @@ function SettingsBody({
             />
           </div>
         </Section>
+
+        {/* 復元ポイント(サブページ本体) */}
+        <SettingsSubPage
+          open={showSnapshots}
+          onClose={() => {
+            setShowSnapshots(false);
+            setConfirmSnap(null);
+          }}
+          title="復元ポイント"
+        >
+          <p className="mb-3 text-[12px] leading-relaxed text-muted-foreground">
+            保存のたびに、この端末へ自動でバックアップ（新しい順）。タップすると、その時点に戻せます。
+          </p>
+          <div className="overflow-hidden rounded-2xl border border-border">
+            {snapshots.length === 0 ? (
+              <p className="px-3 py-4 text-[13px] text-muted-foreground">
+                まだ復元ポイントがありません（保存のたびに自動で作られます）
+              </p>
+            ) : (
+              snapshots.map((s, i) => (
+                <div key={i} className="border-b px-3 py-2.5 last:border-b-0">
+                  {confirmSnap === s ? (
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 text-[12px]">
+                        この時点に戻す？（現在の表示が置き換わります）
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setConfirmSnap(null)}
+                      >
+                        やめる
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (restoreFromRaw(s.data)) {
+                            toast.success("復元しました", {
+                              description: "内容を確認してください",
+                            });
+                          } else {
+                            toast.error("復元に失敗しました");
+                          }
+                          setConfirmSnap(null);
+                          setShowSnapshots(false);
+                        }}
+                      >
+                        戻す
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmSnap(s)}
+                      className="flex w-full items-center gap-2 text-left"
+                    >
+                      <History className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="flex-1 text-[13px]">
+                        {new Date(s.at).toLocaleString("ja-JP", {
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        選考{s.apps}・予定{s.events}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </SettingsSubPage>
+
+        {/* フィードバック(サブページ本体) */}
+        {mode === "cloud" && user && (
+          <SettingsSubPage
+            open={feedbackPage}
+            onClose={() => setFeedbackPage(false)}
+            title="フィードバック"
+          >
+            <FeedbackForm userId={user.id} />
+          </SettingsSubPage>
+        )}
       </div>
 
       <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
