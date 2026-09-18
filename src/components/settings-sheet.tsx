@@ -47,7 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { ChangelogDialog } from "@/components/changelog-dialog";
+import { ChangelogBody } from "@/components/changelog-dialog";
 import { QuickLinksManager } from "@/components/quick-links";
 
 const NOTIFY_HOURS = Array.from({ length: 18 }, (_, i) => i + 6); // 6:00〜23:00
@@ -202,7 +202,7 @@ function SettingsBody({
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [hasV2Backup, setHasV2Backup] = useState(false);
-  const [changelogOpen, setChangelogOpen] = useState(false);
+  const [changelogPage, setChangelogPage] = useState(false);
   const [needsHome, setNeedsHome] = useState(false);
   const [testing, setTesting] = useState(false);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
@@ -740,7 +740,7 @@ function SettingsBody({
             <Row
               icon={<History className="h-4 w-4" />}
               label="更新履歴"
-              onClick={() => setChangelogOpen(true)}
+              onClick={() => setChangelogPage(true)}
             />
             <Row
               icon={<FileText className="h-4 w-4" />}
@@ -835,9 +835,15 @@ function SettingsBody({
             <FeedbackForm userId={user.id} />
           </SettingsSubPage>
         )}
+        {/* 更新履歴(サブページ本体) */}
+        <SettingsSubPage
+          open={changelogPage}
+          onClose={() => setChangelogPage(false)}
+          title="更新履歴"
+        >
+          <ChangelogBody />
+        </SettingsSubPage>
       </div>
-
-      <ChangelogDialog open={changelogOpen} onOpenChange={setChangelogOpen} />
     </>
   );
 }
