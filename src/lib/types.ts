@@ -46,6 +46,13 @@ export interface RelatedLink {
   pin?: boolean;
 }
 
+/** よく使う外部就活サイトへのショートカット(端末ごとに保存・各自で登録) */
+export interface QuickLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
 /** ES(エントリーシート)の設問と回答。企業ごとに保存して使い回せる */
 export interface ESEntry {
   id: string;

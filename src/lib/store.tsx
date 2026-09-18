@@ -25,12 +25,14 @@ import type {
   Theme,
   FontChoice,
   NotifySettings,
+  QuickLink,
 } from "./types";
 import {
   DEFAULT_NOTIFY,
   FONT_OPTIONS,
   LS_FONT_KEY,
   LS_KEY,
+  LS_QUICKLINKS_KEY,
   LS_SEEDED_KEY,
   LS_THEME_KEY,
 } from "./constants";
@@ -84,6 +86,9 @@ interface StoreValue {
   setFont: (f: FontChoice) => void;
   notify: NotifySettings;
   setNotify: (patch: Partial<NotifySettings>) => void;
+  /** よく使うサイト(端末ローカル)。 */
+  quickLinks: QuickLink[];
+  setQuickLinks: (next: QuickLink[]) => void;
   pushSubscriptions: PushSubscriptionJSON[];
   addPushSubscription: (sub: PushSubscriptionJSON) => void;
   addApplication: (input: NewApplicationInput) => string;
@@ -303,6 +308,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("indigo");
   const [font, setFontState] = useState<FontChoice>("system");
   const [notify, setNotifyState] = useState<NotifySettings>(DEFAULT_NOTIFY);
+  const [quickLinks, setQuickLinksState] = useState<QuickLink[]>([]);
   const [pushSubscriptions, setPushSubscriptions] = useState<
     PushSubscriptionJSON[]
   >([]);
@@ -327,6 +333,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (t) setThemeState(t);
       const f = localStorage.getItem(LS_FONT_KEY) as FontChoice | null;
       if (f) setFontState(f);
+      const ql = localStorage.getItem(LS_QUICKLINKS_KEY);
+      if (ql) {
+        const arr = JSON.parse(ql);
+        if (Array.isArray(arr)) setQuickLinksState(arr as QuickLink[]);
+      }
     } catch {
       // ignore
     }
@@ -360,6 +371,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const setNotify = useCallback((patch: Partial<NotifySettings>) => {
     setNotifyState((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const setQuickLinks = useCallback((next: QuickLink[]) => {
+    setQuickLinksState(next);
+    try {
+      localStorage.setItem(LS_QUICKLINKS_KEY, JSON.stringify(next));
+    } catch {
+      // ignore
+    }
   }, []);
 
   const addPushSubscription = useCallback((sub: PushSubscriptionJSON) => {
@@ -1269,6 +1289,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setFont,
     notify,
     setNotify,
+    quickLinks,
+    setQuickLinks,
     pushSubscriptions,
     addPushSubscription,
     addApplication,

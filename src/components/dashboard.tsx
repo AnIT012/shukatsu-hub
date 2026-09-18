@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Check,
   CloudOff,
+  Compass,
   HelpCircle,
   Inbox,
   Plus,
@@ -58,6 +59,7 @@ import { EventsView } from "@/components/events-view";
 import { EventDetail } from "@/components/event-detail";
 import { SettingsPage } from "@/components/settings-sheet";
 import { ImportDialog } from "@/components/import-dialog";
+import { QuickLinksLauncher } from "@/components/quick-links";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
 import { VersionNotice } from "@/components/version-notice";
 import { WhatsNew } from "@/components/whats-new";
@@ -86,6 +88,7 @@ export function Dashboard() {
     applications,
     events,
     loaded,
+    quickLinks,
     seedSampleIfEmpty,
     deleteApplication,
   } = store;
@@ -103,6 +106,7 @@ export function Dashboard() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [linksOpen, setLinksOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [addSpin, setAddSpin] = useState(false);
   const [showOnboard, setShowOnboard] = useState(false);
@@ -465,6 +469,15 @@ export function Dashboard() {
           </span>
           <div className="ml-auto flex items-center gap-1">
             <SaveIndicator />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-9 w-9 text-muted-foreground"
+              aria-label="よく使うサイト"
+              onClick={() => setLinksOpen(true)}
+            >
+              <Compass className="h-[18px] w-[18px]" />
+            </Button>
             <RefreshButton />
             {/* 選考/イベント以外(進捗・設定)では ＋ を縮んでクルッと収納→ポンと復活 */}
             {/* transition は inline で固定(Button基底の transition に上書きされる問題の回避) */}
@@ -654,6 +667,13 @@ export function Dashboard() {
       <BottomNav view={view} onChange={setView} onReTap={handleReTap} />
 
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+
+      <QuickLinksLauncher
+        open={linksOpen}
+        onOpenChange={setLinksOpen}
+        links={quickLinks}
+        onManage={() => setView("settings")}
+      />
 
       <AddApplicationDialog
         open={addOpen}

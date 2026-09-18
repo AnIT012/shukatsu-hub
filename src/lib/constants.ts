@@ -208,6 +208,8 @@ export const FONT_OPTIONS: {
 export const LS_KEY = "shukatsu-dashboard:v1";
 export const LS_THEME_KEY = "shukatsu-dashboard:theme";
 export const LS_FONT_KEY = "shukatsu-dashboard:font";
+/** よく使うサイト(外部就活サイトへの動線)。端末ごとに記憶 */
+export const LS_QUICKLINKS_KEY = "shukatsu-dashboard:quicklinks";
 /** 一覧の表示モード(compact / detail)。端末ごとに記憶 */
 export const LS_VIEWMODE_KEY = "shukatsu-dashboard:viewmode";
 export const LS_ONBOARDED_KEY = "shukatsu-dashboard:onboarded";

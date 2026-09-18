@@ -9,6 +9,7 @@ import {
   Clock,
   Download,
   FileText,
+  Globe,
   HelpCircle,
   History,
   LogOut,
@@ -47,6 +48,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { ChangelogDialog } from "@/components/changelog-dialog";
+import { QuickLinksManager } from "@/components/quick-links";
 
 const NOTIFY_HOURS = Array.from({ length: 18 }, (_, i) => i + 6); // 6:00〜23:00
 
@@ -187,6 +189,8 @@ function SettingsBody({
     setFont,
     notify,
     setNotify,
+    quickLinks,
+    setQuickLinks,
     addPushSubscription,
     clearAll,
     restoreFromRaw,
@@ -208,6 +212,7 @@ function SettingsBody({
   const [fontPicker, setFontPicker] = useState(false);
   const [notifyPage, setNotifyPage] = useState(false);
   const [feedbackPage, setFeedbackPage] = useState(false);
+  const [linksPage, setLinksPage] = useState(false);
 
   useEffect(() => {
     setNeedsHome(isIOS() && !isStandalone());
@@ -590,6 +595,29 @@ function SettingsBody({
               </button>
             ))}
           </div>
+        </SettingsSubPage>
+
+        {/* リンク */}
+        <Section title="リンク">
+          <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
+            <Row
+              icon={<Globe className="h-4 w-4" />}
+              label="よく使うサイト"
+              value={
+                quickLinks.filter((l) => l.url.trim()).length || undefined
+              }
+              onClick={() => setLinksPage(true)}
+            />
+          </div>
+        </Section>
+
+        {/* よく使うサイト(サブページ本体) */}
+        <SettingsSubPage
+          open={linksPage}
+          onClose={() => setLinksPage(false)}
+          title="よく使うサイト"
+        >
+          <QuickLinksManager links={quickLinks} onChange={setQuickLinks} />
         </SettingsSubPage>
 
         {/* データ */}
