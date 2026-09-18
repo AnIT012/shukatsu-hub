@@ -60,6 +60,7 @@ import { EventDetail } from "@/components/event-detail";
 import { SettingsPage } from "@/components/settings-sheet";
 import { ImportDialog } from "@/components/import-dialog";
 import { QuickLinksLauncher } from "@/components/quick-links";
+import { WhatsNewDialog } from "@/components/whats-new-dialog";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
 import { VersionNotice } from "@/components/version-notice";
 import { WhatsNew } from "@/components/whats-new";
@@ -107,6 +108,7 @@ export function Dashboard() {
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [linksOpen, setLinksOpen] = useState(false);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [addSpin, setAddSpin] = useState(false);
   const [showOnboard, setShowOnboard] = useState(false);
@@ -342,57 +344,65 @@ export function Dashboard() {
 
   const tourSteps = useMemo<TourStep[]>(() => {
     const steps: TourStep[] = [
-      { title: "ようこそ！", body: "操作のコツを1分でガイドするよ。" },
+      {
+        title: "就活Hubへようこそ",
+        body: "主要な操作を1分でざっと案内するよ。",
+      },
     ];
     if (applications.length > 0) {
       steps.push(
         {
           tour: "tabs",
-          title: "進捗・選考・イベント・設定",
-          body: "下のタブで切り替え。左端の「進捗」は努力の積み上げ（花畑が育つご褒美ページ）。左右スワイプでも移動OK。",
+          title: "4つのタブ",
+          body: "進捗・選考・イベント・設定を下タブで移動（左右スワイプでも可）。左端の「進捗」は努力が花畑に育つご褒美ページ。",
         },
         {
           tour: "card",
           title: "応募先カード",
-          body: "企業ごとにカードで一覧（締切が近い順）。左の日付＝次の締切で、1週間以内は赤で強調。詳細を開くと進捗バー（緑＝通過／黄＝完了待ち／灰＝未／赤＝不合格）。",
+          body: "企業ごとのカードを締切が近い順に一覧。左の日付が次の締切で、1週間以内は赤。開くと進捗バー（緑＝通過／黄＝完了待ち／灰＝未／赤＝不合格）。",
         },
         {
           tour: "banner",
-          title: "直近1週間の予定",
-          body: "今日から1週間ぶんの予定をここに固定表示。毎朝ここを見ればOK。",
+          title: "直近の予定",
+          body: "この先の締切・予定をここに固定表示。毎朝ここだけ見ればOK。",
         },
         {
           tour: "sort",
           title: "並べ替え",
-          body: "カードの並び順を変更。締切順・優先度順・企業名順から選べて、右の矢印（↑↓）で昇順／降順を切り替えられる（締切順なら近い順⇄遠い順）。",
+          body: "締切順・優先度順・企業名順から選択。左の矢印で昇順／降順を切り替え（締切順なら近い順⇄遠い順）。",
         },
         {
           tour: "filter",
           title: "絞り込み",
-          body: "状況（進行中・結果待ちなど）や優先度で絞れる。",
+          body: "状況（進行中・結果待ちなど）や優先度でカードを絞れる。",
+        },
+        {
+          tour: "links",
+          title: "よく使うサイト",
+          body: "右上のコンパスから、外資就活や各社マイページなど、よく開くサイトにワンタップ。登録は設定から。",
         },
         {
           tour: "add",
           title: "企業を追加",
-          body: "新しい応募先はここから。",
+          body: "新しい応募先はここから。まずは企業名だけでもOK。",
         },
         {
           tour: "status-dot",
           openDetail: true,
-          title: "丸＝未/提出済/完了",
-          body: "丸をタップで進む（締切＋実施日があるタスクは 未→提出済→完了 の2段階／片方だけなら一発で完了）。完了したら段階の「通過／不合格」を選べばOK。",
+          title: "丸をタップで進める",
+          body: "締切＋実施日のあるタスクは 未→提出済→完了 の2段階（片方だけなら一発で完了）。完了したら段階の「通過／不合格」を選ぶ。",
         },
         {
           tour: "step",
           openDetail: true,
           title: "見る／編集モード",
-          body: "ふだんは「見る」だけ（丸で完了、結果を選ぶ）。右上の「編集」を押すと、段階の追加・並べ替え・締切やメモの編集ができる。",
+          body: "ふだんは「見る」だけ（丸で完了、結果を選ぶ）。右上の「編集」で段階の追加・並べ替え・締切やメモの編集。",
         },
         {
           tour: "type",
           openDetail: true,
           title: "選考種別",
-          body: "種別で合格時の表示が 内定／内々定／参加確定 に変化。インターンを選ぶと開催地も出る。",
+          body: "種別で合格時の表示が 内定／内々定／参加確定 に変化。インターンなら開催地も出る。",
         },
         {
           tour: "es",
@@ -409,8 +419,8 @@ export function Dashboard() {
       });
     }
     steps.push({
-      title: "これで準備OK",
-      body: "通知・テーマ・このガイドは、下のタブの「設定」からいつでも開けるよ。就活がんばろう！",
+      title: "準備OK",
+      body: "通知・テーマ・取り込み・このガイドは、いつでも「設定」から。就活がんばろう！",
     });
     return steps;
   }, [applications.length]);
@@ -425,6 +435,25 @@ export function Dashboard() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourIndex]);
+
+  // プッシュ通知(/?whatsnew=1)から開いたら、改修のお知らせを表示してURLを掃除
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("whatsnew") === "1") {
+        setWhatsNewOpen(true);
+        params.delete("whatsnew");
+        const qs = params.toString();
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash,
+        );
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const startTour = () => setTourIndex(0);
   const tourNext = () =>
@@ -474,6 +503,7 @@ export function Dashboard() {
               variant="ghost"
               className="h-9 w-9 text-muted-foreground"
               aria-label="よく使うサイト"
+              data-tour="links"
               onClick={() => setLinksOpen(true)}
             >
               <Compass className="h-[18px] w-[18px]" />
@@ -673,6 +703,12 @@ export function Dashboard() {
         onOpenChange={setLinksOpen}
         links={quickLinks}
         onManage={() => setView("settings")}
+      />
+
+      <WhatsNewDialog
+        open={whatsNewOpen}
+        onClose={() => setWhatsNewOpen(false)}
+        onStartTour={startTour}
       />
 
       <AddApplicationDialog

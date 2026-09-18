@@ -203,12 +203,64 @@ Deno.serve(async (req) => {
   //   {"userId":"<uuid>"} … その1ユーザーだけに限定(他人に飛ばさない)
   let force = false;
   let onlyUser: string | null = null;
+  let body: any = null;
   try {
-    const body = await req.json();
+    body = await req.json();
     force = body?.force === true || body?.test === true;
     if (typeof body?.userId === "string" && body.userId) onlyUser = body.userId;
   } catch {
     // body 無し/JSON でない → 通常実行
+  }
+
+  // ---- 一斉告知(改修のお知らせ等) ----
+  // {"broadcast":true,"title":"...","body":"...","url":"/?whatsnew=1"}
+  //   dryRun:true … 送らずに対象数だけ数える(本番前の確認用)
+  //   userId:"<uuid>" … その1人だけ(自分で受信テスト)
+  // 通知ONのユーザーにだけ届く。スケジュール(時刻)は無視して即時1回。
+  if (body?.broadcast === true) {
+    const title = typeof body.title === "string" ? body.title : "就活Hub";
+    const bcBody = typeof body.body === "string" ? body.body : "";
+    const url = typeof body.url === "string" ? body.url : "/";
+    const dryRun = body.dryRun === true;
+    const payload = JSON.stringify({ title, body: bcBody, url });
+
+    const { data: rows, error } = await supabase
+      .from("user_data")
+      .select("user_id, data");
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    let users = 0;
+    let subs = 0;
+    let sent = 0;
+    let failed = 0;
+    for (const row of rows ?? []) {
+      if (onlyUser && (row as any).user_id !== onlyUser) continue;
+      const d = (row as any).data ?? {};
+      if (!d.notify?.enabled) continue; // 通知OFFの人には送らない
+      const list: any[] = d.pushSubscriptions ?? [];
+      if (!list.length) continue;
+      users++;
+      for (const sub of list) {
+        subs++;
+        if (dryRun) continue;
+        try {
+          await webpush.sendNotification(sub, payload);
+          sent++;
+        } catch (e) {
+          failed++;
+          console.error("broadcast failed:", (e as any)?.statusCode ?? e);
+        }
+      }
+    }
+    return new Response(
+      JSON.stringify({ broadcast: true, dryRun, users, subs, sent, failed }),
+      { headers: { "content-type": "application/json" } },
+    );
   }
 
   const today = jstToday();
