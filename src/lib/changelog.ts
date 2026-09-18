@@ -1,4 +1,13 @@
-import { Bell, KeyRound, ShieldCheck, type LucideIcon } from "lucide-react";
+import {
+  Bell,
+  Compass,
+  Download,
+  KeyRound,
+  Palette,
+  PanelRight,
+  ShieldCheck,
+  type LucideIcon,
+} from "lucide-react";
 
 export interface ChangelogItem {
   icon: LucideIcon;
@@ -18,6 +27,36 @@ export interface ChangelogEntry {
  * → 「更新のお知らせ」モーダルが先頭エントリで全ユーザーに1回出る＋設定の履歴にも残る。
  */
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    date: "2026-09-18",
+    items: [
+      {
+        icon: Palette,
+        title: "画面をまるごと刷新",
+        body: "紙とガラスの質感で、見やすく落ち着いた印象に。",
+      },
+      {
+        icon: PanelRight,
+        title: "設定がiPhoneらしく",
+        body: "項目を開くと右からスッと。スワイプで戻れます。",
+      },
+      {
+        icon: Download,
+        title: "取り込みが強力に",
+        body: "AIに整理してもらったJSONや、バックアップから一括登録。",
+      },
+      {
+        icon: Compass,
+        title: "よく使うサイト",
+        body: "外資就活や各社マイページを、右上のアイコンからワンタップで。",
+      },
+      {
+        icon: Bell,
+        title: "通知まわりも改善",
+        body: "詳細ページや締切表示を、より見やすくしました。",
+      },
+    ],
+  },
   {
     date: "2026-06-20",
     items: [

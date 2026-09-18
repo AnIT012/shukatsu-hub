@@ -60,7 +60,6 @@ import { EventDetail } from "@/components/event-detail";
 import { SettingsPage } from "@/components/settings-sheet";
 import { ImportDialog } from "@/components/import-dialog";
 import { QuickLinksLauncher } from "@/components/quick-links";
-import { WhatsNewDialog } from "@/components/whats-new-dialog";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
 import { VersionNotice } from "@/components/version-notice";
 import { WhatsNew } from "@/components/whats-new";
@@ -108,7 +107,6 @@ export function Dashboard() {
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [linksOpen, setLinksOpen] = useState(false);
-  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [addSpin, setAddSpin] = useState(false);
   const [showOnboard, setShowOnboard] = useState(false);
@@ -436,25 +434,6 @@ export function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourIndex]);
 
-  // プッシュ通知(/?whatsnew=1)から開いたら、改修のお知らせを表示してURLを掃除
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("whatsnew") === "1") {
-        setWhatsNewOpen(true);
-        params.delete("whatsnew");
-        const qs = params.toString();
-        window.history.replaceState(
-          null,
-          "",
-          window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash,
-        );
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
-
   const startTour = () => setTourIndex(0);
   const tourNext = () =>
     setTourIndex((i) => Math.min(i + 1, tourSteps.length - 1));
@@ -703,12 +682,6 @@ export function Dashboard() {
         onOpenChange={setLinksOpen}
         links={quickLinks}
         onManage={() => setView("settings")}
-      />
-
-      <WhatsNewDialog
-        open={whatsNewOpen}
-        onClose={() => setWhatsNewOpen(false)}
-        onStartTour={startTour}
       />
 
       <AddApplicationDialog
