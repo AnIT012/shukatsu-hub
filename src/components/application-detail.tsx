@@ -25,7 +25,7 @@ import {
   Pin,
   Plus,
   StickyNote,
-  Target,
+  CircleArrowRight,
   Trash2,
   CircleX,
 } from "lucide-react";
@@ -1167,7 +1167,7 @@ function NextBanner({
       {/* 上段: NEXT と 締切を横並び(縦に積まない=枠の高さが締切有無で変わらない) */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-          <Target className="h-3.5 w-3.5" />
+          <CircleArrowRight className="h-3.5 w-3.5 text-primary" />
           NEXT{parallel && "（並行）"}
         </div>
         <div

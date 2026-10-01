@@ -157,13 +157,16 @@ export const STEP_KIND_ICON: Record<StepKind, LucideIcon> = {
 
 // 地(ほぼ白+薄い肌色)は全テーマ共通。差はアクセント1色だけ。数は絞って"選んだ感"を出す。
 // 旧テーマ(藍鼠/水浅葱/藤/桜鼠/グレージュ/鳩羽鼠)のCSSは globals に残す(保存済みの人はそのまま効く)
+// 色名はなじみのある呼び方に(和色名は渋すぎた)。値(キー)は保存済みの設定と互換のため旧名のまま
 export const THEME_OPTIONS: { value: Theme; label: string }[] = [
-  { value: "indigo", label: "標準" },
-  { value: "navy", label: "ネイビー" },
-  { value: "seiji", label: "青磁" },
-  { value: "akane", label: "茜" },
-  { value: "kohaku", label: "琥珀" },
-  { value: "sumi", label: "墨" },
+  { value: "indigo", label: "ブルー" },
+  { value: "seiji", label: "グリーン" },
+  { value: "mizuasagi", label: "ティール" },
+  { value: "kohaku", label: "オレンジ" },
+  { value: "akane", label: "レッド" },
+  { value: "sakuraNezu", label: "ピンク" },
+  { value: "fuji", label: "パープル" },
+  { value: "sumi", label: "グラファイト" },
 ];
 
 // ---------------- フォント ----------------

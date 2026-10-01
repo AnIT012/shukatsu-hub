@@ -7,13 +7,14 @@ import {
   Clipboard,
   ClipboardCheck,
   ClipboardList,
+  Compass,
   Flower2,
   Settings,
   Sprout,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type NavView = "progress" | "selection" | "events" | "settings";
+export type NavView = "progress" | "selection" | "events" | "sites" | "settings";
 
 type Anim = "evolve" | "spin";
 
@@ -47,6 +48,13 @@ const TABS: {
     anim: "evolve",
   },
   {
+    value: "sites",
+    label: "サイト",
+    icon: Compass, // よく使う外部サイト
+    activeIcon: Compass,
+    anim: "evolve",
+  },
+  {
     value: "settings",
     label: "設定",
     icon: Settings,
@@ -69,6 +77,23 @@ export function BottomNav({
   hidden?: boolean;
 }) {
   return (
+    <>
+      {/* 下タブの外周に楕円形のブラー。カプセルの周りだけ中身をぼかし、背景とタブが被って読みにくくなるのを防ぐ */}
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none fixed inset-x-0 z-[29] h-[88px]",
+          "bottom-[calc(max(0.625rem,env(safe-area-inset-bottom))-16px)]",
+          hidden && "hidden",
+        )}
+        style={{
+          WebkitBackdropFilter: "blur(12px)",
+          backdropFilter: "blur(12px)",
+          background: "hsl(var(--background) / 0.35)",
+          WebkitMaskImage: "radial-gradient(ellipse 54% 50% at 50% 50%, #000 62%, transparent 100%)",
+          maskImage: "radial-gradient(ellipse 54% 50% at 50% 50%, #000 62%, transparent 100%)",
+        }}
+      />
     <nav
       data-tour="tabs"
       className={cn(
@@ -88,6 +113,7 @@ export function BottomNav({
               key={t.value}
               type="button"
               aria-label={t.label}
+              data-tour={`tab-${t.value}`}
               aria-current={active ? "page" : undefined}
               onClick={() => (active ? onReTap?.(t.value) : onChange(t.value))}
               className="group relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-transform active:scale-90"
@@ -144,5 +170,6 @@ export function BottomNav({
         })}
       </div>
     </nav>
+    </>
   );
 }

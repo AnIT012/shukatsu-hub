@@ -10,7 +10,6 @@ import {
   Clock,
   Download,
   FileText,
-  Globe,
   HelpCircle,
   History,
   LogOut,
@@ -57,7 +56,6 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { ChangelogBody } from "@/components/changelog-dialog";
-import { QuickLinksManager } from "@/components/quick-links";
 
 const NOTIFY_HOURS = Array.from({ length: 18 }, (_, i) => i + 6); // 6:00〜23:00
 
@@ -104,6 +102,8 @@ export function SettingsSheet({
             axis: "",
           };
           widthRef.current = e.currentTarget.getBoundingClientRect().width;
+          // スライダーの上で始まった触れは「戻る」スワイプにしない(横ドラッグで画面ごと動いていた)
+          if ((e.target as HTMLElement).closest("[data-noswipe]")) startRef.current.axis = "y";
         }}
         onTouchMove={(e) => {
           const dx = e.touches[0].clientX - startRef.current.x;
@@ -198,8 +198,6 @@ function SettingsBody({
     setFont,
     notify,
     setNotify,
-    quickLinks,
-    setQuickLinks,
     fontScale,
     setFontScale,
     addPushSubscription,
@@ -223,7 +221,6 @@ function SettingsBody({
   const [fontPicker, setFontPicker] = useState(false);
   const [notifyPage, setNotifyPage] = useState(false);
   const [feedbackPage, setFeedbackPage] = useState(false);
-  const [linksPage, setLinksPage] = useState(false);
   const [fontSizePage, setFontSizePage] = useState(false);
 
   useEffect(() => {
@@ -526,7 +523,7 @@ function SettingsBody({
                     className="h-4 w-4 rounded-full ring-1 ring-inset ring-foreground/10"
                     style={{ background: "hsl(var(--primary))" }}
                   />
-                  {THEME_OPTIONS.find((t) => t.value === theme)?.label ?? "標準"}
+                  {THEME_OPTIONS.find((t) => t.value === theme)?.label ?? "その他"}
                 </>
               }
               onClick={() => setThemePicker(true)}
@@ -624,39 +621,16 @@ function SettingsBody({
           </div>
         </SettingsSubPage>
 
-        {/* リンク */}
-        <Section title="リンク">
-          <div className="overflow-hidden rounded-2xl border border-border bg-card elevate-sm">
-            <Row
-              icon={<Globe className="h-4 w-4" />}
-              label="よく使うサイト"
-              value={
-                quickLinks.filter((l) => l.url.trim()).length || undefined
-              }
-              onClick={() => setLinksPage(true)}
-            />
-          </div>
-        </Section>
-
-        {/* よく使うサイト(サブページ本体) */}
-        <SettingsSubPage
-          open={linksPage}
-          onClose={() => setLinksPage(false)}
-          title="よく使うサイト"
-        >
-          <QuickLinksManager links={quickLinks} onChange={setQuickLinks} />
-        </SettingsSubPage>
-
         {/* データ */}
         <Section title="データ">
           <div className="overflow-hidden rounded-2xl border border-border bg-card elevate-sm">
             <Row
-              icon={<Upload className="h-4 w-4" />}
+              icon={<Download className="h-4 w-4" />}
               label="取り込み（JSON / AI）"
               onClick={onImport}
             />
             <Row
-              icon={<Download className="h-4 w-4" />}
+              icon={<Upload className="h-4 w-4" />}
               label="エクスポート（JSON）"
               onClick={onExport}
             />
@@ -887,12 +861,18 @@ function FontSizePanel({
   scale: number;
   onChange: (s: number) => void;
 }) {
-  const pct = Math.round(scale * 100);
+  // ドラッグ中に画面全体の倍率を変えると指の下のバーまで動く。ドラッグ中は見本だけ変え、離した時に全体へ反映
+  const [draft, setDraft] = useState(scale);
+  useEffect(() => setDraft(scale), [scale]);
+  const commit = () => {
+    if (Math.abs(draft - scale) > 0.001) onChange(draft);
+  };
+  const pct = Math.round(draft * 100);
   const step = 0.05;
   return (
     <div className="space-y-5">
       <p className="text-[12px] leading-relaxed text-muted-foreground">
-        バーをドラッグして、読みやすい大きさに。−＋で微調整もできます。画面全体にすぐ反映されます。
+        バーをドラッグすると見本が変わり、指を離すと画面全体に反映されます。−＋で微調整もできます。
       </p>
 
       {/* スライダー + 微調整 */}
@@ -918,10 +898,16 @@ function FontSizePanel({
             min={FONT_SCALE_MIN}
             max={FONT_SCALE_MAX}
             step={0.01}
-            value={scale}
-            onChange={(e) => onChange(Number(e.target.value))}
+            value={draft}
+            data-noswipe
+            aria-label="文字サイズ"
+            onChange={(e) => setDraft(Number(e.target.value))}
+            onPointerUp={commit}
+            onTouchEnd={commit}
+            onKeyUp={commit}
+            onBlur={commit}
             className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-muted"
-            style={{ accentColor: "hsl(var(--primary))" }}
+            style={{ accentColor: "hsl(var(--primary))", touchAction: "none" }}
           />
           <button
             type="button"
@@ -937,7 +923,7 @@ function FontSizePanel({
           <span>小</span>
           <span>大</span>
         </div>
-        {scale !== FONT_SCALE_DEFAULT && (
+        {draft !== FONT_SCALE_DEFAULT && (
           <button
             type="button"
             onClick={() => onChange(FONT_SCALE_DEFAULT)}
@@ -953,7 +939,11 @@ function FontSizePanel({
         <div className="mb-2 px-1 text-[12px] font-medium text-muted-foreground">
           見本
         </div>
-        <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
+        <div
+          className="space-y-3 rounded-2xl border border-border bg-card p-4"
+          // 全体は確定済みの倍率で拡大済み。見本はドラッグ中の値との差だけ拡大して先に見せる
+          style={{ zoom: draft / scale }}
+        >
           <div className="text-[17px] font-bold text-foreground">
             株式会社サンプル
           </div>
@@ -1011,6 +1001,8 @@ function SettingsSubPage({
             axis: "",
           };
           widthRef.current = e.currentTarget.getBoundingClientRect().width;
+          // スライダーの上で始まった触れは「戻る」スワイプにしない(横ドラッグで画面ごと動いていた)
+          if ((e.target as HTMLElement).closest("[data-noswipe]")) startRef.current.axis = "y";
         }}
         onTouchMove={(e) => {
           const dx = e.touches[0].clientX - startRef.current.x;

@@ -55,7 +55,8 @@ function varsIn(block) {
   for (const m of block.matchAll(/(--[\w-]+):\s*([^;]+);/g)) map[m[1]] = m[2].trim();
   return map;
 }
-const rootBody = CSS.match(/:root\s*\{([\s\S]*?)\n  \}/)[1];
+// ":root, [data-theme="indigo"] {" のように :root に他のセレクタが並んでも読む
+const rootBody = CSS.match(/:root[^{]*\{([\s\S]*?)\n  \}/)[1];
 const root = varsIn(rootBody);
 const themes = { indigo: { ...root } };
 for (const m of CSS.matchAll(/\[data-theme="(\w+)"\]\s*\{([\s\S]*?)\n  \}/g)) {

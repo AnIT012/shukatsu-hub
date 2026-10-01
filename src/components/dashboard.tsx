@@ -6,13 +6,12 @@ import {
   ArrowRight,
   Check,
   CloudOff,
-  Compass,
+  Download,
   HelpCircle,
   Inbox,
   Plus,
   RefreshCw,
   SearchX,
-  Upload,
 } from "lucide-react";
 import type {
   Application,
@@ -40,7 +39,7 @@ import {
   SAMPLE_APP_ID,
   STEP_KIND_LABEL,
 } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import { cn, newId } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -59,7 +58,7 @@ import { EventsView } from "@/components/events-view";
 import { EventDetail } from "@/components/event-detail";
 import { SettingsPage } from "@/components/settings-sheet";
 import { ImportDialog } from "@/components/import-dialog";
-import { QuickLinksLauncher } from "@/components/quick-links";
+import { QuickLinksPage } from "@/components/quick-links";
 import { ListGroup } from "@/components/list-group";
 import { WeekStrip, weekMonthLabel } from "@/components/week-strip";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
@@ -96,11 +95,10 @@ const APP_GROUPS: {
   },
 ];
 
-const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WD_JP = ["日", "月", "火", "水", "木", "金", "土"];
 
 // 下タブと同じ並び。スワイプ(進捗⇄選考⇄イベント⇄設定)のインデックス算出に使う
-const VIEWS: NavView[] = ["progress", "selection", "events", "settings"];
+const VIEWS: NavView[] = ["progress", "selection", "events", "sites", "settings"];
 
 export function Dashboard() {
   const store = useStore();
@@ -109,6 +107,7 @@ export function Dashboard() {
     events,
     loaded,
     quickLinks,
+    setQuickLinks,
     seedSampleIfEmpty,
     deleteApplication,
   } = store;
@@ -126,7 +125,8 @@ export function Dashboard() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [linksOpen, setLinksOpen] = useState(false);
+  // サイト画面: ヘッダーの＋で足した時に編集モードを開くための合図
+  const [sitesEditSignal, setSitesEditSignal] = useState(0);
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [addSpin, setAddSpin] = useState(false);
   const [showOnboard, setShowOnboard] = useState(false);
@@ -212,7 +212,7 @@ export function Dashboard() {
         const threshold = swipeRef.current.w * 0.25;
         const vi = viewIdxRef.current;
         const d = dragXRef.current;
-        if (d < -threshold && vi < 3) setView(VIEWS[vi + 1]);
+        if (d < -threshold && vi < VIEWS.length - 1) setView(VIEWS[vi + 1]);
         else if (d > threshold && vi > 0) setView(VIEWS[vi - 1]);
         setDragX(0);
         dragXRef.current = 0;
@@ -395,18 +395,13 @@ export function Dashboard() {
         },
         {
           tour: "sort",
-          title: "並べ替え",
-          body: "締切順・優先度順・企業名順から選択。左の矢印で昇順／降順を切り替え（締切順なら近い順⇄遠い順）。",
+          title: "並べ替えと絞り込み",
+          body: "締切順・優先度順・企業名順を選べて、左の矢印で昇順と降順を切り替え。右の「絞り込み」では優先度での絞り込みと、コンパクト／詳細の表示切り替え。",
         },
         {
-          tour: "filter",
-          title: "絞り込み",
-          body: "状況（進行中・結果待ちなど）や優先度でカードを絞れる。",
-        },
-        {
-          tour: "links",
+          tour: "tab-sites",
           title: "よく使うサイト",
-          body: "右上のコンパスから、外資就活や各社マイページなど、よく開くサイトにワンタップ。登録は設定から。",
+          body: "下の「サイト」に、外資就活や各社マイページなど、よく開くサイトをまとめておける。追加は右上の＋から。",
         },
         {
           tour: "add",
@@ -423,13 +418,7 @@ export function Dashboard() {
           tour: "step",
           openDetail: true,
           title: "見る／編集モード",
-          body: "ふだんは「見る」だけ（丸で完了、結果を選ぶ）。右上の「編集」で段階の追加・並べ替え・締切やメモの編集。",
-        },
-        {
-          tour: "type",
-          openDetail: true,
-          title: "選考種別",
-          body: "種別で合格時の表示が 内定／内々定／参加確定 に変化。インターンなら開催地も出る。",
+          body: "ふだんは「見る」だけ（丸で完了、結果を選ぶ）。終わった段階は1行に畳まれる。選考フローの右の「編集」で、段階の追加・並べ替え・締切やメモの編集。",
         },
         {
           tour: "es",
@@ -490,18 +479,19 @@ export function Dashboard() {
   }
 
   const now = new Date();
-  const dateLabel = `${now.getMonth() + 1}/${now.getDate()} ${WD[now.getDay()]}.`;
   const viewIdx = VIEWS.indexOf(view);
+  // ＋は「その画面の一覧に1件足す」。足す物がある画面だけで出す
+  const canAdd = view === "selection" || view === "events" || view === "sites";
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* ヘッダー(白) */}
       <header className="shrink-0 border-b bg-card pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5">
-          {view === "settings" ? (
-            // 設定タブでは日付は意味を持たない。何の画面かを見出しにする
+          {view === "settings" || view === "sites" ? (
+            // 設定・サイトでは日付は意味を持たない。何の画面かを見出しにする
             <span className="text-[20px] font-bold tracking-tight text-foreground">
-              設定
+              {view === "settings" ? "設定" : "よく使うサイト"}
             </span>
           ) : (
             // 今日は下の週の帯が示すので、見出しは月(TODOと同じ)
@@ -511,16 +501,6 @@ export function Dashboard() {
           )}
           <div className="ml-auto flex items-center gap-1">
             <SaveIndicator />
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9 text-muted-foreground"
-              aria-label="よく使うサイト"
-              data-tour="links"
-              onClick={() => setLinksOpen(true)}
-            >
-              <Compass className="h-[18px] w-[18px]" />
-            </Button>
             <RefreshButton />
             {/* 選考/イベント以外(進捗・設定)では ＋ を縮んでクルッと収納→ポンと復活 */}
             {/* transition は inline で固定(Button基底の transition に上書きされる問題の回避) */}
@@ -532,18 +512,30 @@ export function Dashboard() {
               }}
               className={cn(
                 "h-9 w-9",
-                view !== "selection" &&
-                  view !== "events" &&
+                !canAdd &&
                   "pointer-events-none -rotate-[30deg] scale-50 opacity-0",
               )}
               data-tour="add"
-              aria-hidden={view !== "selection" && view !== "events"}
-              tabIndex={view === "selection" || view === "events" ? 0 : -1}
-              aria-label={view === "events" ? "イベントを追加" : "企業を追加"}
+              aria-hidden={!canAdd}
+              tabIndex={canAdd ? 0 : -1}
+              aria-label={
+                view === "events"
+                  ? "イベントを追加"
+                  : view === "sites"
+                    ? "サイトを追加"
+                    : "企業を追加"
+              }
               onClick={() => {
                 setAddSpin(true);
                 window.setTimeout(() => setAddSpin(false), 500);
-                view === "events" ? handleAddEvent() : setAddOpen(true);
+                if (view === "events") handleAddEvent();
+                else if (view === "sites") {
+                  setQuickLinks([
+                    ...quickLinks,
+                    { id: newId(), label: "", url: "" },
+                  ]);
+                  setSitesEditSignal((n) => n + 1);
+                } else setAddOpen(true);
               }}
             >
               <Plus
@@ -553,7 +545,7 @@ export function Dashboard() {
           </div>
         </div>
         {/* 今週の帯(設定以外)。日を押すとその日の締切・予定 */}
-        {view !== "settings" && (
+        {view !== "settings" && view !== "sites" && (
           <div className="mx-auto max-w-3xl px-3">
             <WeekStrip
               onOpenApp={(id) => setSelectedId(id)}
@@ -563,13 +555,20 @@ export function Dashboard() {
         )}
       </header>
 
-      <main className="relative flex-1 overflow-hidden bg-background">
+      {/* overflow-hidden だと、入力欄にフォーカスした時にブラウザが main を横へスクロールして
+          ペインが半分ずれる(サイト画面で実際に起きた)。clip はスクロールさせない。古い端末向けに onScroll でも戻す */}
+      <main
+        className="relative flex-1 overflow-clip bg-background"
+        onScroll={(e) => {
+          if (e.currentTarget.scrollLeft !== 0) e.currentTarget.scrollLeft = 0;
+        }}
+      >
         {/* 3ペインを横スライド。各ページは独立スクロール(高さ同期しない=空白せり上がり無し) */}
         <div
           ref={carouselRef}
-          className="flex h-full w-[400%]"
+          className="flex h-full w-[500%]"
           style={{
-            transform: `translateX(calc(${-viewIdx * 25}% + ${dragX}px))`,
+            transform: `translateX(calc(${-viewIdx * 20}% + ${dragX}px))`,
             transition: dragging
               ? "none"
               : "transform 0.34s cubic-bezier(0.22, 0.61, 0.36, 1)",
@@ -583,7 +582,7 @@ export function Dashboard() {
               paneRefs.current[0] = el;
             }}
             className={cn(
-              "h-full w-1/4 shrink-0 overscroll-none scrollbar-thin",
+              "h-full w-1/5 shrink-0 overscroll-none scrollbar-thin",
               dragging ? "overflow-hidden" : "overflow-y-auto",
             )}
           >
@@ -596,7 +595,7 @@ export function Dashboard() {
               paneRefs.current[1] = el;
             }}
             className={cn(
-              "h-full w-1/4 shrink-0 overscroll-none scrollbar-thin",
+              "h-full w-1/5 shrink-0 overscroll-none scrollbar-thin",
               // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
               dragging ? "overflow-hidden" : "overflow-y-auto",
             )}
@@ -676,7 +675,7 @@ export function Dashboard() {
               paneRefs.current[2] = el;
             }}
             className={cn(
-              "h-full w-1/4 shrink-0 overscroll-none scrollbar-thin",
+              "h-full w-1/5 shrink-0 overscroll-none scrollbar-thin",
               // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
               dragging ? "overflow-hidden" : "overflow-y-auto",
             )}
@@ -690,13 +689,31 @@ export function Dashboard() {
               />
             </div>
           </div>
-          {/* 設定 */}
+          {/* サイト(よく使う外部サイト。開く・足す・直すをこの画面で完結) */}
           <div
             ref={(el) => {
               paneRefs.current[3] = el;
             }}
             className={cn(
-              "h-full w-1/4 shrink-0 overscroll-none scrollbar-thin",
+              "h-full w-1/5 shrink-0 overscroll-none scrollbar-thin",
+              dragging ? "overflow-hidden" : "overflow-y-auto",
+            )}
+          >
+            <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))]">
+              <QuickLinksPage
+                links={quickLinks}
+                onChange={setQuickLinks}
+                editSignal={sitesEditSignal}
+              />
+            </div>
+          </div>
+          {/* 設定 */}
+          <div
+            ref={(el) => {
+              paneRefs.current[4] = el;
+            }}
+            className={cn(
+              "h-full w-1/5 shrink-0 overscroll-none scrollbar-thin",
               // 横スワイプ中は縦スクロールを物理的に止める(overflow hidden)
               dragging ? "overflow-hidden" : "overflow-y-auto",
             )}
@@ -717,32 +734,11 @@ export function Dashboard() {
         </div>
       </main>
 
-      {/* 下タブの外周をやわらげる: 画面下端に向かって薄くブラー＋地色フェード。
-          浮くカプセルの背後で中身がボヤけ、背景とタブが被って見にくくなるのを防ぐ。 */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-20 h-[calc(4.75rem+env(safe-area-inset-bottom))]"
-        style={{
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
-          maskImage: "linear-gradient(to top, black 42%, transparent)",
-          WebkitMaskImage: "linear-gradient(to top, black 42%, transparent)",
-          background:
-            "linear-gradient(to top, hsl(var(--background)/0.72), transparent)",
-        }}
-      />
-
       {/* 下タブは常時固定表示(隠さない)。モーダルは中央に出るので競合しない */}
       <BottomNav view={view} onChange={setView} onReTap={handleReTap} />
 
       <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
 
-      <QuickLinksLauncher
-        open={linksOpen}
-        onOpenChange={setLinksOpen}
-        links={quickLinks}
-        onManage={() => setView("settings")}
-      />
 
       <AddApplicationDialog
         open={addOpen}
@@ -913,7 +909,7 @@ function EmptyState({
           最初の企業を追加
         </Button>
         <Button variant="outline" onClick={onImport}>
-          <Upload className="h-4 w-4" />
+          <Download className="h-4 w-4" />
           取り込み
         </Button>
       </div>

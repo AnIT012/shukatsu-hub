@@ -6,7 +6,7 @@ import { cn, safeHref } from "@/lib/utils";
 import { dueInstant, dueToDate, splitDue, urgencyOf } from "@/lib/date";
 import { focusOf, isEventDone } from "@/lib/next-action";
 
-const WD_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WD_JA = ["日", "月", "火", "水", "木", "金", "土"];
 
 export function EventCard({
   ev,
@@ -249,7 +249,7 @@ function EventDateBlock({
             urgent ? "text-danger" : "text-muted-foreground",
           )}
         >
-          {time || WD_EN[d.getDay()]}
+          {time || `${WD_JA[d.getDay()]}曜`}
         </div>
       </div>
     </div>

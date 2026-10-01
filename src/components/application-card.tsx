@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Check,
   ChevronRight,
+  CircleArrowRight,
   CircleCheckBig,
   CircleSlash,
   CircleX,
@@ -32,7 +33,7 @@ import {
 } from "@/lib/next-action";
 import { dueToDate, splitDue, urgencyOf } from "@/lib/date";
 
-const WD_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WD_JA = ["日", "月", "火", "水", "木", "金", "土"];
 
 /** 段階の見出し(段階名 > 先頭タスクの種別) */
 function stageShort(stage: SelectionStage): string {
@@ -307,7 +308,7 @@ function DateBlock({
               urgent ? "text-danger" : "text-muted-foreground",
             )}
           >
-            {time || WD_EN[d.getDay()]}
+            {time || `${WD_JA[d.getDay()]}曜`}
           </div>
         </div>
       ) : (
@@ -332,9 +333,10 @@ function NextLine({
     // 種別(選考ステップ名)を表示。サブタイトル(name)ではなく kind を主役に
     const names = next.tasks.map((t) => STEP_KIND_LABEL[t.kind]).slice(0, 3);
     return (
-      <div className={`${top}truncate text-[12px]`}>
-        <span className="text-muted-foreground">次: </span>
-        <span className="font-medium">{names.join("・")}</span>
+      // 「次:」の文字ではなく、次にやることの記号(詳細のNEXTと同じ丸＋矢印)
+      <div className={`${top}flex min-w-0 items-center gap-1 text-[12px]`}>
+        <CircleArrowRight className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="次にやること" />
+        <span className="truncate font-medium">{names.join("・")}</span>
       </div>
     );
   }

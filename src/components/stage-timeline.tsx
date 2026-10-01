@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CalendarClock,
   CalendarDays,
@@ -40,6 +40,7 @@ import {
 } from "@/lib/next-action";
 import { joinDue, relativeLabel, splitDue, urgencyOf } from "@/lib/date";
 import { cn } from "@/lib/utils";
+import { Collapse } from "@/components/list-group";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -96,7 +97,7 @@ function DoneDot({
       onClick={onClick}
       title={title}
       className={cn(
-        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-110",
+        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-transform duration-150 ease-[cubic-bezier(.2,.8,.2,1)] motion-safe:hover:scale-110 motion-safe:active:scale-90",
         done
           ? "bg-amber-400 text-white"
           : submitted
@@ -104,7 +105,7 @@ function DoneDot({
             : "border-2 border-input bg-card",
       )}
     >
-      {done && <Check className="h-3.5 w-3.5 animate-evo-stamp" />}
+      {done && <Check className="h-3.5 w-3.5 animate-evo-stamp motion-reduce:animate-none" />}
     </button>
   );
 }
@@ -183,7 +184,7 @@ export function StageTimeline({
               setEditingId(null);
             }}
             className={cn(
-              "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors active:scale-95",
+              "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-[color,background-color,border-color,transform] duration-150 ease-[cubic-bezier(.2,.8,.2,1)] motion-safe:active:scale-95",
               editMode
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -418,116 +419,63 @@ function StageBlock({
     </div>
   );
 
-  if (collapsed) {
-    return (
-      <div className="flex gap-3">
-        {spine}
-        <div className={cn("min-w-0 flex-1", isLast ? "pb-1" : "pb-3.5")}>
-          <button
-            type="button"
-            aria-expanded={false}
-            onClick={() => setOpen(true)}
-            className="-my-1.5 flex min-h-[18px] w-full items-center gap-1.5 py-1.5 text-left"
-          >
-            <span className="shrink-0 text-[11px] font-semibold text-muted-foreground">
-              段階 {index + 1}
-            </span>
-            <span className="shrink-0 text-[11px] text-muted-foreground/60">·</span>
-            <span className="min-w-0 truncate text-[13px] text-foreground">
-              {summaryLabel || "（未設定）"}
-            </span>
-            {meta && (
-              <span
-                className={cn(
-                  "ml-auto shrink-0 text-[12px] font-medium",
-                  stage.result === "waiting" ? "text-muted-foreground" : meta.cls,
-                )}
-              >
-                {meta.label}
-              </span>
-            )}
-            <ChevronDown
-              className={cn(
-                "h-3.5 w-3.5 shrink-0 text-muted-foreground/60",
-                !meta && "ml-auto",
-              )}
-            />
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // 結果の札がポンと出るのは「結果が変わった時」だけ。開閉や最初の表示では跳ねさせない
+  const firstResult = useRef(stage.result);
+  const stamped = stage.result !== firstResult.current;
 
-  return (
-    <div className="flex gap-3">
-      {/* 縦のスパイン: 段階の状態印 + つなぎ線(囲いをやめて動線を1本に) */}
-      {spine}
-
-      {/* 中身 */}
-      <div
-        className={cn(
-          "min-w-0 flex-1",
-          isLast ? "pb-1" : "pb-5",
-          settled && "opacity-80",
-        )}
-      >
-      {/* 段階ヘッダー: 並行バッジ / 段階名(任意) / 現在地。
-          畳める段階(見るモード・今の段階以外)を開いた時は、ヘッダーのタップで畳み直す */}
-      <div
-        className={cn(
-          "flex items-center gap-1.5",
-          collapsible && "-my-1.5 cursor-pointer py-1.5",
-        )}
-        role={collapsible ? "button" : undefined}
-        tabIndex={collapsible ? 0 : undefined}
-        aria-expanded={collapsible ? true : undefined}
-        onClick={collapsible ? () => setOpen(false) : undefined}
-        onKeyDown={
-          collapsible
-            ? (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setOpen(false);
-                }
-              }
-            : undefined
-        }
-      >
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          段階 {index + 1}
+  // 畳んだ1行と開いた見出しは同じ行(同じ要素)を書き換える。矢印は1本を回すので開閉と一緒に動く
+  const headerInner = (
+    <>
+      <span className="shrink-0 text-[11px] font-semibold text-muted-foreground">
+        段階 {index + 1}
+      </span>
+      {collapsed && (
+        <>
+          <span className="shrink-0 text-[11px] text-muted-foreground/60">·</span>
+          <span className="min-w-0 truncate text-[13px] text-foreground">
+            {summaryLabel || "（未設定）"}
+          </span>
+        </>
+      )}
+      {!collapsed && parallel && (
+        <span className="inline-flex items-center gap-0.5 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">
+          <GitBranch className="h-3 w-3" />
+          並行
         </span>
-        {parallel && (
-          <span className="inline-flex items-center gap-0.5 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">
-            <GitBranch className="h-3 w-3" />
-            並行
-          </span>
-        )}
-        {isCurrent && !settled && (
-          <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-            次にやる
-          </span>
-        )}
-        {meta && (
-          <span
-            key={stage.result}
-            className={cn(
-              "animate-evo-rise ml-auto inline-flex items-center gap-1 text-[12px] font-semibold",
-              meta.cls,
-            )}
-          >
-            <meta.icon className="h-3.5 w-3.5" />
-            {meta.label}
-          </span>
-        )}
-        {collapsible && (
-          <ChevronUp
-            className={cn(
-              "h-3.5 w-3.5 shrink-0 text-muted-foreground/60",
-              !meta && "ml-auto",
-            )}
-          />
-        )}
-        {editMode && (
+      )}
+      {!collapsed && isCurrent && !settled && (
+        <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+          次にやる
+        </span>
+      )}
+      {meta && (
+        <span
+          key={stage.result}
+          className={cn(
+            stamped && "animate-evo-rise motion-reduce:animate-none",
+            "ml-auto inline-flex shrink-0 items-center gap-1 text-[12px]",
+            collapsed
+              ? cn(
+                  "font-medium",
+                  stage.result === "waiting" ? "text-muted-foreground" : meta.cls,
+                )
+              : cn("font-semibold", meta.cls),
+          )}
+        >
+          {!collapsed && <meta.icon className="h-3.5 w-3.5" />}
+          {meta.label}
+        </span>
+      )}
+      {collapsible && (
+        <ChevronDown
+          className={cn(
+            "h-3.5 w-3.5 shrink-0 text-muted-foreground/60 transition-transform duration-[280ms] ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none",
+            !meta && "ml-auto",
+            open && "rotate-180",
+          )}
+        />
+      )}
+      {editMode && (
           <div className={cn("flex items-center", meta ? "" : "ml-auto")}>
             <Button
               type="button"
@@ -563,8 +511,38 @@ function StageBlock({
             </Button>
           </div>
         )}
-      </div>
+    </>
+  );
 
+  return (
+    <div className="flex gap-3">
+      {/* 縦のスパイン: 段階の状態印 + つなぎ線(囲いをやめて動線を1本に) */}
+      {spine}
+
+      {/* 中身。畳んだ時は下の余白も詰める(余白と薄さも開閉と同じ緩急で動かす) */}
+      <div
+        className={cn(
+          "min-w-0 flex-1 transition-[padding-bottom,opacity] duration-[280ms] ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none",
+          isLast ? "pb-1" : collapsed ? "pb-3.5" : "pb-5",
+          settled && !collapsed && "opacity-80",
+        )}
+      >
+      {/* 段階ヘッダー: 並行バッジ / 段階名(任意) / 現在地。
+          畳める段階(見るモード・今の段階以外)は、この行のタップで開閉する */}
+      {collapsible ? (
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="-my-1.5 flex min-h-[18px] w-full items-center gap-1.5 py-1.5 text-left transition-opacity duration-150 active:opacity-60"
+        >
+          {headerInner}
+        </button>
+      ) : (
+        <div className="flex items-center gap-1.5">{headerInner}</div>
+      )}
+
+      <Collapse open={!collapsed}>
       {/* タスク群 */}
       <div className="mt-1.5 space-y-1.5">
         {stage.tasks.map((task, ti) => (
@@ -573,7 +551,8 @@ function StageBlock({
             app={app}
             task={task}
             editMode={editMode}
-            dotTour={index === 0 && ti === 0 ? "status-dot" : undefined}
+            // 案内の目印は「今の段階」の最初のタスク(終わった段階は畳まれて見えないため)
+            dotTour={isCurrent && ti === 0 && !collapsed ? "status-dot" : undefined}
             editing={editingId === task.id}
             canDelete={stage.tasks.length > 1}
             onOpen={() => setEditingId(task.id)}
@@ -629,6 +608,7 @@ function StageBlock({
               />
             </div>
           )}
+      </Collapse>
       </div>
     </div>
   );
@@ -654,7 +634,7 @@ function ResultBtn({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-md border px-2.5 py-1 text-[12px] font-medium transition-colors",
+        "rounded-md border px-2.5 py-1 text-[12px] font-medium transition-[color,background-color,border-color,transform] duration-150 ease-[cubic-bezier(.2,.8,.2,1)] motion-safe:active:scale-[0.96]",
         cls,
       )}
     >

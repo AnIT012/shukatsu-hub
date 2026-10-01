@@ -5,28 +5,30 @@
 @layer base {
   /* 紙とガラス(デフォルト)。地は「限りなく白に近い、ごく薄い肌色」= ほぼ白+温かみ。
      インク #1E2A3A / 藍アクセント / 煉瓦 / 苔。地の値は theme_to_paper と一致させる(全テーマ共通) */
-  :root {
-    --background: 226 46% 94%; /* 地=テーマ色(藍)の淡いティント。白カードが浮く */
+  /* ブルー(標準)は data-theme 無しの既定でもあり、テーマ選択の見本(data-theme="indigo")でも同じ値を出す */
+  :root,
+  [data-theme="indigo"] {
+    --background: 214 72% 95.5%; /* 地=テーマ色(ブルー)の淡いティント。白カードが浮く */
     --foreground: 220 30% 10.5%; /* インク(近黒) */
-    --card: 226 44% 99.6%; /* ほぼ純白(ごく淡く色相を含む) */
+    --card: 214 60% 99.6%; /* ほぼ純白(ごく淡く色相を含む) */
     --card-foreground: 216 38% 12%;
-    --popover: 36 44% 99.3%;
+    --popover: 214 60% 99.6%;
     --popover-foreground: 216 38% 12%;
-    --primary: 230 44% 43%; /* 藍 #3D4E9E */
+    --primary: 217 82% 45%; /* 藍 #3D4E9E */
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%; /* 沈んだ面 */
     --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%; /* ink3 #5E6975 */
-    --accent: 228 34% 92%; /* 藍 ramp L1(地に藍を薄く) */
-    --accent-foreground: 228 46% 32%; /* 濃い藍 #2C3A78 */
+    --accent: 214 82% 91%; /* 藍 ramp L1(地に藍を薄く) */
+    --accent-foreground: 217 82% 36%; /* 濃い藍 #2C3A78 */
     --danger: 8 60% 34%; /* 煉瓦 #8A2F22 */
     --danger-foreground: 0 0% 100%;
     --success: 143 40% 30%; /* 苔 #2E6B45 */
     --warning: 35 84% 31%; /* 琥珀寄りの注意色。AA(on card)を通す濃さ */
-    --border: 226 24% 89.5%; /* 罫=同色相で一段濃く */
-    --input: 226 24% 89.5%;
-    --ring: 230 44% 43%;
+    --border: 214 42% 88.5%; /* 罫=同色相で一段濃く */
+    --input: 214 42% 88.5%;
+    --ring: 217 82% 45%;
     --radius: 1rem;
   }
 
@@ -52,24 +54,24 @@
   }
 
   [data-theme="sumi"] {
-    --background: 40 18% 94.2%;
+    --background: 40 13% 95%;
     --foreground: 220 30% 10.5%;
     --card: 42 22% 99.7%;
     --card-foreground: 216 38% 12%;
-    --popover: 36 44% 99.3%;
+    --popover: 42 22% 99.7%;
     --popover-foreground: 216 38% 12%;
-    --primary: 240 5% 24%;
+    --primary: 220 9% 24%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
     --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
-    --accent: 60 8% 91%;
-    --accent-foreground: 240 5% 30%;
+    --accent: 220 10% 90.5%;
+    --accent-foreground: 220 9% 21%;
     --danger: 346 45% 49%;
     --border: 40 14% 89%;
     --input: 40 14% 89%;
-    --ring: 240 5% 24%;
+    --ring: 220 9% 24%;
   }
 
   [data-theme="navy"] {
@@ -116,134 +118,134 @@
 
   /* 水浅葱(みずあさぎ) — くすみ水色 */
   [data-theme="mizuasagi"] {
-    --background: 40 14% 97.2%;
+    --background: 175 55% 94.5%;
     --foreground: 220 30% 10.5%;
-    --card: 0 0% 100%;
+    --card: 175 45% 99.6%;
     --card-foreground: 216 38% 12%;
-    --popover: 36 44% 99.3%;
+    --popover: 175 45% 99.6%;
     --popover-foreground: 216 38% 12%;
-    --primary: 191 32% 38%;
+    --primary: 178 86% 26%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
     --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
-    --accent: 190 32% 92%;
-    --accent-foreground: 191 32% 34%;
+    --accent: 176 52% 88.5%;
+    --accent-foreground: 178 86% 21%;
     --danger: 346 45% 49%;
-    --border: 36 24% 90%;
-    --input: 36 24% 90%;
-    --ring: 191 32% 38%;
+    --border: 175 30% 87.5%;
+    --input: 175 30% 87.5%;
+    --ring: 178 86% 26%;
   }
 
   /* 青磁(せいじ) — くすみ青緑 */
   [data-theme="seiji"] {
-    --background: 160 34% 93.6%;
+    --background: 140 42% 94.5%;
     --foreground: 220 30% 10.5%;
-    --card: 158 32% 99.6%;
+    --card: 140 40% 99.6%;
     --card-foreground: 216 38% 12%;
-    --popover: 36 44% 99.3%;
+    --popover: 140 40% 99.6%;
     --popover-foreground: 216 38% 12%;
-    --primary: 160 34% 36%;
+    --primary: 146 64% 29%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
     --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
-    --accent: 158 30% 92%;
-    --accent-foreground: 160 34% 32%;
+    --accent: 142 46% 88.5%;
+    --accent-foreground: 146 64% 23%;
     --danger: 346 45% 49%;
-    --border: 160 22% 88%;
-    --input: 160 22% 88%;
-    --ring: 160 34% 36%;
+    --border: 140 26% 87.5%;
+    --input: 140 26% 87.5%;
+    --ring: 146 64% 29%;
   }
 
   /* 藤(ふじ) — くすみ紫 */
   [data-theme="fuji"] {
-    --background: 40 14% 97.2%;
+    --background: 265 72% 96.2%;
     --foreground: 220 30% 10.5%;
-    --card: 0 0% 100%;
+    --card: 265 60% 99.6%;
     --card-foreground: 216 38% 12%;
-    --popover: 36 44% 99.3%;
+    --popover: 265 60% 99.6%;
     --popover-foreground: 216 38% 12%;
-    --primary: 258 26% 47%;
+    --primary: 266 56% 49%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
     --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
-    --accent: 258 32% 94%;
-    --accent-foreground: 258 28% 43%;
+    --accent: 265 72% 92%;
+    --accent-foreground: 266 56% 40%;
     --danger: 346 45% 49%;
-    --border: 36 24% 90%;
-    --input: 36 24% 90%;
-    --ring: 258 26% 47%;
+    --border: 265 36% 89.5%;
+    --input: 265 36% 89.5%;
+    --ring: 266 56% 49%;
   }
 
   /* 桜鼠(さくらねず) — くすみピンク。締切(danger)は朱で区別 */
   [data-theme="sakuraNezu"] {
-    --background: 40 14% 97.2%;
+    --background: 330 76% 96.2%;
     --foreground: 220 30% 10.5%;
-    --card: 0 0% 100%;
+    --card: 330 60% 99.6%;
     --card-foreground: 216 38% 12%;
-    --popover: 36 44% 99.3%;
+    --popover: 330 60% 99.6%;
     --popover-foreground: 216 38% 12%;
-    --primary: 348 28% 51%;
+    --primary: 330 72% 44%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
     --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
-    --accent: 350 33% 94%;
-    --accent-foreground: 348 30% 45%;
-    --danger: 6 68% 44%;
-    --border: 36 24% 90%;
-    --input: 36 24% 90%;
-    --ring: 348 28% 51%;
+    --accent: 330 76% 92%;
+    --accent-foreground: 330 72% 36%;
+    --danger: 8 70% 38%;
+    --border: 330 40% 89.5%;
+    --input: 330 40% 89.5%;
+    --ring: 330 72% 44%;
   }
 
   /* 茜(あかね) — くすみ赤。締切(danger)は朱橙で区別 */
   [data-theme="akane"] {
-    --background: 357 52% 94.4%;
+    --background: 355 82% 96%;
     --foreground: 220 30% 10.5%;
-    --card: 356 48% 99.6%;
+    --card: 355 70% 99.6%;
     --card-foreground: 216 38% 12%;
-    --popover: 36 44% 99.3%;
+    --popover: 355 70% 99.6%;
     --popover-foreground: 216 38% 12%;
-    --primary: 2 42% 44%;
+    --primary: 356 74% 45%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
     --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
-    --accent: 6 34% 93%;
-    --accent-foreground: 2 42% 40%;
-    --danger: 20 82% 36%;
-    --border: 357 30% 89.5%;
-    --input: 357 30% 89.5%;
-    --ring: 2 42% 44%;
+    --accent: 356 82% 92%;
+    --accent-foreground: 356 74% 37%;
+    --danger: 20 82% 34%;
+    --border: 356 46% 89.5%;
+    --input: 356 46% 89.5%;
+    --ring: 356 74% 45%;
   }
 
   /* 琥珀(こはく) — 金茶 */
   [data-theme="kohaku"] {
-    --background: 37 60% 93.5%;
+    --background: 30 90% 95.2%;
     --foreground: 220 30% 10.5%;
-    --card: 38 48% 99.6%;
+    --card: 32 80% 99.6%;
     --card-foreground: 216 38% 12%;
-    --popover: 36 44% 99.3%;
+    --popover: 32 80% 99.6%;
     --popover-foreground: 216 38% 12%;
-    --primary: 34 55% 35%;
+    --primary: 24 92% 39%;
     --primary-foreground: 0 0% 100%;
     --secondary: 34 26% 94%;
     --secondary-foreground: 216 38% 12%;
     --muted: 34 26% 94%;
     --muted-foreground: 214 11% 42%;
-    --accent: 36 40% 91%;
-    --accent-foreground: 34 56% 31%;
+    --accent: 28 92% 89.5%;
+    --accent-foreground: 22 92% 31%;
     --danger: 4 62% 46%;
-    --border: 37 34% 88%;
-    --input: 37 34% 88%;
-    --ring: 34 55% 35%;
+    --border: 30 52% 88%;
+    --input: 30 52% 88%;
+    --ring: 24 92% 39%;
   }
 
   /* 鳩羽鼠(はとばねず) — 紫がかった鼠 */
@@ -343,13 +345,15 @@
      ⚠ position は付けない — nav側の fixed を殺さない(fixedが::beforeの基準になる)。 */
   .glass-nav {
     isolation: isolate;
-    background-color: hsl(var(--background) / 0.62);
+    /* 地をテーマ色で染めたので、地の色ベースのガラスだと溶ける。白(カード色)寄りにして浮かせる */
+    background-color: hsl(var(--card) / 0.84);
     -webkit-backdrop-filter: blur(20px) saturate(1.8) brightness(1.04);
     backdrop-filter: blur(20px) saturate(1.8) brightness(1.04);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.45),
-      inset 0 -1px 0 hsl(var(--foreground) / 0.06),
-      0 8px 24px hsl(var(--foreground) / 0.1);
+      inset 0 1px 0 rgb(255 255 255 / 0.6),
+      0 0 0 0.5px hsl(var(--foreground) / 0.1),
+      0 2px 6px hsl(var(--foreground) / 0.07),
+      0 12px 30px -8px hsl(var(--foreground) / 0.24);
   }
   /* (色収差の縁リングは撤去 — 実機で縁が緑/赤に見えて"壊れて"読めるため。
      ガラスは blur+彩度+明るさ+上光/下影の縁だけで十分成立する) */

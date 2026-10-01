@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarClock, Flag } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { STEP_KIND_LABEL } from "@/lib/constants";
@@ -57,6 +57,16 @@ export function WeekStrip({
 }) {
   const { applications, events } = useStore();
   const [openDay, setOpenDay] = useState<string | null>(null);
+  // 閉じていく間も中身を変えない(閉じた瞬間に「予定はありません」へ化けてから滑り落ちないように)
+  const lastDay = useRef<string | null>(null);
+  if (openDay) lastDay.current = openDay;
+  const viewDay = openDay ?? lastDay.current;
+  // 帯が最初に出た時だけ、点を日ごとに少しずつずらして出す(後から増えた点は待たせずに出す)
+  const [intro, setIntro] = useState(true);
+  useEffect(() => {
+    const t = window.setTimeout(() => setIntro(false), 700);
+    return () => window.clearTimeout(t);
+  }, []);
   const today = ymd(new Date());
   const days = useMemo(() => thisWeekDays(), [today]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -96,8 +106,8 @@ export function WeekStrip({
     return m;
   }, [applications, events]);
 
-  const sel = openDay ? (byDay.get(openDay) ?? []) : [];
-  const selDate = openDay ? new Date(`${openDay}T00:00`) : null;
+  const sel = viewDay ? (byDay.get(viewDay) ?? []) : [];
+  const selDate = viewDay ? new Date(`${viewDay}T00:00`) : null;
   const deadlines = sel.filter((x) => x.kind === "deadline");
   const helds = sel.filter((x) => x.kind === "held");
 
@@ -134,7 +144,7 @@ export function WeekStrip({
               </span>
               <span
                 className={cn(
-                  "mx-auto mt-1 grid h-8 place-items-center rounded-full text-[16px] font-medium tabular-nums transition-transform duration-100 group-active:scale-90",
+                  "mx-auto mt-1 grid h-8 place-items-center rounded-full text-[16px] font-medium tabular-nums transition-transform duration-100 ease-[cubic-bezier(.2,.8,.2,1)] motion-safe:group-active:scale-90",
                   firstOfMonth ? "w-auto min-w-[2rem] px-1.5 text-[13px]" : "w-8",
                   isToday
                     ? "bg-primary font-bold text-primary-foreground"
@@ -147,13 +157,20 @@ export function WeekStrip({
               </span>
               <span className="mt-[3px] flex h-[6px] items-center justify-center gap-[2px]">
                 {Array.from({ length: nDl }, (_, j) => (
-                  <i key={`d${j}`} className="h-[5px] w-[5px] rounded-full bg-danger" />
+                  <i
+                    key={`d${j}`}
+                    className="h-[5px] w-[5px] rounded-full bg-danger motion-safe:animate-dot-pop"
+                    style={intro ? { animationDelay: `${120 + i * 35 + j * 25}ms` } : undefined}
+                  />
                 ))}
                 {Array.from({ length: nHd }, (_, j) => (
                   <i
                     key={`h${j}`}
-                    className="h-[6px] w-[6px] rounded-full"
-                    style={{ boxShadow: "inset 0 0 0 1.5px hsl(var(--primary))" }}
+                    className="h-[6px] w-[6px] rounded-full motion-safe:animate-dot-pop"
+                    style={{
+                      boxShadow: "inset 0 0 0 1.5px hsl(var(--primary))",
+                      ...(intro ? { animationDelay: `${120 + i * 35 + (nDl + j) * 25}ms` } : {}),
+                    }}
                   />
                 ))}
               </span>
@@ -169,8 +186,12 @@ export function WeekStrip({
           <SheetTitle className="text-base">
             {selDate && `${selDate.getMonth() + 1}月${selDate.getDate()}日（${WD[selDate.getDay()]}）`}
           </SheetTitle>
+          {/* シートが上がってくるのに少し遅れて、中身が4px浮いて現れる(見出し→行の順に30msずつ) */}
           {sel.length === 0 ? (
-            <p className="mt-6 pb-2 text-center text-[13px] text-muted-foreground">
+            <p
+              className="mt-6 pb-2 text-center text-[13px] text-muted-foreground motion-safe:animate-row-in"
+              style={{ animationDelay: "80ms" }}
+            >
               この日の締切・予定はありません
             </p>
           ) : (
@@ -180,19 +201,32 @@ export function WeekStrip({
                 { label: "予定", list: helds },
               ]
                 .filter((g) => g.list.length > 0)
-                .map((g) => (
+                .map((g, gi, groups) => {
+                  // 前のグループの見出し＋行の数だけ後ろへずらす(上限8段)
+                  const base = groups.slice(0, gi).reduce((n, x) => n + 1 + x.list.length, 0);
+                  const delay = (k: number) => ({
+                    animationDelay: `${80 + Math.min(base + k, 8) * 30}ms`,
+                  });
+                  return (
                   <section key={g.label}>
-                    <h3 className="mb-1.5 px-1 text-[12.5px] font-semibold text-muted-foreground">
+                    <h3
+                      className="mb-1.5 px-1 text-[12.5px] font-semibold text-muted-foreground motion-safe:animate-row-in"
+                      style={delay(0)}
+                    >
                       {g.label} <span className="tabular-nums text-muted-foreground/70">{g.list.length}</span>
                     </h3>
-                    <div className="overflow-hidden rounded-xl bg-card ring-1 ring-border">
+                    <div
+                      className="overflow-hidden rounded-xl bg-card ring-1 ring-border motion-safe:animate-row-in"
+                      style={delay(1)}
+                    >
                       {g.list.map((it, i) => (
                         <button
                           key={`${it.type}-${it.id}-${it.kind}-${i}`}
                           type="button"
                           onClick={() => open(it)}
                           className={cn(
-                            "flex w-full items-center gap-3 px-3.5 py-3 text-left active:bg-muted/60",
+                            // 押した瞬間に灰を敷き、離したらゆっくり抜く(iOSの行と同じ)
+                            "flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors duration-300 ease-[cubic-bezier(.2,.8,.2,1)] active:bg-muted/60 active:duration-0",
                             i > 0 && "border-t border-border",
                           )}
                         >
@@ -223,7 +257,8 @@ export function WeekStrip({
                       ))}
                     </div>
                   </section>
-                ))}
+                  );
+                })}
             </div>
           )}
         </SheetContent>

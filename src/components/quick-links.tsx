@@ -1,9 +1,9 @@
 "use client";
 
-import { ExternalLink, Globe, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, ExternalLink, Globe, Pencil, Plus, Trash2 } from "lucide-react";
 import type { QuickLink } from "@/lib/types";
 import { newId } from "@/lib/utils";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -21,91 +21,125 @@ function openLink(url: string) {
   window.open(u, "_blank", "noopener,noreferrer");
 }
 
-/** ヘッダーから開く、よく使うサイトのランチャー(ボトムシート)。 */
-export function QuickLinksLauncher({
-  open,
-  onOpenChange,
+/**
+ * 下タブ「サイト」の画面。よく使う外部サイトを開く・足す・直すを、この1画面で完結させる。
+ * 表示=押すと新しいタブで開く一覧 / 編集=その場で名前・URL・削除(別画面へ飛ばさない)。
+ */
+export function QuickLinksPage({
   links,
-  onManage,
+  onChange,
+  editSignal,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   links: QuickLink[];
-  onManage: () => void;
+  onChange: (next: QuickLink[]) => void;
+  /** 値が変わるたびに編集モードを開く(ヘッダーの＋から足した時など) */
+  editSignal: number;
 }) {
-  const usable = links.filter((l) => l.url.trim());
-  return (
-    <Sheet open={open} onOpenChange={(o) => !o && onOpenChange(false)}>
-      <SheetContent
-        side="bottom"
-        className="max-h-[80vh] overflow-y-auto rounded-t-2xl px-5 pb-7 pt-4 scrollbar-thin"
-      >
-        <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
-        <div className="flex items-center justify-between">
-          <SheetTitle className="text-base">よく使うサイト</SheetTitle>
-          <button
-            type="button"
-            onClick={() => {
-              onOpenChange(false);
-              onManage();
-            }}
-            className="text-[13px] font-medium text-primary"
-          >
-            編集
-          </button>
-        </div>
+  const [editing, setEditing] = useState(false);
+  useEffect(() => {
+    if (editSignal > 0) setEditing(true);
+  }, [editSignal]);
 
-        {usable.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-dashed px-4 py-8 text-center">
-            <Globe className="mx-auto h-6 w-6 text-muted-foreground" />
-            <p className="mt-2 text-[13px] text-muted-foreground">
-              外資就活・ワンキャリアなど、よく開くサイトを登録しておくと、ここからすぐ飛べます。
-            </p>
+  const usable = links.filter((l) => l.url.trim());
+  const add = () => {
+    onChange([...links, { id: newId(), label: "", url: "" }]);
+    setEditing(true);
+  };
+
+  if (links.length === 0) {
+    return (
+      <div className="mt-6 flex flex-col items-center rounded-2xl border border-dashed px-6 py-12 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-primary">
+          <Globe className="h-7 w-7" />
+        </div>
+        <h2 className="mt-4 font-semibold">よく使うサイトを登録</h2>
+        <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-muted-foreground">
+          外資就活・ワンキャリア・各社のマイページなど、よく開くサイトをここからワンタップで。
+        </p>
+        <button
+          type="button"
+          onClick={add}
+          className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-5 text-[14px] font-semibold text-primary-foreground transition-transform active:scale-95"
+        >
+          <Plus className="h-4 w-4" />
+          サイトを追加
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <section>
+      <div className="mb-1.5 flex items-center gap-1.5 px-1">
+        <h2 className="text-[12.5px] font-semibold text-muted-foreground">
+          よく使うサイト{" "}
+          <span className="tabular-nums text-muted-foreground/70">{usable.length}</span>
+        </h2>
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          className={cn(
+            "ml-auto inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[12px] font-medium transition-colors active:scale-95",
+            editing
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          {editing ? (
+            <>
+              <Check className="h-3.5 w-3.5" />
+              完了
+            </>
+          ) : (
+            <>
+              <Pencil className="h-3.5 w-3.5" />
+              編集
+            </>
+          )}
+        </button>
+      </div>
+
+      {editing ? (
+        <QuickLinksManager links={links} onChange={onChange} />
+      ) : (
+        <div className="overflow-hidden rounded-xl bg-card ring-1 ring-border elevate-sm">
+          {usable.map((l, i) => (
             <button
+              key={l.id}
               type="button"
-              onClick={() => {
-                onOpenChange(false);
-                onManage();
-              }}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-[13px] font-semibold text-primary-foreground"
+              onClick={() => openLink(l.url)}
+              className={cn(
+                "relative flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors active:bg-muted/60",
+                i > 0 &&
+                  "before:absolute before:left-[62px] before:right-0 before:top-0 before:h-px before:bg-border",
+              )}
             >
-              <Plus className="h-4 w-4" />
-              サイトを登録
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
+                <Globe className="h-[18px] w-[18px]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[15px] font-semibold text-foreground">
+                  {l.label.trim() || normalizeUrl(l.url).replace(/^https?:\/\//, "")}
+                </span>
+                <span className="block truncate text-[12px] text-muted-foreground">
+                  {normalizeUrl(l.url).replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                </span>
+              </span>
+              <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground/60" />
             </button>
-          </div>
-        ) : (
-          <div className="mt-3 space-y-2">
-            {usable.map((l) => (
-              <button
-                key={l.id}
-                type="button"
-                onClick={() => openLink(l.url)}
-                className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-3.5 py-3 text-left transition-colors hover:bg-muted/50 active:scale-[0.99]"
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
-                  <Globe className="h-4.5 w-4.5" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-medium text-foreground">
-                    {l.label.trim() || l.url}
-                  </span>
-                  {l.label.trim() && (
-                    <span className="block truncate text-[12px] text-muted-foreground">
-                      {normalizeUrl(l.url).replace(/^https?:\/\//, "")}
-                    </span>
-                  )}
-                </span>
-                <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </button>
-            ))}
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
+          ))}
+          {usable.length === 0 && (
+            <p className="px-4 py-4 text-[13px] text-muted-foreground">
+              URLが入っているサイトがありません。「編集」から入れてください。
+            </p>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
-/** 設定のサブページで使う、よく使うサイトの編集(追加/名前・URL/削除)。 */
+/** サイト画面の編集モードで使う、よく使うサイトの編集(追加/名前・URL/削除)。 */
 export function QuickLinksManager({
   links,
   onChange,
@@ -122,7 +156,7 @@ export function QuickLinksManager({
   return (
     <div className="space-y-3">
       <p className="text-[12px] leading-relaxed text-muted-foreground">
-        名前とURLを登録すると、ホーム右上のアイコンからワンタップで開けます。
+        名前とURLを入れると、一覧から押すだけで開けます。
       </p>
 
       {links.length === 0 ? (

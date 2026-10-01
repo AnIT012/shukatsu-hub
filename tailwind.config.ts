@@ -85,11 +85,24 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(4px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        // 行が4pxだけ浮き上がって現れる(初回だけ・段差を付けて並べる)
+        "row-in": {
+          from: { opacity: "0", transform: "translateY(4px)" },
+          to: { opacity: "1", transform: "none" },
+        },
+        // 週の帯の点が小さく膨らんで現れる
+        "dot-pop": {
+          from: { opacity: "0", transform: "scale(0.3)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.25s ease-out",
+        // 緩急は全体で1つ: cubic-bezier(.2,.8,.2,1)。both=遅延中は出す前の姿で待つ
+        "row-in": "row-in 260ms cubic-bezier(.2,.8,.2,1) both",
+        "dot-pop": "dot-pop 240ms cubic-bezier(.2,.8,.2,1) both",
       },
     },
   },
