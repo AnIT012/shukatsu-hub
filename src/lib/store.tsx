@@ -295,6 +295,8 @@ interface LocalData {
   dirty: boolean;
   theme: Theme | null;
   font: FontChoice | null;
+  /** よく使うサイト(アカウントのデータ。クラウドでは選考と一緒に暗号化して同期する) */
+  quickLinks: QuickLink[];
 }
 
 function readLocal(key: string): LocalData | null {
@@ -316,6 +318,7 @@ function readLocal(key: string): LocalData | null {
       dirty: parsed?.dirty === true,
       theme: typeof parsed?.theme === "string" ? (parsed.theme as Theme) : null,
       font: typeof parsed?.font === "string" ? (parsed.font as FontChoice) : null,
+      quickLinks: Array.isArray(parsed?.quickLinks) ? (parsed.quickLinks as QuickLink[]) : [],
     };
   } catch {
     return null;
@@ -330,6 +333,8 @@ interface CachePayload {
   theme: Theme;
   font: FontChoice;
   savedAt: string;
+  /** 省いたら、端末キャッシュにある値をそのまま残す */
+  quickLinks?: QuickLink[];
 }
 
 /** クラウドの1行(data/updated_at/vault)を読んだ結果 */
@@ -347,10 +352,12 @@ interface Decoded {
   subs: PushSubscriptionJSON[];
   theme: Theme | null;
   font: FontChoice | null;
+  /** よく使うサイト。クラウドに無ければ null(=手元の値を変えない) */
+  ql: QuickLink[] | null;
 }
 
 /** data 列のうち、暗号化しない設定(通知・テーマ等)を読む */
-function settingsOf(remote: any): Omit<Decoded, "apps" | "evs"> {
+function settingsOf(remote: any): Omit<Decoded, "apps" | "evs" | "ql"> {
   const obj = remote && typeof remote === "object" && !Array.isArray(remote) ? remote : {};
   return {
     ntf: { ...DEFAULT_NOTIFY, ...(obj.notify ?? {}) },
@@ -363,19 +370,32 @@ function settingsOf(remote: any): Omit<Decoded, "apps" | "evs"> {
 /** 平文の data 列を読む(旧形式=配列 にも対応) */
 function decodePlain(remote: any): Decoded {
   if (Array.isArray(remote)) {
-    return { apps: normalizeApps(remote), evs: [], ...settingsOf(null) };
+    return { apps: normalizeApps(remote), evs: [], ql: null, ...settingsOf(null) };
   }
   return {
     apps: normalizeApps(remote?.applications),
     evs: normalizeEvents(remote?.events),
+    ql: Array.isArray(remote?.quickLinks) ? (remote.quickLinks as QuickLink[]) : null,
     ...settingsOf(remote),
   };
+}
+
+/** ゲスト(端末だけ)のよく使うサイト。ログイン中のアカウントには使わない */
+function readGuestQuickLinks(): QuickLink[] {
+  try {
+    const v = localStorage.getItem(LS_QUICKLINKS_KEY);
+    const arr = v ? JSON.parse(v) : [];
+    return Array.isArray(arr) ? (arr as QuickLink[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 /** 端末キャッシュに保存。オフラインでも必ず成功させ、dirty で未送信を記録する。 */
 function writeLocal(key: string, payload: CachePayload, dirty: boolean) {
   try {
-    localStorage.setItem(key, JSON.stringify({ version: 1, dirty, ...payload }));
+    const quickLinks = payload.quickLinks ?? readLocal(key)?.quickLinks ?? [];
+    localStorage.setItem(key, JSON.stringify({ version: 1, dirty, ...payload, quickLinks }));
   } catch {
     // 容量超過等は無視(UI 表示には影響させない)
   }
@@ -489,6 +509,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return {
         apps: normalizeApps((opened.body as any).applications),
         evs: normalizeEvents((opened.body as any).events),
+        ql: Array.isArray((opened.body as any).quickLinks)
+          ? ((opened.body as any).quickLinks as QuickLink[])
+          : null,
         ...settingsOf(row.data),
       };
     }
@@ -518,6 +541,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     pushSubscriptions: PushSubscriptionJSON[];
     theme: Theme | null;
     font: FontChoice | null;
+    quickLinks: QuickLink[];
   }): Promise<{ data: unknown; vault?: VaultColumn }> => {
     const settings = {
       notify: c.notify,
@@ -529,6 +553,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const sealed = await seal(dekRef.current, {
         applications: c.applications,
         events: c.events,
+        quickLinks: c.quickLinks,
       });
       return {
         data: {
@@ -544,7 +569,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         vault: { keys: keysRef.current, sealed },
       };
     }
-    return { data: { applications: c.applications, events: c.events, ...settings } };
+    return {
+      data: {
+        applications: c.applications,
+        events: c.events,
+        quickLinks: c.quickLinks,
+        ...settings,
+      },
+    };
   };
 
   // saveState の最新値を同期参照(オフライン復帰の検知用・クロージャの陳腐化回避)
@@ -562,11 +594,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (t) setThemeState(t);
       const f = localStorage.getItem(LS_FONT_KEY) as FontChoice | null;
       if (f) setFontState(f);
-      const ql = localStorage.getItem(LS_QUICKLINKS_KEY);
-      if (ql) {
-        const arr = JSON.parse(ql);
-        if (Array.isArray(arr)) setQuickLinksState(arr as QuickLink[]);
-      }
       const fs = Number(localStorage.getItem(LS_FONTSCALE_KEY));
       if (fs >= FONT_SCALE_MIN && fs <= FONT_SCALE_MAX) setFontScaleState(fs);
     } catch {
@@ -612,13 +639,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setNotifyState((prev) => ({ ...prev, ...patch }));
   }, []);
 
+  // よく使うサイトはアカウントのデータ。保存は選考と同じ流れ(下の保存の effect)に乗せる。
+  // 以前は端末に1つのキーだったため、同じ端末でアカウントを替えると別の人の一覧が見えていた
   const setQuickLinks = useCallback((next: QuickLink[]) => {
     setQuickLinksState(next);
-    try {
-      localStorage.setItem(LS_QUICKLINKS_KEY, JSON.stringify(next));
-    } catch {
-      // ignore
-    }
   }, []);
 
   const setFontScale = useCallback((scale: number) => {
@@ -705,6 +729,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           }
           hydratedRef.current = false;
           setApplications(r.apps);
+          if (r.ql) setQuickLinksState(r.ql);
           setEvents(r.evs);
           setNotifyState(r.ntf);
           setPushSubscriptions(r.subs);
@@ -791,6 +816,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         baseUpdatedAtRef.current = row.updated_at;
         hydratedRef.current = false;
         setApplications(r.apps);
+          if (r.ql) setQuickLinksState(r.ql);
         setEvents(r.evs);
         setNotifyState(r.ntf);
         setPushSubscriptions(r.subs);
@@ -823,6 +849,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setPushSubscriptions(cached.pushSubscriptions);
         if (cached.theme) setThemeState(cached.theme);
         if (cached.font) setFontState(cached.font);
+      }
+      // よく使うサイト: 端末だけ(ゲスト)は従来の端末キー、ログイン中はそのアカウントのキャッシュ→クラウド
+      if (!cancelled) {
+        if (mode === "local" || !supabase || !user) {
+          setQuickLinksState(readGuestQuickLinks());
+        } else {
+          setQuickLinksState(cached?.quickLinks ?? []);
+        }
       }
 
       if (mode === "local" || !supabase || !user) {
@@ -898,6 +932,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (decoded && (Array.isArray(row?.data) || (row?.data && typeof row.data === "object"))) {
           const { apps, evs, ntf, subs } = decoded;
           setApplications(apps);
+          if (decoded.ql) setQuickLinksState(decoded.ql);
           setEvents(evs);
           setNotifyState(ntf);
           setPushSubscriptions(subs);
@@ -915,6 +950,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               theme: decoded.theme ?? cached?.theme ?? "indigo",
               font: decoded.font ?? cached?.font ?? "system",
               savedAt: remoteUpdatedAt || nowISO(),
+              quickLinks: decoded.ql ?? cached?.quickLinks ?? [],
             },
             needsMigration,
           );
@@ -932,6 +968,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           const legacy = cached ?? readLocal(LS_KEY);
           if (legacy && legacy.applications.length > 0) {
             setApplications(legacy.applications);
+            setQuickLinksState(readGuestQuickLinks());
             setEvents(legacy.events);
             writeLocal(
               cacheKey,
@@ -943,6 +980,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
                 theme: legacy.theme ?? "indigo",
                 font: legacy.font ?? "system",
                 savedAt: nowISO(),
+                quickLinks: readGuestQuickLinks(),
               },
               true,
             );
@@ -990,8 +1028,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       theme,
       font,
       savedAt: nowISO(),
+      quickLinks,
     };
     const t = window.setTimeout(() => {
+      if (!isCloud) {
+        try {
+          localStorage.setItem(LS_QUICKLINKS_KEY, JSON.stringify(quickLinks));
+        } catch {
+          // ignore
+        }
+      }
       // (1) まず端末に保存。オフラインでも必ず成功させ「見た目の編集」を確定させる。
       //     クラウド利用時は dirty=true で記録し、送信できるまで未送信として残す。
       writeLocal(cacheKey, payload, isCloud);
@@ -1016,6 +1062,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     pushSubscriptions,
     theme,
     font,
+    quickLinks,
     loaded,
     mode,
     user?.id,
@@ -1047,6 +1094,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       baseUpdatedAtRef.current = row.updated_at;
       hydratedRef.current = false;
       setApplications(r.apps);
+          if (r.ql) setQuickLinksState(r.ql);
       setEvents(r.evs);
       setNotifyState(r.ntf);
       setPushSubscriptions(r.subs);
@@ -1442,6 +1490,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         baseUpdatedAtRef.current = row.updated_at;
         hydratedRef.current = false;
         setApplications(r.apps);
+          if (r.ql) setQuickLinksState(r.ql);
         setEvents(r.evs);
         setNotifyState(r.ntf);
         setPushSubscriptions(r.subs);
