@@ -333,7 +333,9 @@
     input,
     select,
     textarea {
-      font-size: max(16px, var(--input-fs, 1rem)) !important;
+      /* 文字サイズ設定(html の zoom)で縮めていると、見た目が16pxを割って拡大が起きる。
+         --app-zoom で割り戻して、見た目で16px以上を守る(lib/store.tsx が zoom と一緒に書く) */
+      font-size: max(calc(16px / var(--app-zoom, 1)), var(--input-fs, 1rem)) !important;
     }
   }
 }

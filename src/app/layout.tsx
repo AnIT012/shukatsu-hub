@@ -34,6 +34,16 @@ export const metadata: Metadata = {
   },
 };
 
+// iPhone/iPad(iPadOS の Mac 偽装も含む)だけ viewport に maximum-scale=1 を足す。
+// iOS は指で広げる拡大ではこれを無視するので、拡大できなくなる人は出ない。止まるのは入力欄の自動拡大だけ。
+// meta が後から出てくる場合に備え、DOMContentLoaded でもう一度当てる。
+const IOS_NO_FOCUS_ZOOM = `(function(){try{
+var ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+if(!ios)return;
+function f(){var m=document.querySelector('meta[name=viewport]');if(m&&!/maximum-scale/.test(m.content))m.content+=', maximum-scale=1';}
+f();document.addEventListener('DOMContentLoaded',f);
+}catch(e){}})();`;
+
 export const viewport: Viewport = {
   // 地ならし#5: 上部バーの色は上端fixed/sticky(=ヘッダー card)の色から導かれる。
   // 紙の地に合わせる(白のままだと status bar だけ浮く)。地の色は globals の html/body で別途指定済み。
@@ -41,8 +51,9 @@ export const viewport: Viewport = {
   themeColor: "#fdfeff",
   width: "device-width",
   initialScale: 1,
-  // ⚠ 地ならし#1: maximumScale/userScalable は付けない(拡大を奪う)。
-  //    入力欄focus時の拡大は globals の16px下限で潰している。
+  // ⚠ 地ならし#1: maximumScale/userScalable はここでは付けない(Android では指の拡大まで奪う)。
+  //    入力欄focus時の拡大は globals の16px下限(文字サイズ設定の zoom も割り戻す)で潰し、
+  //    iOS だけ head の IOS_NO_FOCUS_ZOOM で maximum-scale=1 を足す(iOS は指の拡大ではこれを無視する)。
   viewportFit: "cover",
 };
 
@@ -54,6 +65,8 @@ export default function RootLayout({
       <head>
         {/* 起動の台本(テーマを先に当て、起動の膜をいつ退かせるかを決める)。描画より前に走らせる */}
         <script dangerouslySetInnerHTML={{ __html: LAUNCH_SCRIPT }} />
+        {/* iOS で入力欄に触れた時の自動拡大を止める(上の viewport のコメント) */}
+        <script dangerouslySetInnerHTML={{ __html: IOS_NO_FOCUS_ZOOM }} />
         {/* 地ならし#7: standalone(ホーム画面から起動)かどうかの旗を、描画前に root へ立てる。
             後から判定すると画面が1回ちらつく。書き方はこの1本だけ(増やすと install 導線が壊れる)。 */}
         <script

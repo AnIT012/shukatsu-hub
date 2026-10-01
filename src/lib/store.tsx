@@ -578,6 +578,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.documentElement.style.zoom =
       fontScale === 1 ? "" : String(fontScale);
+    // 入力欄の16px下限を、縮めた分だけ割り戻すための値(globals.css)
+    document.documentElement.style.setProperty("--app-zoom", String(fontScale));
   }, [fontScale]);
 
   useEffect(() => {
