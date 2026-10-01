@@ -5,36 +5,15 @@
 //           → 準備ができたら、マークの位置から丸く開いて本編へ(一覧の行はそこから浮き上がる)。
 // 同じタブで開き直した時は、組み上がった姿から短く退く。視差効果を減らす設定では、最後の姿を置いて淡く消す。
 
+import { BrandMark } from "@/components/brand-mark";
+
 const WORD = ["就", "活", "H", "u", "b"];
-// 今週の7つの点(真ん中=今日だけ大きい)。アプリ上部の週の帯と同じ並び
-const CELLS = [0, 1, 2, 3, 4, 5, 6];
 
 export function LaunchScreen() {
   return (
     <div id="launch" className="launch" aria-hidden>
       <div className="launch-inner">
-        <svg className="launch-mark" viewBox="0 0 96 96" width="96" height="96">
-          <rect className="lm-tile" x="0" y="0" width="96" height="96" rx="26" />
-          <path
-            className="lm-handle"
-            d="M36 30 v-4.5 a6.5 6.5 0 0 1 6.5 -6.5 h11 a6.5 6.5 0 0 1 6.5 6.5 v4.5"
-          />
-          <rect className="lm-body" x="17" y="29" width="62" height="46" rx="10" />
-          <rect className="lm-band" x="17" y="40" width="62" height="3.5" rx="1.75" />
-          <g className="lm-cells">
-            {CELLS.map((i) => (
-              <circle
-                key={i}
-                className="lm-cell"
-                cx={27 + i * 7}
-                cy={56}
-                r={i === 3 ? 3.6 : 2.4}
-                style={{ ["--i" as string]: i }}
-              />
-            ))}
-          </g>
-          <path className="lm-check" d="M57 63 l7.5 7.5 l15 -18" pathLength={1} />
-        </svg>
+        <BrandMark />
         {/* 字送りは tracking を使わず、1字ずつ左右に同じ余白(末尾の後ろに空きを作らない=中心がずれない) */}
         <div className="launch-word">
           {WORD.map((c, i) => (
