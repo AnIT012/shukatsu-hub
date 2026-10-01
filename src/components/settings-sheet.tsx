@@ -12,6 +12,7 @@ import {
   FileText,
   HelpCircle,
   History,
+  CalendarDays,
   LogOut,
   MessageSquare,
   Minus,
@@ -42,6 +43,7 @@ import {
   showTestNotification,
 } from "@/lib/push";
 import type { Snapshot } from "@/lib/snapshots";
+import type { DailyBackup } from "@/lib/daily-backup";
 import { submitFeedback } from "@/lib/feedback";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -204,6 +206,7 @@ function SettingsBody({
     clearAll,
     restoreFromRaw,
     listLocalSnapshots,
+    listDailyBackups,
     applications,
     events,
   } = useStore();
@@ -217,6 +220,8 @@ function SettingsBody({
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [showSnapshots, setShowSnapshots] = useState(false);
   const [confirmSnap, setConfirmSnap] = useState<Snapshot | null>(null);
+  const [daily, setDaily] = useState<DailyBackup[]>([]);
+  const [confirmDaily, setConfirmDaily] = useState<DailyBackup | null>(null);
   const [themePicker, setThemePicker] = useState(false);
   const [fontPicker, setFontPicker] = useState(false);
   const [notifyPage, setNotifyPage] = useState(false);
@@ -289,6 +294,17 @@ function SettingsBody({
     const list = listLocalSnapshots();
     setSnapshots(list);
     setShowSnapshots(true);
+    void listDailyBackups().then(setDaily);
+  };
+
+  const restoreDaily = (b: DailyBackup) => {
+    if (restoreFromRaw(b.data)) {
+      toast.success("復元しました", { description: "内容を確認してください" });
+    } else {
+      toast.error("復元に失敗しました");
+    }
+    setConfirmDaily(null);
+    setShowSnapshots(false);
   };
 
   const toggleLead = (d: number) => {
@@ -677,7 +693,7 @@ function SettingsBody({
               ))}
             <Row
               icon={<History className="h-4 w-4" />}
-              label="復元ポイント（自動バックアップ）"
+              label="バックアップと復元"
               onClick={openSnapshots}
             />
           </div>
@@ -761,12 +777,64 @@ function SettingsBody({
           onClose={() => {
             setShowSnapshots(false);
             setConfirmSnap(null);
+            setConfirmDaily(null);
           }}
-          title="復元ポイント"
+          title="バックアップと復元"
         >
           <p className="mb-3 text-[12px] leading-relaxed text-muted-foreground">
-            保存のたびに、この端末へ自動でバックアップ（新しい順）。タップすると、その時点に戻せます。
+            どちらもこの端末の中に自動で残ります。押すと、その時点の内容に戻せます。
           </p>
+
+          <h3 className="mb-1.5 px-1 text-[12.5px] font-semibold text-muted-foreground">
+            毎日のバックアップ（30日分）
+          </h3>
+          <div className="mb-5 overflow-hidden rounded-2xl border border-border bg-card">
+            {daily.length === 0 ? (
+              <p className="px-3 py-4 text-[13px] text-muted-foreground">
+                まだありません。使った日ごとに1つずつ残ります。
+              </p>
+            ) : (
+              daily.map((b) => (
+                <div key={b.day} className="border-b px-3 py-2.5 last:border-b-0">
+                  {confirmDaily === b ? (
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 text-[12px]">
+                        この日の内容に戻しますか？今の表示は置き換わります。
+                      </span>
+                      <Button variant="ghost" size="sm" onClick={() => setConfirmDaily(null)}>
+                        やめる
+                      </Button>
+                      <Button size="sm" onClick={() => restoreDaily(b)}>
+                        戻す
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDaily(b)}
+                      className="flex w-full items-center gap-2 text-left"
+                    >
+                      <CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="flex-1 text-[13px]">
+                        {new Date(`${b.day}T00:00:00`).toLocaleDateString("ja-JP", {
+                          month: "numeric",
+                          day: "numeric",
+                          weekday: "short",
+                        })}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        選考{b.apps}・予定{b.events}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          <h3 className="mb-1.5 px-1 text-[12.5px] font-semibold text-muted-foreground">
+            保存ごとの復元ポイント（直近15回）
+          </h3>
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
             {snapshots.length === 0 ? (
               <p className="px-3 py-4 text-[13px] text-muted-foreground">

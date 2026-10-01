@@ -15,6 +15,20 @@ const NEWS_KEY = "shukatsu-dashboard:newsSeen";
 // 最新の更新日。これと既読版が違えば全ユーザーに1回だけ表示される。
 const NEWS_VERSION = LATEST_CHANGELOG.date;
 
+/**
+ * この端末で初めて同意した人(新規・審査用アカウントを初めて開いた人)には、
+ * 「更新のお知らせ」を続けて出さない。前の版を見たことがある人(既読の記録がある)はそのまま出す。
+ */
+export function skipNewsForFirstVisit() {
+  try {
+    if (localStorage.getItem(NEWS_KEY) === null) {
+      localStorage.setItem(NEWS_KEY, NEWS_VERSION);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 /** 既存ユーザーに「更新のお知らせ」を版ごとに1回だけ表示する。 */
 export function WhatsNew({ enabled }: { enabled: boolean }) {
   const [open, setOpen] = useState(false);

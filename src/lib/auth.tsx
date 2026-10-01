@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import { isSupabaseConfigured, supabase } from "./supabase";
+import { clearPendingPassword, setPendingPassword } from "./vault";
 
 export type AuthMode = "local" | "cloud";
 
@@ -97,15 +98,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setMode("cloud");
   };
 
+  // パスワードは、暗号化の鍵を作る/開くために「ログインの前に」メモリへ渡す
+  // (ログイン成功の知らせが返り値より先に届き、読み込みが始まることがあるため)。失敗したら消す。保存はしない。
   const signIn: AuthValue["signIn"] = async (email, password) => {
     if (!supabase) return { error: "Supabase が未設定です" };
+    setPendingPassword(password);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) clearPendingPassword();
     return { error: error?.message ?? null };
   };
 
   const signUp: AuthValue["signUp"] = async (email, password) => {
     if (!supabase) return { error: "Supabase が未設定です" };
+    setPendingPassword(password);
     const { error } = await supabase.auth.signUp({ email, password });
+    if (error) clearPendingPassword();
     return { error: error?.message ?? null };
   };
 

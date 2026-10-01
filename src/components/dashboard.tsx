@@ -63,7 +63,8 @@ import { ListGroup } from "@/components/list-group";
 import { WeekStrip, weekMonthLabel } from "@/components/week-strip";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
 import { VersionNotice } from "@/components/version-notice";
-import { WhatsNew } from "@/components/whats-new";
+import { WhatsNew, skipNewsForFirstVisit } from "@/components/whats-new";
+import { VaultGate } from "@/components/vault-gate";
 import { OnboardingPrompts } from "@/components/onboarding-prompts";
 import { BottomNav, type NavView } from "@/components/bottom-nav";
 import { ProgressView } from "@/components/progress-view";
@@ -109,7 +110,10 @@ export function Dashboard() {
     setQuickLinks,
     seedSampleIfEmpty,
     deleteApplication,
+    vaultState,
   } = store;
+  // 暗号化の鍵の画面が出ている間は、ほかのお知らせを重ねない(順番に1枚ずつ)
+  const vaultBusy = vaultState === "locked" || vaultState === "setup";
   const { user, mode } = useAuth();
   // 同意/オンボード済みフラグはアカウント別に持つ(同一ブラウザで複数アカウントを使っても誤って出ない問題を防ぐ)
   const flagKey = (base: string) =>
@@ -276,6 +280,7 @@ export function Dashboard() {
     }
     setLegalOpen(false);
     setLegalConsentMode(false);
+    skipNewsForFirstVisit();
     try {
       // 同意後にチュートリアルへ進むのは新規ユーザー(実データ無し)だけ
       const isNewUser =
@@ -794,7 +799,7 @@ export function Dashboard() {
 
       {mode === "cloud" && user && (
         <FeedbackPrompt
-          open={feedbackOpen}
+          open={feedbackOpen && !vaultBusy}
           userId={user.id}
           onClose={closeFeedback}
         />
@@ -802,7 +807,9 @@ export function Dashboard() {
 
       {/* 選考フロー(段階＞タスク)移行の通告(移行ユーザーに1回だけ) */}
       <VersionNotice />
-      <WhatsNew enabled={applications.length > 0} />
+      <WhatsNew enabled={applications.length > 0 && !vaultBusy && !legalOpen} />
+      {/* 暗号化の鍵を開く/作る(鍵が無い端末・まだ平文のアカウント) */}
+      <VaultGate />
 
       {tourIndex >= 0 && (
         <Tutorial

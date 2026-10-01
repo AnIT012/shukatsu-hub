@@ -291,7 +291,10 @@ Deno.serve(async (req) => {
     const subs: any[] = d.pushSubscriptions ?? [];
     if (!subs.length) continue;
 
-    const payloads = buildPayloads(d.applications, d.events, notify, today);
+    // 暗号化済み(vault)の人は、中身が読めない。アプリが平文で置く通知用の最小限
+    // (企業名・イベント名・種類・日時・決着だけ)を読む。data.applications は古い版向けの置き札なので使わない。
+    const src = d.vault === 1 ? d.notifyFeed ?? { applications: [], events: [] } : d;
+    const payloads = buildPayloads(src.applications, src.events, notify, today);
     if (!payloads.length) continue;
     users++;
 

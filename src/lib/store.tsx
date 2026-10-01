@@ -44,11 +44,41 @@ import { newId } from "./utils";
 import { DATA_TABLE, supabase } from "./supabase";
 import { normalizeApps, normalizeEvents } from "./io";
 import { pushSnapshot, listSnapshots, type Snapshot } from "./snapshots";
+import {
+  listDailyBackups as listDailyBackupsIdb,
+  saveDailyBackup,
+  type DailyBackup,
+} from "./daily-backup";
+import {
+  buildNotifyFeed,
+  generateDek,
+  isVaultColumn,
+  loadLocalDek,
+  saveLocalDek,
+  seal,
+  stubApplications,
+  clearPendingPassword,
+  peekPendingPassword,
+  unseal,
+  unwrapDek,
+  wrapDek,
+  type VaultColumn,
+  type VaultKeys,
+} from "./vault";
 import { badgeCount, deriveResult } from "./next-action";
 import { buildSampleApplications } from "./sample";
 import { useAuth } from "./auth";
 
 export type SaveState = "idle" | "saving" | "saved" | "offline";
+
+/**
+ * クラウドの中身の暗号化の状態。
+ *  off     … 端末だけで使っている / サーバーが暗号化の列にまだ対応していない(従来どおり)
+ *  setup   … クラウドに平文のまま。パスワードを一度入れれば暗号化に切り替わる(使うのは止めない)
+ *  locked  … クラウドは暗号化済みだが、この端末に鍵が無い。パスワードを入れるまで中身を出さない・書かない
+ *  ready   … 暗号化して送っている
+ */
+export type VaultState = "off" | "setup" | "locked" | "ready";
 
 interface NewApplicationInput {
   company: string;
@@ -164,6 +194,12 @@ interface StoreValue {
   restoreFromRaw: (raw: string) => boolean;
   /** 自動ローカルバックアップ(復元ポイント)の一覧を取得(新しい順) */
   listLocalSnapshots: () => Snapshot[];
+  /** 毎日の自動バックアップ(端末・30日分)の一覧(新しい順) */
+  listDailyBackups: () => Promise<DailyBackup[]>;
+  /** クラウドの暗号化の状態 */
+  vaultState: VaultState;
+  /** パスワードで暗号化の鍵を開く/作る。違えば false */
+  unlockVault: (password: string) => Promise<boolean>;
   /** 全データ(選考+イベント)を空にする。設定の「全データ削除」用。 */
   clearAll: () => void;
   /** 新規(空)ユーザーにだけサンプルを投入。投入したら true。既存データは絶対に壊さない。 */
@@ -296,6 +332,46 @@ interface CachePayload {
   savedAt: string;
 }
 
+/** クラウドの1行(data/updated_at/vault)を読んだ結果 */
+interface RemoteRow {
+  data: unknown;
+  updated_at: string;
+  vault: unknown;
+}
+
+/** クラウドの中身を、画面に出す形にしたもの */
+interface Decoded {
+  apps: Application[];
+  evs: EventItem[];
+  ntf: NotifySettings;
+  subs: PushSubscriptionJSON[];
+  theme: Theme | null;
+  font: FontChoice | null;
+}
+
+/** data 列のうち、暗号化しない設定(通知・テーマ等)を読む */
+function settingsOf(remote: any): Omit<Decoded, "apps" | "evs"> {
+  const obj = remote && typeof remote === "object" && !Array.isArray(remote) ? remote : {};
+  return {
+    ntf: { ...DEFAULT_NOTIFY, ...(obj.notify ?? {}) },
+    subs: Array.isArray(obj.pushSubscriptions) ? obj.pushSubscriptions : [],
+    theme: typeof obj.theme === "string" ? (obj.theme as Theme) : null,
+    font: typeof obj.font === "string" ? (obj.font as FontChoice) : null,
+  };
+}
+
+/** 平文の data 列を読む(旧形式=配列 にも対応) */
+function decodePlain(remote: any): Decoded {
+  if (Array.isArray(remote)) {
+    return { apps: normalizeApps(remote), evs: [], ...settingsOf(null) };
+  }
+  return {
+    apps: normalizeApps(remote?.applications),
+    evs: normalizeEvents(remote?.events),
+    ...settingsOf(remote),
+  };
+}
+
 /** 端末キャッシュに保存。オフラインでも必ず成功させ、dirty で未送信を記録する。 */
 function writeLocal(key: string, payload: CachePayload, dirty: boolean) {
   try {
@@ -326,6 +402,151 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // 楽観ロック用: この端末が最後にクラウドから読んだ updated_at。
   // 書き込み時に「自分の読んだ版のまま」なら上書きOK、変わっていれば別端末が更新したと判断する。
   const baseUpdatedAtRef = useRef<string>("");
+
+  // ---- 暗号化(エンドツーエンド)。仕組みは lib/vault.ts の冒頭 ----
+  const [vaultState, setVaultStateRaw] = useState<VaultState>("off");
+  const vaultStateRef = useRef<VaultState>("off");
+  const setVaultState = (s: VaultState) => {
+    vaultStateRef.current = s;
+    setVaultStateRaw(s);
+    // 鍵が手に入ったら、ログイン時に預かったパスワードはもう要らない(メモリからも消す)
+    if (s === "ready") clearPendingPassword();
+  };
+  /** この端末で開いたデータ鍵(メモリ) */
+  const dekRef = useRef<Uint8Array | null>(null);
+  /** クラウドに置く「包んだデータ鍵」 */
+  const keysRef = useRef<VaultKeys | null>(null);
+  /** サーバーの表に vault 列があるか(null=まだ分からない)。無ければ従来どおり平文で動く */
+  const vaultColRef = useRef<boolean | null>(null);
+
+  /** 自分の1行を読む。vault 列が無いサーバーでも落ちずに従来の形で読む */
+  const fetchRow = async (): Promise<RemoteRow | null> => {
+    if (!supabase || !user) return null;
+    if (vaultColRef.current !== false) {
+      const { data, error } = await supabase
+        .from(DATA_TABLE)
+        .select("data, updated_at, vault")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!error) {
+        vaultColRef.current = true;
+        if (!data) return null;
+        return {
+          data: data.data,
+          updated_at: typeof data.updated_at === "string" ? data.updated_at : "",
+          vault: (data as any).vault ?? null,
+        };
+      }
+      // 列が無い(=SQL未適用)なら平文の従来動作へ。それ以外のエラーは投げる
+      if (!/vault/i.test(error.message ?? "")) throw error;
+      vaultColRef.current = false;
+    }
+    const { data, error } = await supabase
+      .from(DATA_TABLE)
+      .select("data, updated_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return {
+      data: data.data,
+      updated_at: typeof data.updated_at === "string" ? data.updated_at : "",
+      vault: null,
+    };
+  };
+
+  /**
+   * 読んだ1行を画面の形にする。暗号化済みなら開く。
+   * 鍵が無ければ null を返し、状態を locked にする(中身は出さない・書かない)。
+   * password は、ログイン直後か「パスワードを入れてください」の画面から来た時だけ渡る。
+   */
+  const decodeRow = async (
+    row: RemoteRow,
+    password: string | null,
+  ): Promise<Decoded | null> => {
+    if (!user) return decodePlain(row.data);
+    if (isVaultColumn(row.vault)) {
+      const vault = row.vault as VaultColumn;
+      keysRef.current = vault.keys;
+      const tryOpen = async (dek: Uint8Array | null) => {
+        if (!dek) return null;
+        const body = await unseal<{ applications: unknown; events: unknown }>(dek, vault.sealed);
+        return body ? { dek, body } : null;
+      };
+      let opened =
+        (await tryOpen(dekRef.current)) ?? (await tryOpen(loadLocalDek(user.id)));
+      if (!opened && password) {
+        opened = await tryOpen(await unwrapDek(vault.keys, password));
+      }
+      if (!opened) {
+        dekRef.current = null;
+        setVaultState("locked");
+        return null;
+      }
+      dekRef.current = opened.dek;
+      saveLocalDek(user.id, opened.dek);
+      setVaultState("ready");
+      return {
+        apps: normalizeApps((opened.body as any).applications),
+        evs: normalizeEvents((opened.body as any).events),
+        ...settingsOf(row.data),
+      };
+    }
+    // まだ平文のクラウド
+    if (vaultColRef.current) {
+      if (password) {
+        // ログイン直後: この場で鍵を作る(送るのは次の保存から)
+        const dek = generateDek();
+        keysRef.current = await wrapDek(dek, password);
+        dekRef.current = dek;
+        saveLocalDek(user.id, dek);
+        setVaultState("ready");
+      } else if (!dekRef.current || !keysRef.current) {
+        setVaultState("setup");
+      }
+    } else {
+      setVaultState("off");
+    }
+    return decodePlain(row.data);
+  };
+
+  /** 送る形を作る。鍵があれば中身は暗号文にし、data 列には置き札と通知用の最小限だけを置く */
+  const encodeDoc = async (c: {
+    applications: Application[];
+    events: EventItem[];
+    notify: NotifySettings;
+    pushSubscriptions: PushSubscriptionJSON[];
+    theme: Theme | null;
+    font: FontChoice | null;
+  }): Promise<{ data: unknown; vault?: VaultColumn }> => {
+    const settings = {
+      notify: c.notify,
+      pushSubscriptions: c.pushSubscriptions,
+      ...(c.theme ? { theme: c.theme } : {}),
+      ...(c.font ? { font: c.font } : {}),
+    };
+    if (vaultColRef.current && dekRef.current && keysRef.current) {
+      const sealed = await seal(dekRef.current, {
+        applications: c.applications,
+        events: c.events,
+      });
+      return {
+        data: {
+          applications: stubApplications(nowISO()),
+          events: [],
+          ...settings,
+          vault: 1,
+          // 通知をオフにしている人の分は、企業名も含めて何も平文で置かない
+          ...(c.notify.enabled
+            ? { notifyFeed: buildNotifyFeed(c.applications, c.events) }
+            : {}),
+        },
+        vault: { keys: keysRef.current, sealed },
+      };
+    }
+    return { data: { applications: c.applications, events: c.events, ...settings } };
+  };
+
   // saveState の最新値を同期参照(オフライン復帰の検知用・クロージャの陳腐化回避)
   const saveStateRef = useRef<SaveState>("idle");
   useEffect(() => {
@@ -429,25 +650,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
     const cached = readLocal(cacheKey);
     if (!cached || !cached.dirty) return false;
+    // 暗号化済みのクラウドに、鍵を持たないまま書くと中身を壊す。開くまで送らない(dirty のまま残る)
+    if (vaultStateRef.current === "locked") return false;
     // 直前がオフライン表示なら「復帰して同期できた瞬間」→ 同期完了アニメ(トースト)を1回出す
     const recovering = saveStateRef.current === "offline";
-    const docObj = {
-      applications: cached.applications,
-      events: cached.events,
-      notify: cached.notify,
-      pushSubscriptions: cached.pushSubscriptions,
-      ...(cached.theme ? { theme: cached.theme } : {}),
-      ...(cached.font ? { font: cached.font } : {}),
-    };
     const newUpdatedAt = nowISO();
     const base = baseUpdatedAtRef.current;
     try {
+      const doc = await encodeDoc(cached);
+      // vault 列は、鍵がある時だけ書く(無い時に null で上書きしない)
+      const fields: Record<string, unknown> = {
+        data: doc.data,
+        updated_at: newUpdatedAt,
+        ...(doc.vault ? { vault: doc.vault } : {}),
+      };
       let wrote = false;
       // 楽観ロック: 自分が最後に読んだ版(base)のままなら上書きする。
       if (base) {
         const { data, error } = await supabase
           .from(DATA_TABLE)
-          .update({ data: docObj, updated_at: newUpdatedAt })
+          .update(fields)
           .eq("user_id", user.id)
           .eq("updated_at", base)
           .select("updated_at");
@@ -459,17 +681,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
       if (!wrote) {
         // base 無し(初回) or 不一致(別端末が更新) → 現状を確認
-        const { data: cur, error: readErr } = await supabase
-          .from(DATA_TABLE)
-          .select("data, updated_at")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (readErr) throw readErr;
+        const cur = await fetchRow();
         if (!cur) {
           // 行が無い → 新規作成
           const { data: ins, error: insErr } = await supabase
             .from(DATA_TABLE)
-            .upsert({ user_id: user.id, data: docObj, updated_at: newUpdatedAt })
+            .upsert({ user_id: user.id, ...fields })
             .select("updated_at");
           if (insErr) throw insErr;
           baseUpdatedAtRef.current =
@@ -478,37 +695,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           // 競合: 別端末がクラウドを更新していた。安全側=クラウドを正として取り込む。
           // ただしこの端末の未送信分は復元ポイントに退避してから取り込む(必ず戻せる)。
           pushSnapshot(cacheKey, cached.applications, cached.events);
-          const remote = cur.data;
-          const rApps = Array.isArray(remote)
-            ? normalizeApps(remote)
-            : normalizeApps((remote as any)?.applications);
-          const rEvs = Array.isArray(remote)
-            ? []
-            : normalizeEvents((remote as any)?.events);
-          const rNtf = {
-            ...DEFAULT_NOTIFY,
-            ...((remote as any)?.notify ?? {}),
-          };
-          const rSubs = Array.isArray((remote as any)?.pushSubscriptions)
-            ? (remote as any).pushSubscriptions
-            : [];
+          const r = await decodeRow(cur, null);
+          if (!r) {
+            // 別の端末が暗号化に切り替えていて、この端末に鍵が無い。
+            // 未送信分は復元ポイントに退避済み。パスワードを入れて開くまで送らない
+            return false;
+          }
           hydratedRef.current = false;
-          setApplications(rApps);
-          setEvents(rEvs);
-          setNotifyState(rNtf);
-          setPushSubscriptions(rSubs);
-          if ((remote as any)?.theme) setTheme((remote as any).theme);
-          if ((remote as any)?.font) setFont((remote as any).font);
-          baseUpdatedAtRef.current = (cur.updated_at as string) || "";
+          setApplications(r.apps);
+          setEvents(r.evs);
+          setNotifyState(r.ntf);
+          setPushSubscriptions(r.subs);
+          if (r.theme) setTheme(r.theme);
+          if (r.font) setFont(r.font);
+          baseUpdatedAtRef.current = cur.updated_at || "";
           writeLocal(
             cacheKey,
             {
-              applications: rApps,
-              events: rEvs,
-              notify: rNtf,
-              pushSubscriptions: rSubs,
-              theme: ((remote as any)?.theme as Theme) ?? cached.theme ?? "indigo",
-              font: ((remote as any)?.font as FontChoice) ?? cached.font ?? "system",
+              applications: r.apps,
+              events: r.evs,
+              notify: r.ntf,
+              pushSubscriptions: r.subs,
+              theme: r.theme ?? cached.theme ?? "indigo",
+              font: r.font ?? cached.font ?? "system",
               savedAt: baseUpdatedAtRef.current || newUpdatedAt,
             },
             false,
@@ -573,33 +782,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      const { data, error } = await supabase
-        .from(DATA_TABLE)
-        .select("data, updated_at")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (error) throw error;
-      const remote = data?.data;
-      baseUpdatedAtRef.current =
-        typeof data?.updated_at === "string" ? data.updated_at : "";
-      hydratedRef.current = false;
-      if (Array.isArray(remote)) {
-        setApplications(normalizeApps(remote));
-        setEvents([]);
-      } else if (remote && typeof remote === "object") {
-        const a = normalizeApps((remote as any).applications);
-        const e = normalizeEvents((remote as any).events);
-        setApplications(a);
-        setEvents(e);
-        setNotifyState({ ...DEFAULT_NOTIFY, ...((remote as any).notify ?? {}) });
-        setPushSubscriptions(
-          Array.isArray((remote as any).pushSubscriptions)
-            ? (remote as any).pushSubscriptions
-            : [],
-        );
-        if ((remote as any).theme) setTheme((remote as any).theme);
-        if ((remote as any).font) setFont((remote as any).font);
-        pushSnapshot(cacheKey, a, e);
+      const row = await fetchRow();
+      if (row) {
+        const r = await decodeRow(row, null);
+        if (!r) return; // 暗号化済みで鍵が無い → パスワードの画面が出る
+        baseUpdatedAtRef.current = row.updated_at;
+        hydratedRef.current = false;
+        setApplications(r.apps);
+        setEvents(r.evs);
+        setNotifyState(r.ntf);
+        setPushSubscriptions(r.subs);
+        if (r.theme) setTheme(r.theme);
+        if (r.font) setFont(r.font);
+        pushSnapshot(cacheKey, r.apps, r.evs);
       }
       setSaveState("saved");
       setLastSavedAt(Date.now());
@@ -629,22 +824,47 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (mode === "local" || !supabase || !user) {
+        setVaultState("off");
+        dekRef.current = null;
+        keysRef.current = null;
         if (!cancelled) setLoaded(true);
         return;
       }
 
       try {
-        const { data, error } = await supabase
-          .from(DATA_TABLE)
-          .select("data, updated_at")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        // ログイン直後ならパスワードが1度だけ受け取れる(鍵を作る/開く用。保存しない)
+        const password = peekPendingPassword();
+        dekRef.current = null;
+        keysRef.current = null;
+        const row = await fetchRow();
         if (cancelled) return;
-        if (error) throw error;
+        const remoteUpdatedAt: string = row?.updated_at ?? "";
 
-        const remote = data?.data;
-        const remoteUpdatedAt: string =
-          typeof data?.updated_at === "string" ? data.updated_at : "";
+        // 鍵の用意は、送る前に必ず済ませる(鍵の無いまま送ると暗号文を平文で上書きしうる)
+        let decoded: Decoded | null = null;
+        if (row) {
+          decoded = await decodeRow(row, password);
+          if (cancelled) return;
+          if (!decoded) {
+            // 暗号化済みでこの端末に鍵が無い → パスワードの画面へ。中身は出さない
+            hydratedRef.current = false;
+            setApplications([]);
+            setEvents([]);
+            return;
+          }
+        } else if (vaultColRef.current && password) {
+          // 初めてのクラウド(新規登録直後など): 最初の保存から暗号化して送る
+          const dek = generateDek();
+          keysRef.current = await wrapDek(dek, password);
+          dekRef.current = dek;
+          saveLocalDek(user.id, dek);
+          setVaultState("ready");
+        } else {
+          setVaultState(vaultColRef.current ? "setup" : "off");
+        }
+        // 平文のクラウドに鍵ができた = 暗号化へ移す必要がある
+        const needsMigration =
+          !!row && !isVaultColumn(row.vault) && vaultStateRef.current === "ready";
 
         // 端末に未送信(dirty)の編集があるなら「新しい方を採用」。
         // ローカルが新しければ表示を保持してクラウドを追従させる(リロード時の巻き戻し防止)。
@@ -673,24 +893,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        if (Array.isArray(remote)) {
-          // 旧形式(配列) → applications のみ。events は空で開始
-          setApplications(normalizeApps(remote));
-          setEvents([]);
-        } else if (remote && typeof remote === "object") {
-          const apps = normalizeApps((remote as any).applications);
-          const evs = normalizeEvents((remote as any).events);
-          const ntf = { ...DEFAULT_NOTIFY, ...((remote as any).notify ?? {}) };
-          const subs = Array.isArray((remote as any).pushSubscriptions)
-            ? (remote as any).pushSubscriptions
-            : [];
+        if (decoded && (Array.isArray(row?.data) || (row?.data && typeof row.data === "object"))) {
+          const { apps, evs, ntf, subs } = decoded;
           setApplications(apps);
           setEvents(evs);
           setNotifyState(ntf);
           setPushSubscriptions(subs);
-          if ((remote as any).theme) setTheme((remote as any).theme);
-          if ((remote as any).font) setFont((remote as any).font);
-          // クラウドを正として採用 → 端末キャッシュを clean 同期(次回起動の判定基準を揃える)
+          if (decoded.theme) setTheme(decoded.theme);
+          if (decoded.font) setFont(decoded.font);
+          // クラウドを正として採用 → 端末キャッシュを clean 同期(次回起動の判定基準を揃える)。
+          // 暗号化へ移す時は dirty で書いて、このあと送る
           writeLocal(
             cacheKey,
             {
@@ -698,34 +910,44 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               events: evs,
               notify: ntf,
               pushSubscriptions: subs,
-              theme: ((remote as any).theme as Theme) ?? cached?.theme ?? "indigo",
-              font: ((remote as any).font as FontChoice) ?? cached?.font ?? "system",
+              theme: decoded.theme ?? cached?.theme ?? "indigo",
+              font: decoded.font ?? cached?.font ?? "system",
               savedAt: remoteUpdatedAt || nowISO(),
             },
-            false,
+            needsMigration,
           );
-          // 読み込んだクラウド状態を復元ポイントに退避
+          // 読み込んだクラウド状態を復元ポイントと毎日のバックアップに退避
           pushSnapshot(cacheKey, apps, evs);
+          void saveDailyBackup(cacheKey, apps, evs);
+          if (needsMigration) {
+            dirtyRef.current = true;
+            if (!cancelled) setLoaded(true);
+            await flushToCloud();
+            return;
+          }
         } else {
-          // クラウドが空 → ローカルのキャッシュ/レガシーを移行
+          // クラウドが空 → ローカルのキャッシュ/レガシーを移行(送る形は flushToCloud が作る=暗号化も効く)
           const legacy = cached ?? readLocal(LS_KEY);
           if (legacy && legacy.applications.length > 0) {
             setApplications(legacy.applications);
             setEvents(legacy.events);
-            const legacyAt = nowISO();
-            const { data: up } = await supabase
-              .from(DATA_TABLE)
-              .upsert({
-                user_id: user.id,
-                data: {
-                  applications: legacy.applications,
-                  events: legacy.events,
-                },
-                updated_at: legacyAt,
-              })
-              .select("updated_at");
-            baseUpdatedAtRef.current =
-              (up?.[0]?.updated_at as string) || legacyAt;
+            writeLocal(
+              cacheKey,
+              {
+                applications: legacy.applications,
+                events: legacy.events,
+                notify: legacy.notify,
+                pushSubscriptions: legacy.pushSubscriptions,
+                theme: legacy.theme ?? "indigo",
+                font: legacy.font ?? "system",
+                savedAt: nowISO(),
+              },
+              true,
+            );
+            dirtyRef.current = true;
+            if (!cancelled) setLoaded(true);
+            await flushToCloud();
+            return;
           } else {
             setApplications([]);
             setEvents([]);
@@ -753,6 +975,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       hydratedRef.current = true;
       return;
     }
+    // 鍵が無くて中身を出していない間は、空の状態で端末キャッシュを上書きしない
+    if (vaultStateRef.current === "locked") return;
     dirtyRef.current = true;
     setSaveState("saving");
     const isCloud = mode === "cloud" && !!supabase && !!user;
@@ -769,6 +993,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       // (1) まず端末に保存。オフラインでも必ず成功させ「見た目の編集」を確定させる。
       //     クラウド利用時は dirty=true で記録し、送信できるまで未送信として残す。
       writeLocal(cacheKey, payload, isCloud);
+      // 毎日の自動バックアップ(端末・その日の最後の状態を1つ・30日分)
+      void saveDailyBackup(cacheKey, payload.applications, payload.events);
       if (!isCloud) {
         // ローカルモードは端末保存で完結
         dirtyRef.current = false;
@@ -805,34 +1031,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         await flushToCloud();
         return;
       }
-      const { data, error } = await supabase!
-        .from(DATA_TABLE)
-        .select("data, updated_at")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (error || !data) return;
-      const remote = data.data;
-      baseUpdatedAtRef.current =
-        typeof data.updated_at === "string" ? data.updated_at : "";
-      hydratedRef.current = false;
-      if (Array.isArray(remote)) {
-        setApplications(normalizeApps(remote));
-        setEvents([]);
-      } else if (remote && typeof remote === "object") {
-        setApplications(normalizeApps((remote as any).applications));
-        setEvents(normalizeEvents((remote as any).events));
-        setNotifyState({
-          ...DEFAULT_NOTIFY,
-          ...((remote as any).notify ?? {}),
-        });
-        setPushSubscriptions(
-          Array.isArray((remote as any).pushSubscriptions)
-            ? (remote as any).pushSubscriptions
-            : [],
-        );
-        if ((remote as any).theme) setTheme((remote as any).theme);
-        if ((remote as any).font) setFont((remote as any).font);
+      // 鍵が無くて閉じている間は取り込まない(パスワードの画面で開いた時に読み直す)
+      if (vaultStateRef.current === "locked") return;
+      let row: RemoteRow | null = null;
+      try {
+        row = await fetchRow();
+      } catch {
+        return;
       }
+      if (!row) return;
+      const r = await decodeRow(row, null);
+      if (!r) return;
+      baseUpdatedAtRef.current = row.updated_at;
+      hydratedRef.current = false;
+      setApplications(r.apps);
+      setEvents(r.evs);
+      setNotifyState(r.ntf);
+      setPushSubscriptions(r.subs);
+      if (r.theme) setTheme(r.theme);
+      if (r.font) setFont(r.font);
     };
     document.addEventListener("visibilitychange", sync);
     window.addEventListener("focus", sync);
@@ -1202,6 +1419,88 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [cacheKey],
   );
 
+  const listDailyBackups = useCallback<StoreValue["listDailyBackups"]>(
+    () => listDailyBackupsIdb(cacheKey),
+    [cacheKey],
+  );
+
+  const unlockVault = useCallback<StoreValue["unlockVault"]>(
+    async (password) => {
+      if (mode !== "cloud" || !supabase || !user || !password) return false;
+      let row: RemoteRow | null;
+      try {
+        row = await fetchRow();
+      } catch {
+        return false;
+      }
+      if (row && isVaultColumn(row.vault)) {
+        // 暗号化済み: 包んだ鍵をパスワードで開く(違えば GCM の検証で落ちる)
+        const r = await decodeRow(row, password);
+        if (!r) return false;
+        baseUpdatedAtRef.current = row.updated_at;
+        hydratedRef.current = false;
+        setApplications(r.apps);
+        setEvents(r.evs);
+        setNotifyState(r.ntf);
+        setPushSubscriptions(r.subs);
+        if (r.theme) setTheme(r.theme);
+        if (r.font) setFont(r.font);
+        writeLocal(
+          cacheKey,
+          {
+            applications: r.apps,
+            events: r.evs,
+            notify: r.ntf,
+            pushSubscriptions: r.subs,
+            theme: r.theme ?? theme,
+            font: r.font ?? font,
+            savedAt: row.updated_at || nowISO(),
+          },
+          false,
+        );
+        pushSnapshot(cacheKey, r.apps, r.evs);
+        void saveDailyBackup(cacheKey, r.apps, r.evs);
+        return true;
+      }
+      if (!vaultColRef.current) return false;
+      // 平文のクラウド: 打ち間違えたパスワードで鍵を包むと、ほかの端末で二度と開けない。
+      // 先にログインのパスワードとして正しいかを確かめる
+      if (!user.email) return false;
+      const { error } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password,
+      });
+      if (error) return false;
+      const dek = generateDek();
+      keysRef.current = await wrapDek(dek, password);
+      dekRef.current = dek;
+      saveLocalDek(user.id, dek);
+      setVaultState("ready");
+      // 今の中身を暗号化して送り直す(クラウドの平文を置き換える)
+      const cached = readLocal(cacheKey);
+      if (row && cached) {
+        writeLocal(
+          cacheKey,
+          {
+            applications: cached.applications,
+            events: cached.events,
+            notify: cached.notify,
+            pushSubscriptions: cached.pushSubscriptions,
+            theme: cached.theme ?? theme,
+            font: cached.font ?? font,
+            savedAt: nowISO(),
+          },
+          true,
+        );
+        dirtyRef.current = true;
+        await flushToCloud();
+      }
+      return true;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mode, user?.id, cacheKey, flushToCloud, theme, font],
+  );
+
   const clearAll = useCallback(() => {
     setApplications([]);
     setEvents([]);
@@ -1354,6 +1653,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     mergeImport,
     restoreFromRaw,
     listLocalSnapshots,
+    listDailyBackups,
+    vaultState,
+    unlockVault,
     clearAll,
     seedSampleIfEmpty,
     events,
