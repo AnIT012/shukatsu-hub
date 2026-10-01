@@ -121,17 +121,17 @@ export function ApplicationCard({
         <div className="flex items-center gap-3">
           <DateBlock app={app} next={next} urgent={urgent} />
           <div className="min-w-0 flex-1 self-center">
-            <div className="truncate text-[15px] font-semibold leading-tight">
+            <div className="truncate text-[17px] font-bold leading-tight tracking-tight text-foreground">
               {app.company || "(名称未設定)"}
             </div>
             {showRole && app.role && (
-              <div className="truncate text-[11px] text-muted-foreground">
+              <div className="truncate text-[10.5px] text-muted-foreground">
                 {app.role}
               </div>
             )}
             <NextLine app={app} next={next} />
           </div>
-          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/50" />
+          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/40" />
         </div>
         <PinnedChips app={app} className="mt-2" />
       </div>
@@ -178,11 +178,11 @@ export function ApplicationCard({
       <div className="mt-2 flex items-stretch gap-3">
         <DateBlock app={app} next={next} urgent={urgent} />
         <div className="min-w-0 flex-1 self-center">
-          <div className="truncate text-[15px] font-semibold leading-tight">
+          <div className="truncate text-[17px] font-bold leading-tight tracking-tight text-foreground">
             {app.company || "(名称未設定)"}
           </div>
           {showRole && app.role && (
-            <div className="truncate text-[11px] text-muted-foreground">
+            <div className="truncate text-[10.5px] text-muted-foreground">
               {app.role}
             </div>
           )}
@@ -288,7 +288,7 @@ function DateBlock({
           </div>
           <div
             className={cn(
-              "mt-1 text-[17px] font-bold leading-none tracking-tight",
+              "mt-0.5 text-[19px] font-bold leading-none tracking-tight",
               urgent ? "text-danger" : "text-foreground",
             )}
           >
@@ -315,7 +315,7 @@ function NextLine({ app, next }: { app: Application; next: StageNextAction }) {
     // 種別(選考ステップ名)を表示。サブタイトル(name)ではなく kind を主役に
     const names = next.tasks.map((t) => STEP_KIND_LABEL[t.kind]).slice(0, 3);
     return (
-      <div className="mt-1 truncate text-[12.5px]">
+      <div className="mt-1 truncate text-[12px]">
         <span className="text-muted-foreground">次: </span>
         <span className="font-medium">{names.join("・")}</span>
       </div>
@@ -324,20 +324,20 @@ function NextLine({ app, next }: { app: Application; next: StageNextAction }) {
   if (next.type === "waiting") {
     const label = currentStageLabel(app);
     return (
-      <div className="mt-1 truncate text-[12.5px] text-muted-foreground">
+      <div className="mt-1 truncate text-[12px] text-muted-foreground">
         {label ? `${label} の結果待ち` : "結果待ち"}
       </div>
     );
   }
   if (next.type === "empty") {
     return (
-      <div className="mt-1 truncate text-[12.5px] text-muted-foreground">
+      <div className="mt-1 truncate text-[12px] text-muted-foreground">
         選考ステップ未登録
       </div>
     );
   }
   return (
-    <div className="mt-1 truncate text-[12.5px] text-muted-foreground">
+    <div className="mt-1 truncate text-[12px] text-muted-foreground">
       {app.result === "passed"
         ? `${PASSED_LABEL[app.selectionType]}（選考通過）`
         : app.result === "rejected"

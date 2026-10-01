@@ -68,7 +68,7 @@ export function EventCard({
         <div className="flex items-center gap-3">
           <EventDateBlock d={d} kind={focusKind} focus={focus} urgent={urgent} />
           <div className="min-w-0 flex-1 self-center">
-            <div className="truncate text-[15px] font-semibold leading-tight">
+            <div className="truncate text-[17px] font-bold leading-tight tracking-tight text-foreground">
               {ev.title || "(イベント名未設定)"}
             </div>
             <div className="truncate text-[11px] text-muted-foreground">
@@ -161,7 +161,7 @@ export function EventCard({
       <div className="mt-2 flex items-stretch gap-3">
         <EventDateBlock d={d} kind={focusKind} focus={focus} urgent={urgent} />
         <div className="min-w-0 flex-1 self-center">
-          <div className="truncate text-[15px] font-semibold leading-tight">
+          <div className="truncate text-[17px] font-bold leading-tight tracking-tight text-foreground">
             {ev.title || "(イベント名未設定)"}
           </div>
           <div className="truncate text-[11px] text-muted-foreground">
@@ -225,7 +225,7 @@ function EventDateBlock({
         </div>
         <div
           className={cn(
-            "mt-1 text-[17px] font-bold leading-none tracking-tight",
+            "mt-0.5 text-[19px] font-bold leading-none tracking-tight",
             urgent ? "text-danger" : "text-foreground",
           )}
         >
