@@ -51,6 +51,30 @@ interface View {
   vh: number;
 }
 
+/**
+ * 画面の物差し。文字サイズ設定は html に zoom を当てているので、getBoundingClientRect の数字と
+ * この膜(position: fixed)の CSS の数字は尺度がずれる(90%だとくり抜きが上へずれた)。
+ * どちらの尺度で返すかはブラウザで違うので、画面いっぱいの見えない箱を置いて、その場で比を測る。
+ *  k  … getBoundingClientRect の 1 が、膜の CSS で何pxか
+ *  vw/vh … 膜の CSS で測った画面の幅と高さ
+ */
+function measureScale(): { k: number; vw: number; vh: number } {
+  try {
+    const p = document.createElement("div");
+    p.style.cssText =
+      "position:fixed;left:0;top:0;width:100%;height:100%;visibility:hidden;pointer-events:none";
+    document.body.appendChild(p);
+    const r = p.getBoundingClientRect();
+    const vw = p.offsetWidth || window.innerWidth;
+    const vh = p.offsetHeight || window.innerHeight;
+    p.remove();
+    const k = r.width > 0 ? vw / r.width : 1;
+    return { k, vw, vh };
+  } catch {
+    return { k: 1, vw: window.innerWidth, vh: window.innerHeight };
+  }
+}
+
 function sameBox(a: Box | null, b: Box | null) {
   if (a === b) return true;
   if (!a || !b) return false;
@@ -153,14 +177,15 @@ export function Tutorial({
       if (!el) return null;
       const r = el.getBoundingClientRect();
       if (r.width === 0 && r.height === 0) return null;
-      return { top: r.top, left: r.left, width: r.width, height: r.height };
+      // 膜の CSS の尺度に直す(文字サイズ設定の zoom ぶん)
+      const { k } = measureScale();
+      return { top: r.top * k, left: r.left * k, width: r.width * k, height: r.height * k };
     };
 
     const commit = (mode: View["mode"]) => {
       if (cancelled) return;
       const box = read();
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
+      const { vw, vh } = measureScale();
       const first = !committed;
       setView((prev) => {
         if (
@@ -192,8 +217,8 @@ export function Tutorial({
       const el = find();
       if (!el) return false;
       const r = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-      if (r.top >= 72 && r.bottom <= vh - 72) return false;
+      const { k, vh } = measureScale();
+      if (r.top * k >= 72 && r.bottom * k <= vh - 72) return false;
       el.scrollIntoView({
         block: "center",
         inline: "nearest",
@@ -230,6 +255,9 @@ export function Tutorial({
     };
     window.addEventListener("resize", onMove);
     window.addEventListener("scroll", onMove, true);
+    // 詳細シートが滑り込み終わった・開閉が終わった時にも測り直す(端末が遅いと settle の時点でまだ動いている)
+    document.addEventListener("animationend", onMove, true);
+    document.addEventListener("transitionend", onMove, true);
 
     return () => {
       cancelled = true;
@@ -238,6 +266,8 @@ export function Tutorial({
       cancelAnimationFrame(moveRaf);
       window.removeEventListener("resize", onMove);
       window.removeEventListener("scroll", onMove, true);
+      document.removeEventListener("animationend", onMove, true);
+      document.removeEventListener("transitionend", onMove, true);
     };
   }, [index, tour, openDetail, hasStep]);
 
@@ -254,9 +284,8 @@ export function Tutorial({
 
   if (!step) return null;
 
-  const vw = view?.vw ?? (typeof window === "undefined" ? 0 : window.innerWidth);
-  const vh =
-    view?.vh ?? (typeof window === "undefined" ? 0 : window.innerHeight);
+  const vw = view?.vw ?? (typeof window === "undefined" ? 0 : measureScale().vw);
+  const vh = view?.vh ?? (typeof window === "undefined" ? 0 : measureScale().vh);
   const box = view?.box ?? null;
   const dIndex = view ? Math.min(view.index, steps.length - 1) : index;
   const dStep = steps[dIndex] ?? step;
