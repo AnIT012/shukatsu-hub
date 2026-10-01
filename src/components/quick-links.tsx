@@ -22,7 +22,7 @@ function openLink(url: string) {
 }
 
 /**
- * 下タブ「サイト」の画面。よく使う外部サイトを開く・足す・直すを、この1画面で完結させる。
+ * 下タブ「サイト・ID」の2つ目の節。よく使う外部サイトを開く・足す・直すを、この節で完結させる。
  * 表示=押すと新しいタブで開く一覧 / 編集=その場で名前・URL・削除(別画面へ飛ばさない)。
  */
 export function QuickLinksPage({
@@ -47,24 +47,26 @@ export function QuickLinksPage({
   };
 
   if (links.length === 0) {
+    // 画面の2つ目の節なので、大きな空の状態にはしない(見出し＋1行＋小さな追加)
     return (
-      <div className="mt-6 flex flex-col items-center rounded-2xl border border-dashed px-6 py-12 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-primary">
-          <Globe className="h-7 w-7" />
+      <section>
+        <h2 className="mb-1.5 flex items-center gap-1.5 px-1 py-1 text-[12.5px] font-semibold text-muted-foreground">
+          よく使うサイト
+        </h2>
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed px-4 py-5 text-center">
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
+            よく開くサイトを登録すると、押すだけで開けます。
+          </p>
+          <button
+            type="button"
+            onClick={add}
+            className="inline-flex h-8 items-center gap-1 rounded-full border border-border bg-card px-3.5 text-[13px] font-medium text-foreground transition-transform active:scale-95"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            サイトを追加
+          </button>
         </div>
-        <h2 className="mt-4 font-semibold">よく使うサイトを登録</h2>
-        <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-muted-foreground">
-          外資就活・ワンキャリア・各社のマイページなど、よく開くサイトをここからワンタップで。
-        </p>
-        <button
-          type="button"
-          onClick={add}
-          className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-5 text-[14px] font-semibold text-primary-foreground transition-transform active:scale-95"
-        >
-          <Plus className="h-4 w-4" />
-          サイトを追加
-        </button>
-      </div>
+      </section>
     );
   }
 

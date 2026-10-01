@@ -245,8 +245,6 @@ export type Situation =
   | "declined";
 
 export interface Filters {
-  /** 表示する状況(空 = すべて) */
-  situations: Situation[];
   /** 表示する優先度(空 = すべて) */
   priorities: Priority[];
   onlyThisWeek: boolean;

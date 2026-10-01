@@ -24,15 +24,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import {
-  PRIORITY_OPTIONS,
-  SITUATION_LABEL,
-  SITUATION_OPTIONS,
-} from "@/lib/constants";
+import { PRIORITY_OPTIONS } from "@/lib/constants";
 import type {
   Filters,
   Priority,
-  Situation,
   SortDir,
   SortKey,
   ViewMode,
@@ -48,13 +43,16 @@ const SORT_LABEL: Record<SortKey, string> = {
 export function ViewModeSeg({
   viewMode,
   onChange,
+  bare = false,
 }: {
   viewMode: ViewMode;
   onChange: (m: ViewMode) => void;
+  /** 見出し「表示」を出さない(呼び出し側が見出しを持つとき) */
+  bare?: boolean;
 }) {
   return (
     <div>
-      <div className="mb-2 text-xs text-muted-foreground">表示</div>
+      {!bare && <div className="mb-2 text-xs text-muted-foreground">表示</div>}
       <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
         {([
           ["compact", LayoutList, "コンパクト"],
@@ -106,6 +104,24 @@ function Chip({
   );
 }
 
+/** シートの1ブロック = 小さな見出し＋中身(設定画面と同じ組み方) */
+function Block({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <h3 className="mb-2 px-1 text-[12.5px] font-semibold text-muted-foreground">
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
 export function ControlsBar({
   sort,
   onSortChange,
@@ -127,17 +143,7 @@ export function ControlsBar({
 }) {
   const [open, setOpen] = useState(false);
   const activeCount =
-    filters.situations.length +
-    filters.priorities.length +
-    (filters.onlyThisWeek ? 1 : 0);
-
-  const toggleSit = (s: Situation) =>
-    onFiltersChange({
-      ...filters,
-      situations: filters.situations.includes(s)
-        ? filters.situations.filter((x) => x !== s)
-        : [...filters.situations, s],
-    });
+    filters.priorities.length + (filters.onlyThisWeek ? 1 : 0);
 
   const togglePri = (p: Priority) =>
     onFiltersChange({
@@ -216,28 +222,14 @@ export function ControlsBar({
           <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
           <SheetTitle className="mb-4 text-base">表示・絞り込み</SheetTitle>
 
-          <div className="space-y-4">
+          {/* 状況での絞り込みは置かない: 一覧がもう進行中/結果待ち/合格/選考終了に分かれているので二重になる */}
+          <div className="space-y-5">
             {/* 表示モードは頻度が低い好み設定なので、一覧の操作列ではなくここに格納 */}
-            <ViewModeSeg viewMode={viewMode} onChange={onViewModeChange} />
-            <div>
-              <div className="mb-2 text-xs text-muted-foreground">
-                状況（複数選択OK）
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {SITUATION_OPTIONS.map((s) => (
-                  <Chip
-                    key={s}
-                    active={filters.situations.includes(s)}
-                    onClick={() => toggleSit(s)}
-                  >
-                    {SITUATION_LABEL[s]}
-                  </Chip>
-                ))}
-              </div>
-            </div>
+            <Block title="表示">
+              <ViewModeSeg bare viewMode={viewMode} onChange={onViewModeChange} />
+            </Block>
 
-            <div>
-              <div className="mb-2 text-xs text-muted-foreground">優先度</div>
+            <Block title="優先度">
               <div className="flex flex-wrap gap-2">
                 {PRIORITY_OPTIONS.map((p) => (
                   <Chip
@@ -249,39 +241,43 @@ export function ControlsBar({
                   </Chip>
                 ))}
               </div>
-            </div>
+            </Block>
 
-            <button
-              type="button"
-              onClick={() =>
-                onFiltersChange({ ...filters, onlyThisWeek: !filters.onlyThisWeek })
-              }
-              className="flex w-full items-center justify-between rounded-xl bg-muted px-4 py-3 text-sm"
-            >
-              <span>今週やることだけ表示</span>
-              <span
-                className={cn(
-                  "relative h-6 w-10 rounded-full transition-colors",
-                  filters.onlyThisWeek ? "bg-primary" : "bg-border",
-                )}
+            <Block title="期間">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={filters.onlyThisWeek}
+                onClick={() =>
+                  onFiltersChange({ ...filters, onlyThisWeek: !filters.onlyThisWeek })
+                }
+                className="flex min-h-[46px] w-full items-center justify-between rounded-xl bg-card px-3.5 py-2.5 text-left text-[15px] ring-1 ring-border"
               >
+                <span>今週やることだけ表示</span>
                 <span
                   className={cn(
-                    "absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition-all",
-                    filters.onlyThisWeek ? "left-[18px]" : "left-0.5",
+                    "relative h-6 w-10 shrink-0 rounded-full transition-colors duration-[280ms] ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none",
+                    filters.onlyThisWeek ? "bg-primary" : "bg-border",
                   )}
-                />
-              </span>
-            </button>
+                >
+                  <span
+                    className={cn(
+                      "absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition-[left] duration-[280ms] ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none",
+                      filters.onlyThisWeek ? "left-[18px]" : "left-0.5",
+                    )}
+                  />
+                </span>
+              </button>
+            </Block>
           </div>
 
-          <div className="mt-5 flex gap-2">
+          <div className="mt-6 flex gap-2">
             <Button
               variant="ghost"
               className="flex-1"
+              disabled={activeCount === 0}
               onClick={() =>
                 onFiltersChange({
-                  situations: [],
                   priorities: [],
                   onlyThisWeek: false,
                 })

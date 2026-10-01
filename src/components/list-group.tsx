@@ -90,6 +90,7 @@ export function ListGroup({
   count,
   collapsible = false,
   defaultOpen = true,
+  dividerClassName = "before:left-[78px]",
   children,
 }: {
   /** 開閉を覚えるためのキー */
@@ -98,6 +99,8 @@ export function ListGroup({
   count: number;
   collapsible?: boolean;
   defaultOpen?: boolean;
+  /** 区切り線の始点(行の本文の列に合わせる)。既定は選考一覧の x=78 */
+  dividerClassName?: string;
   children: React.ReactNode;
 }) {
   const key = `shukatsu-dashboard:group-open:${id}`;
@@ -167,7 +170,10 @@ export function ListGroup({
           className={cn(
             "relative",
             i > 0 &&
-              "before:absolute before:left-[78px] before:right-0 before:top-0 before:h-px before:bg-border",
+              cn(
+                "before:absolute before:right-0 before:top-0 before:h-px before:bg-border",
+                dividerClassName,
+              ),
             intro && "motion-safe:animate-row-in",
           )}
           style={

@@ -49,8 +49,8 @@ const TABS: {
   },
   {
     value: "sites",
-    label: "サイト",
-    icon: Compass, // よく使う外部サイト
+    label: "サイト・ID",
+    icon: Compass, // 各社のマイページとID＋よく使う外部サイト
     activeIcon: Compass,
     anim: "evolve",
   },

@@ -58,7 +58,7 @@ import { EventsView } from "@/components/events-view";
 import { EventDetail } from "@/components/event-detail";
 import { SettingsPage } from "@/components/settings-sheet";
 import { ImportDialog } from "@/components/import-dialog";
-import { QuickLinksPage } from "@/components/quick-links";
+import { SitesIdsPage } from "@/components/sites-ids-page";
 import { ListGroup } from "@/components/list-group";
 import { WeekStrip, weekMonthLabel } from "@/components/week-strip";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
@@ -70,7 +70,6 @@ import { ProgressView } from "@/components/progress-view";
 import { AppLoader } from "@/components/app-loader";
 
 const DEFAULT_FILTERS: Filters = {
-  situations: [],
   priorities: [],
   onlyThisWeek: false,
 };
@@ -200,7 +199,7 @@ export function Dashboard() {
         let d = dx;
         const vi = viewIdxRef.current;
         if (vi === 0 && d > 0) d *= 0.3;
-        if (vi === 3 && d < 0) d *= 0.3;
+        if (vi === VIEWS.length - 1 && d < 0) d *= 0.3;
         dragXRef.current = d;
         setDragging(true);
         setDragX(d);
@@ -330,12 +329,7 @@ export function Dashboard() {
   }, [applications]);
 
   const visible = useMemo(() => {
-    let list = applications.filter((a) => {
-      if (
-        filters.situations.length &&
-        !filters.situations.includes(situationOf(a))
-      )
-        return false;
+    const list = applications.filter((a) => {
       if (filters.priorities.length && !filters.priorities.includes(a.priority))
         return false;
       if (filters.onlyThisWeek && !hasThisWeekStageTask(a)) return false;
@@ -380,8 +374,8 @@ export function Dashboard() {
       steps.push(
         {
           tour: "tabs",
-          title: "4つのタブ",
-          body: "進捗・選考・イベント・設定を下タブで移動（左右スワイプでも可）。左端の「進捗」は努力が花畑に育つご褒美ページ。",
+          title: "5つのタブ",
+          body: "進捗・選考・イベント・サイト・ID・設定は、下のタブか左右のスワイプで移動できます。左端の「進捗」は、進めた分だけ花畑が育つページです。",
         },
         {
           tour: "week",
@@ -400,8 +394,8 @@ export function Dashboard() {
         },
         {
           tour: "tab-sites",
-          title: "よく使うサイト",
-          body: "下の「サイト」に、外資就活や各社マイページなど、よく開くサイトをまとめておける。追加は右上の＋から。",
+          title: "サイト・ID",
+          body: "下の「サイト・ID」に、各社のマイページとログインID、よく使うサイトがまとまります。パスワードは保存しません。",
         },
         {
           tour: "add",
@@ -491,7 +485,7 @@ export function Dashboard() {
           {view === "settings" || view === "sites" ? (
             // 設定・サイトでは日付は意味を持たない。何の画面かを見出しにする
             <span className="text-[20px] font-bold tracking-tight text-foreground">
-              {view === "settings" ? "設定" : "よく使うサイト"}
+              {view === "settings" ? "設定" : "サイト・ID"}
             </span>
           ) : (
             // 今日は下の週の帯が示すので、見出しは月(TODOと同じ)
@@ -689,7 +683,7 @@ export function Dashboard() {
               />
             </div>
           </div>
-          {/* サイト(よく使う外部サイト。開く・足す・直すをこの画面で完結) */}
+          {/* サイト・ID(各社のマイページとID＋よく使う外部サイト。開く・足す・直すをこの画面で完結) */}
           <div
             ref={(el) => {
               paneRefs.current[3] = el;
@@ -700,9 +694,11 @@ export function Dashboard() {
             )}
           >
             <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))]">
-              <QuickLinksPage
+              <SitesIdsPage
+                applications={applications}
+                onOpenApp={(id) => setSelectedId(id)}
                 links={quickLinks}
-                onChange={setQuickLinks}
+                onLinksChange={setQuickLinks}
                 editSignal={sitesEditSignal}
               />
             </div>
