@@ -18,6 +18,7 @@ import type {
   Application,
   Filters,
   Priority,
+  Situation,
   SortDir,
   SortKey,
   ViewMode,
@@ -59,6 +60,7 @@ import { EventDetail } from "@/components/event-detail";
 import { SettingsPage } from "@/components/settings-sheet";
 import { ImportDialog } from "@/components/import-dialog";
 import { QuickLinksLauncher } from "@/components/quick-links";
+import { ListGroup } from "@/components/list-group";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
 import { VersionNotice } from "@/components/version-notice";
 import { WhatsNew } from "@/components/whats-new";
@@ -74,6 +76,24 @@ const DEFAULT_FILTERS: Filters = {
 };
 
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
+
+// 一覧のグループ。やることがある会社を上に、終わった会社は畳んで下に置く
+const APP_GROUPS: {
+  id: string;
+  title: string;
+  match: (s: Situation) => boolean;
+  collapsible?: boolean;
+}[] = [
+  { id: "in_progress", title: "進行中", match: (s) => s === "in_progress" },
+  { id: "waiting", title: "結果待ち", match: (s) => s === "waiting" },
+  { id: "passed", title: "合格", match: (s) => s === "passed" },
+  {
+    id: "ended",
+    title: "選考終了",
+    match: (s) => s === "rejected" || s === "declined",
+    collapsible: true,
+  },
+];
 
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WD_JP = ["日", "月", "火", "水", "木", "金", "土"];
@@ -339,6 +359,15 @@ export function Dashboard() {
     return decorated.map((d) => d.a);
   }, [applications, filters, sort, sortDir]);
 
+  const appGroups = useMemo(
+    () =>
+      APP_GROUPS.map((g) => ({
+        ...g,
+        items: visible.filter((a) => g.match(situationOf(a))),
+      })).filter((g) => g.items.length > 0),
+    [visible],
+  );
+
   const tourSteps = useMemo<TourStep[]>(() => {
     const steps: TourStep[] = [
       {
@@ -355,8 +384,8 @@ export function Dashboard() {
         },
         {
           tour: "card",
-          title: "応募先カード",
-          body: "企業ごとのカードを締切が近い順に一覧。左の日付が次の締切で、1週間以内は赤。開くと進捗バー（緑＝通過／黄＝完了待ち／灰＝未／赤＝不合格）。",
+          title: "応募先の一覧",
+          body: "進行中・結果待ち・合格・選考終了に分けて、それぞれ締切が近い順に並ぶ。左の日付が次の締切で、1週間以内は赤。選考終了は畳んであり、見出しのタップで開く。",
         },
         {
           tour: "sort",
@@ -596,19 +625,31 @@ export function Dashboard() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="mt-3 space-y-2">
-                      {visible.map((app, i) => (
-                        <div
-                          key={app.id}
-                          data-tour={i === 0 ? "card" : undefined}
+                    <div className="mt-4 space-y-5">
+                      {appGroups.map((g, gi) => (
+                        <ListGroup
+                          key={g.id}
+                          id={`apps-${g.id}`}
+                          title={g.title}
+                          count={g.items.length}
+                          collapsible={g.collapsible}
+                          defaultOpen={!g.collapsible}
                         >
-                          <ApplicationCard
-                            app={app}
-                            showRole={dupCompanies.has(app.company.trim())}
-                            onOpen={() => setSelectedId(app.id)}
-                            compact={viewMode === "compact"}
-                          />
-                        </div>
+                          {g.items.map((app, i) => (
+                            <div
+                              key={app.id}
+                              data-tour={gi === 0 && i === 0 ? "card" : undefined}
+                            >
+                              <ApplicationCard
+                                app={app}
+                                showRole={dupCompanies.has(app.company.trim())}
+                                onOpen={() => setSelectedId(app.id)}
+                                compact={viewMode === "compact"}
+                                inGroup
+                              />
+                            </div>
+                          ))}
+                        </ListGroup>
                       ))}
                     </div>
                   )}

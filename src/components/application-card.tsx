@@ -77,14 +77,24 @@ export function ApplicationCard({
   onOpen,
   showRole = false,
   compact = false,
+  inGroup = false,
 }: {
   app: Application;
   onOpen: () => void;
   showRole?: boolean;
   compact?: boolean;
+  /** グループ(白パネル1枚)の中の1行として描く。器・影・角丸を持たず、罫線は親が引く */
+  inGroup?: boolean;
 }) {
   const next = getStageNextAction(app);
   const sit = situationOf(app);
+  // 単独カード=自分で浮く器 / グループ内=器は親パネル、行は面を持たない
+  const shell = inGroup
+    ? "group block w-full cursor-pointer bg-card p-3.5 text-left transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring active:bg-muted/60"
+    : cn(
+        "group block w-full cursor-pointer rounded-xl bg-card p-3.5 text-left ring-1 ring-border elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+        sit === "rejected" || sit === "declined" ? "opacity-60" : "",
+      );
   const segs = stageSegments(app);
 
   const u =
@@ -110,13 +120,7 @@ export function ApplicationCard({
             onOpen();
           }
         }}
-        className={cn(
-          // 純正寄り: 色枠を廃してヘアライン1本、影は囁き、丸みを大きく。緊急/通過は日付と印で示す
-          "group block w-full cursor-pointer rounded-xl bg-card p-3.5 text-left ring-1 ring-border elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
-          sit === "rejected" || sit === "declined"
-            ? "opacity-60"
-            : "",
-        )}
+        className={shell}
       >
         <div className="flex items-center gap-3">
           <DateBlock app={app} next={next} urgent={urgent} />
@@ -149,22 +153,20 @@ export function ApplicationCard({
           onOpen();
         }
       }}
-      className={cn(
-        "group block w-full cursor-pointer rounded-xl bg-card p-3.5 text-left ring-1 ring-border elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
-        sit === "rejected" || sit === "declined"
-          ? "opacity-60"
-          : "",
-      )}
+      className={shell}
     >
       <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            "rounded px-2 py-0.5 text-[11px] font-medium",
-            situationBadgeClass(sit),
-          )}
-        >
-          {sitLabel}
-        </span>
+        {/* グループ内では見出しが状況を言っているので、札は出さない(重複) */}
+        {!inGroup && (
+          <span
+            className={cn(
+              "rounded px-2 py-0.5 text-[11px] font-medium",
+              situationBadgeClass(sit),
+            )}
+          >
+            {sitLabel}
+          </span>
+        )}
         {urgent && (
           <span className="text-[11px] font-medium text-danger">
             {next.focusKind === "held" ? "実施間近" : "締切間近"}

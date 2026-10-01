@@ -13,6 +13,7 @@ import { useStore } from "@/lib/store";
 import { focusOf, isEventDone } from "@/lib/next-action";
 import { dueInstant, isDueThisWeekOrOverdue } from "@/lib/date";
 import { EventCard } from "@/components/event-card";
+import { ListGroup } from "@/components/list-group";
 import { EventsControlsBar } from "@/components/events-controls-bar";
 import { Button } from "@/components/ui/button";
 
@@ -124,16 +125,33 @@ export function EventsView({
           </Button>
         </div>
       ) : (
-        <div className="mt-3 space-y-2">
-          {visible.map((ev) => (
-            <div key={ev.id}>
-              <EventCard
-                ev={ev}
-                onOpen={() => onOpenEvent(ev.id)}
-                compact={viewMode === "compact"}
-              />
-            </div>
-          ))}
+        <div className="mt-4 space-y-5">
+          {/* これからの予定を上に。参加済・辞退・開催済は「終了」に畳む */}
+          {[
+            { id: "upcoming", title: "予定", items: visible.filter((ev) => !isEventDone(ev)), collapsible: false },
+            { id: "done", title: "終了", items: visible.filter((ev) => isEventDone(ev)), collapsible: true },
+          ]
+            .filter((g) => g.items.length > 0)
+            .map((g) => (
+              <ListGroup
+                key={g.id}
+                id={`events-${g.id}`}
+                title={g.title}
+                count={g.items.length}
+                collapsible={g.collapsible}
+                defaultOpen={!g.collapsible}
+              >
+                {g.items.map((ev) => (
+                  <EventCard
+                    key={ev.id}
+                    ev={ev}
+                    onOpen={() => onOpenEvent(ev.id)}
+                    compact={viewMode === "compact"}
+                    inGroup
+                  />
+                ))}
+              </ListGroup>
+            ))}
         </div>
       )}
     </>

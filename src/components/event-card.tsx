@@ -12,10 +12,13 @@ export function EventCard({
   ev,
   onOpen,
   compact = false,
+  inGroup = false,
 }: {
   ev: EventItem;
   onOpen: () => void;
   compact?: boolean;
+  /** グループ(白パネル1枚)の中の1行として描く。器・影・角丸・色枠を持たない */
+  inGroup?: boolean;
 }) {
   const attended = ev.status === "attended";
   const declined = ev.status === "declined";
@@ -55,15 +58,19 @@ export function EventCard({
             onOpen();
           }
         }}
-        className={cn(
-          "group block w-full cursor-pointer rounded-xl bg-card p-3.5 text-left ring-1 elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
-          attended
-            ? "ring-[hsl(var(--success)/0.55)]"
-            : urgent
-              ? "ring-[hsl(var(--danger)/0.55)]"
-              : "ring-border",
-          declined || ended ? "opacity-60" : "",
-        )}
+        className={
+          inGroup
+            ? "group block w-full cursor-pointer bg-card p-3.5 text-left transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring active:bg-muted/60"
+            : cn(
+                "group block w-full cursor-pointer rounded-xl bg-card p-3.5 text-left ring-1 elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+                attended
+                  ? "ring-[hsl(var(--success)/0.55)]"
+                  : urgent
+                    ? "ring-[hsl(var(--danger)/0.55)]"
+                    : "ring-border",
+                declined || ended ? "opacity-60" : "",
+              )
+        }
       >
         <div className="flex items-center gap-3">
           <EventDateBlock d={d} kind={focusKind} focus={focus} urgent={urgent} />
@@ -123,15 +130,19 @@ export function EventCard({
           onOpen();
         }
       }}
-      className={cn(
-        "group block w-full cursor-pointer rounded-xl bg-card p-3.5 text-left ring-1 elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
-        attended
-          ? "ring-[hsl(var(--success)/0.55)]"
-          : urgent
-            ? "ring-[hsl(var(--danger)/0.55)]"
-            : "ring-border",
-        done ? "opacity-60" : "",
-      )}
+      className={
+        inGroup
+          ? "group block w-full cursor-pointer bg-card p-3.5 text-left transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring active:bg-muted/60"
+          : cn(
+              "group block w-full cursor-pointer rounded-xl bg-card p-3.5 text-left ring-1 elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+              attended
+                ? "ring-[hsl(var(--success)/0.55)]"
+                : urgent
+                  ? "ring-[hsl(var(--danger)/0.55)]"
+                  : "ring-border",
+              done ? "opacity-60" : "",
+            )
+      }
     >
       <div className="flex items-center gap-2">
         <span
