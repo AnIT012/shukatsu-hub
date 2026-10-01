@@ -375,15 +375,17 @@
   }
   /* カードを地から浮かせる柔らかい影。近白×近白で平坦(さっぱり)に見えるのを、
      色でなく「層の深さ」で立てる。ヘアラインだけの器はこれで一段持ち上がる */
+  /* 影は"浮遊"ではなく"刷り"。近く・薄く・くっきり。地のティントと罫でカードを締める */
   .elevate {
     box-shadow:
-      0 1px 2px hsl(var(--foreground) / 0.05),
-      0 8px 22px -10px hsl(var(--foreground) / 0.16);
+      0 0.5px 0 hsl(var(--foreground) / 0.04),
+      0 1px 2px hsl(var(--foreground) / 0.06),
+      0 2px 5px -2px hsl(var(--foreground) / 0.08);
   }
   .elevate-sm {
     box-shadow:
-      0 1px 2px hsl(var(--foreground) / 0.07),
-      0 6px 16px -6px hsl(var(--foreground) / 0.2);
+      0 0.5px 0 hsl(var(--foreground) / 0.035),
+      0 1px 2px hsl(var(--foreground) / 0.05);
   }
   /* 紙の粒。平らな面に刷った質感を乗せる(近白で平坦に見えるのを材質で救う) */
   .grain {

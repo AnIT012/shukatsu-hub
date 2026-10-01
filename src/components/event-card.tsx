@@ -56,13 +56,13 @@ export function EventCard({
           }
         }}
         className={cn(
-          "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+          "group block w-full cursor-pointer rounded-xl bg-card p-3.5 text-left ring-1 elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
           attended
             ? "ring-[hsl(var(--success)/0.55)]"
             : urgent
               ? "ring-[hsl(var(--danger)/0.55)]"
               : "ring-border",
-          declined || ended ? "opacity-45 grayscale" : "",
+          declined || ended ? "opacity-60" : "",
         )}
       >
         <div className="flex items-center gap-3">
@@ -124,13 +124,13 @@ export function EventCard({
         }
       }}
       className={cn(
-        "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+        "group block w-full cursor-pointer rounded-xl bg-card p-3.5 text-left ring-1 elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
         attended
           ? "ring-[hsl(var(--success)/0.55)]"
           : urgent
             ? "ring-[hsl(var(--danger)/0.55)]"
             : "ring-border",
-        done ? "opacity-45 grayscale" : "",
+        done ? "opacity-60" : "",
       )}
     >
       <div className="flex items-center gap-2">

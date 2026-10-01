@@ -468,9 +468,9 @@ export function Dashboard() {
       {/* ヘッダー(白) */}
       <header className="shrink-0 border-b bg-card pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5">
-          <span className="text-[17px] font-bold tracking-tight text-foreground">
-            {now.getMonth() + 1}月{now.getDate()}日{" "}
-            <span className="ml-0.5 text-[14px] font-medium text-muted-foreground">
+          <span className="text-[20px] font-bold tracking-tight text-foreground">
+            {now.getMonth() + 1}月{now.getDate()}日
+            <span className="ml-1 text-[13px] font-semibold text-muted-foreground">
               {WD_JP[now.getDay()]}
             </span>
           </span>
@@ -596,7 +596,7 @@ export function Dashboard() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="mt-3 space-y-2.5">
+                    <div className="mt-3 space-y-2">
                       {visible.map((app, i) => (
                         <div
                           key={app.id}

@@ -112,9 +112,9 @@ export function ApplicationCard({
         }}
         className={cn(
           // 純正寄り: 色枠を廃してヘアライン1本、影は囁き、丸みを大きく。緊急/通過は日付と印で示す
-          "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 ring-border elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+          "group block w-full cursor-pointer rounded-xl bg-card p-3.5 text-left ring-1 ring-border elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
           sit === "rejected" || sit === "declined"
-            ? "opacity-45 grayscale"
+            ? "opacity-60"
             : "",
         )}
       >
@@ -150,9 +150,9 @@ export function ApplicationCard({
         }
       }}
       className={cn(
-        "group block w-full cursor-pointer rounded-2xl bg-card p-3.5 text-left ring-1 ring-border elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
+        "group block w-full cursor-pointer rounded-xl bg-card p-3.5 text-left ring-1 ring-border elevate-sm transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]",
         sit === "rejected" || sit === "declined"
-          ? "opacity-45 grayscale"
+          ? "opacity-60"
           : "",
       )}
     >
@@ -337,7 +337,14 @@ function NextLine({ app, next }: { app: Application; next: StageNextAction }) {
     );
   }
   return (
-    <div className="mt-1 truncate text-[12px] text-muted-foreground">
+    <div
+      className={cn(
+        "mt-1 truncate text-[12px]",
+        app.result === "passed"
+          ? "font-semibold text-success"
+          : "text-muted-foreground",
+      )}
+    >
       {app.result === "passed"
         ? `${PASSED_LABEL[app.selectionType]}（選考通過）`
         : app.result === "rejected"
