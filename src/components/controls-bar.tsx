@@ -44,6 +44,43 @@ const SORT_LABEL: Record<SortKey, string> = {
   name: "企業名順",
 };
 
+/** 表示モード(コンパクト/詳細)。絞り込みシートの先頭に置くセグメント。 */
+export function ViewModeSeg({
+  viewMode,
+  onChange,
+}: {
+  viewMode: ViewMode;
+  onChange: (m: ViewMode) => void;
+}) {
+  return (
+    <div>
+      <div className="mb-2 text-xs text-muted-foreground">表示</div>
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+        {([
+          ["compact", LayoutList, "コンパクト"],
+          ["detail", Rows3, "詳細"],
+        ] as const).map(([m, Icon, label]) => (
+          <button
+            key={m}
+            type="button"
+            aria-pressed={viewMode === m}
+            onClick={() => onChange(m)}
+            className={cn(
+              "flex items-center justify-center gap-1.5 rounded-lg py-2 text-[13px] font-medium transition-colors",
+              viewMode === m
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Chip({
   active,
   onClick,
@@ -171,43 +208,17 @@ export function ControlsBar({
         )}
       </Button>
 
-      {/* 表示モード = iOSセグメント(選択が紙色で浮く) */}
-      <div
-        role="group"
-        aria-label="表示モード"
-        className="flex h-9 shrink-0 items-center rounded-full bg-secondary p-0.5"
-      >
-        {([
-          ["compact", LayoutList, "コンパクト表示"],
-          ["detail", Rows3, "詳細表示"],
-        ] as const).map(([m, Icon, label]) => (
-          <button
-            key={m}
-            type="button"
-            aria-label={label}
-            aria-pressed={viewMode === m}
-            onClick={() => onViewModeChange(m)}
-            className={cn(
-              "flex h-8 w-9 items-center justify-center rounded-full transition-all active:scale-95",
-              viewMode === m
-                ? "bg-card text-primary shadow-[0_1px_2px_hsl(var(--foreground)/0.14)]"
-                : "text-muted-foreground",
-            )}
-          >
-            <Icon className="h-4 w-4" />
-          </button>
-        ))}
-      </div>
-
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="bottom"
           className="rounded-t-2xl px-5 pb-7 pt-4"
         >
           <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
-          <SheetTitle className="mb-4 text-base">絞り込み</SheetTitle>
+          <SheetTitle className="mb-4 text-base">表示・絞り込み</SheetTitle>
 
           <div className="space-y-4">
+            {/* 表示モードは頻度が低い好み設定なので、一覧の操作列ではなくここに格納 */}
+            <ViewModeSeg viewMode={viewMode} onChange={onViewModeChange} />
             <div>
               <div className="mb-2 text-xs text-muted-foreground">
                 状況（複数選択OK）

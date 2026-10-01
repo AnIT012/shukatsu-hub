@@ -14,6 +14,7 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
+  HelpCircle,
   KeyRound,
   Link2,
   ListChecks,
@@ -183,11 +184,14 @@ function DetailBody({
   const [showId, setShowId] = useState(false);
   const [editId, setEditId] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [flowHelpOpen, setFlowHelpOpen] = useState(false);
+  const [flowEdit, setFlowEdit] = useState(false);
   const next = getStageNextAction(app);
   const intern = isInternType(app.selectionType);
   const pinnedCount = app.links.filter((l) => l.pin).length;
   const hasLoginId = (app.loginId ?? "").trim() !== "";
-  const editingId = editId || !hasLoginId;
+  // ログイン・リンク欄はIDとリンクをまとめて1つの編集状態で扱う
+  const editingAccess = editId || editLinks;
 
   return (
     <>
@@ -337,36 +341,46 @@ function DetailBody({
             </Button>
           </div>
         ) : (
-          <div
+          // 印(押せない)は塗らない。1行の字で並べ、押せるチップと顔を分ける
+          <p
             data-tour="type"
-            className="mt-3 flex flex-wrap items-center gap-1.5"
+            className="mt-2 text-[12.5px] leading-relaxed text-muted-foreground"
           >
-            <InfoBadge>{SELECTION_TYPE_LABEL[app.selectionType]}</InfoBadge>
-            <InfoBadge tone={app.priority === "high" ? "accent" : "default"}>
-              優先度 {PRIORITY_LABEL[app.priority]}
-            </InfoBadge>
-            <InfoBadge
-              tone={
-                app.result === "passed"
-                  ? "success"
-                  : app.result === "rejected"
-                    ? "danger"
-                    : "default"
-              }
-            >
-              {app.result === "passed"
-                ? PASSED_LABEL[app.selectionType]
-                : RESULT_LABEL[app.result]}
-            </InfoBadge>
-            {intern && app.venueMode && (
-              <InfoBadge>
-                <MapPin className="h-3 w-3" />
-                {app.venueMode === "online"
-                  ? "オンライン"
-                  : `対面${app.venuePlace ? ` · ${app.venuePlace}` : ""}`}
-              </InfoBadge>
+            {[
+              <span key="type">{SELECTION_TYPE_LABEL[app.selectionType]}</span>,
+              <span
+                key="priority"
+                className={cn(
+                  app.priority === "high" && "font-medium text-primary",
+                )}
+              >
+                優先度 {PRIORITY_LABEL[app.priority]}
+              </span>,
+              <span key="result">
+                {app.result === "passed"
+                  ? PASSED_LABEL[app.selectionType]
+                  : RESULT_LABEL[app.result]}
+              </span>,
+              ...(intern && app.venueMode
+                ? [
+                    <span key="venue">
+                      {app.venueMode === "online"
+                        ? "オンライン"
+                        : `対面${app.venuePlace ? `・${app.venuePlace}` : ""}`}
+                    </span>,
+                  ]
+                : []),
+            ].flatMap((node, i) =>
+              i === 0
+                ? [node]
+                : [
+                    <span key={`sep-${i}`} className="opacity-60">
+                      {" · "}
+                    </span>,
+                    node,
+                  ],
             )}
-          </div>
+          </p>
         )}
 
         {/* 次にやること バナー */}
@@ -374,9 +388,288 @@ function DetailBody({
           <NextBanner app={app} next={next} />
         </div>
 
+        {/* ログイン・リンク: 次の行動で使う物なので NEXT の直下に1か所だけ。
+            表示=チップ1列(IDはタップでコピー / リンクは開く) / ✎で入力・ピン・マスクをまとめて編集 */}
+        <Section
+          icon={<KeyRound className="h-4 w-4" />}
+          title="ログイン・リンク"
+          action={
+            <div className="flex items-center gap-1.5">
+              {(hasLoginId || app.links.length > 0) && (
+                <SectionAction
+                  active={editingAccess}
+                  icon={
+                    editingAccess ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <Pencil className="h-3.5 w-3.5" />
+                    )
+                  }
+                  onClick={() => {
+                    if (editingAccess) toast.success("保存しました");
+                    const on = !editingAccess;
+                    setEditId(on);
+                    setEditLinks(on);
+                  }}
+                >
+                  {editingAccess ? "完了" : "編集"}
+                </SectionAction>
+              )}
+              <SectionAction
+                icon={<Plus className="h-3.5 w-3.5" />}
+                onClick={() => {
+                  addLink(app.id);
+                  setEditId(true);
+                  setEditLinks(true);
+                }}
+              >
+                リンク
+              </SectionAction>
+            </div>
+          }
+        >
+          {editingAccess ? (
+            <div className="space-y-4">
+              <div>
+                <div className="mb-1.5 text-[12px] font-medium text-muted-foreground">
+                  ログインID・会員番号
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={app.loginId ?? ""}
+                    onChange={(e) =>
+                      updateApplication(app.id, { loginId: e.target.value })
+                    }
+                    type={showId ? "text" : "password"}
+                    placeholder="例: 会員番号 / ログインID"
+                    className="h-9 flex-1 text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 border border-input text-muted-foreground hover:bg-accent"
+                    title={showId ? "隠す" : "表示する"}
+                    onClick={() => setShowId((v) => !v)}
+                  >
+                    {showId ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                {hasLoginId && (
+                  <div className="mt-3 space-y-1">
+                    <ToggleRow
+                      label="一覧カードにピン留めする"
+                      checked={!!app.loginIdPinned}
+                      onClick={() =>
+                        updateApplication(app.id, {
+                          loginIdPinned: !app.loginIdPinned,
+                        })
+                      }
+                    />
+                    <ToggleRow
+                      label="IDを隠して表示"
+                      hint="（カードで••••・タップでコピー）"
+                      checked={!!app.loginIdMasked}
+                      onClick={() =>
+                        updateApplication(app.id, {
+                          loginIdMasked: !app.loginIdMasked,
+                        })
+                      }
+                    />
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="mb-1.5 text-[12px] font-medium text-muted-foreground">
+                  リンク
+                </div>
+                {app.links.length === 0 ? (
+                  <EmptyAdd onClick={() => addLink(app.id)}>
+                    マイページ等のURLを登録する
+                  </EmptyAdd>
+                ) : (
+                  <div className="space-y-2">
+                    {app.links.map((link) => (
+                      <div key={link.id} className="flex items-center gap-2">
+                        <Input
+                          value={link.label}
+                          onChange={(e) =>
+                            updateLink(app.id, link.id, { label: e.target.value })
+                          }
+                          placeholder="ラベル"
+                          className="h-9 w-[34%] text-sm"
+                        />
+                        <Input
+                          value={link.url}
+                          onChange={(e) =>
+                            updateLink(app.id, link.id, { url: e.target.value })
+                          }
+                          placeholder="https://..."
+                          className="h-9 flex-1 text-sm"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className={cn(
+                            "h-9 w-9 shrink-0 transition-all",
+                            link.pin
+                              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                              : "border border-input text-muted-foreground hover:bg-accent",
+                          )}
+                          disabled={!link.pin && pinnedCount >= 2}
+                          title={
+                            link.pin
+                              ? "ピン留め中（カードに表示）・タップで解除"
+                              : pinnedCount >= 2
+                                ? "ピンは最大2つまで"
+                                : "カードにピン留め"
+                          }
+                          onClick={() =>
+                            updateLink(app.id, link.id, { pin: !link.pin })
+                          }
+                        >
+                          <Pin
+                            key={link.pin ? "on" : "off"}
+                            className={cn(
+                              "h-4 w-4",
+                              link.pin && "animate-evo-drop fill-current",
+                            )}
+                          />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 shrink-0 text-muted-foreground hover:text-danger"
+                          onClick={() => deleteLink(app.id, link.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : hasLoginId || app.links.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {hasLoginId && (
+                <button
+                  type="button"
+                  title="タップでIDをコピー"
+                  onClick={() => {
+                    navigator.clipboard
+                      ?.writeText((app.loginId ?? "").trim())
+                      .then(() => {
+                        toast.success("IDをコピーしました");
+                        setCopiedId("loginId");
+                        window.setTimeout(
+                          () =>
+                            setCopiedId((c) => (c === "loginId" ? null : c)),
+                          1300,
+                        );
+                      })
+                      .catch(() => {});
+                  }}
+                  className={cn(
+                    "inline-flex max-w-full items-center gap-1.5 rounded-lg border px-3 py-2 text-[13px] font-medium hover:bg-accent/50",
+                    copiedId === "loginId"
+                      ? "border-[hsl(var(--success)/0.5)] bg-[hsl(var(--success)/0.1)] text-success"
+                      : "bg-card text-primary",
+                  )}
+                >
+                  {copiedId === "loginId" ? (
+                    <>
+                      <Check className="animate-evo-flip h-3.5 w-3.5" />
+                      コピーしました
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="h-3.5 w-3.5" />
+                      <span className="max-w-[12rem] truncate">
+                        {app.loginIdMasked ? "ID ••••••••" : app.loginId}
+                      </span>
+                      <Copy className="h-3.5 w-3.5 opacity-60" />
+                    </>
+                  )}
+                </button>
+              )}
+              {app.links.map((link) => (
+                <a
+                  key={link.id}
+                  href={safeHref(link.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 text-[13px] font-medium text-primary",
+                    !link.url && "pointer-events-none opacity-40",
+                  )}
+                >
+                  <span className="max-w-[12rem] truncate">
+                    {link.label || "リンク"}
+                  </span>
+                  <ExternalLink className="h-3.5 w-3.5 opacity-60" />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <EmptyAdd
+              onClick={() => {
+                setEditId(true);
+                setEditLinks(true);
+              }}
+            >
+              ログインIDやマイページのURLを登録する
+            </EmptyAdd>
+          )}
+        </Section>
+
+
         {/* 選考フロー(段階＞タスク) */}
-        <Section icon={<ListChecks className="h-4 w-4" />} title="選考フロー">
-          <StageTimeline app={app} />
+        <Section
+          icon={<ListChecks className="h-4 w-4" />}
+          title="選考フロー"
+          titleAccessory={
+            <button
+              type="button"
+              aria-label="使い方"
+              title="使い方"
+              onClick={() => setFlowHelpOpen(true)}
+              className="-my-1 inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </button>
+          }
+          action={
+            app.stages.length > 0 ? (
+              <SectionAction
+                active={flowEdit}
+                icon={
+                  flowEdit ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <Pencil className="h-3.5 w-3.5" />
+                  )
+                }
+                onClick={() => setFlowEdit((v) => !v)}
+              >
+                {flowEdit ? "完了" : "編集"}
+              </SectionAction>
+            ) : undefined
+          }
+        >
+          <StageTimeline
+            app={app}
+            helpOpen={flowHelpOpen}
+            onHelpOpenChange={setFlowHelpOpen}
+            editMode={flowEdit}
+            onEditModeChange={setFlowEdit}
+          />
         </Section>
 
         {/* ES設問・回答: 読み物表示 / 個別✎編集 */}
@@ -566,261 +859,6 @@ function DetailBody({
           )}
         </Section>
 
-        {/* ログインID・会員番号: ✎編集(入力＋表示切替＋ピン/マスク) / 完了でリンク風の簡易表示＋コピー */}
-        <Section
-          icon={<KeyRound className="h-4 w-4" />}
-          title="ログインID・会員番号"
-          action={
-            hasLoginId ? (
-              <SectionAction
-                active={editingId}
-                icon={
-                  editingId ? (
-                    <Check className="h-3.5 w-3.5" />
-                  ) : (
-                    <Pencil className="h-3.5 w-3.5" />
-                  )
-                }
-                onClick={() => {
-                  if (editingId) {
-                    toast.success("保存しました");
-                    setEditId(false);
-                  } else {
-                    setEditId(true);
-                  }
-                }}
-              >
-                {editingId ? "完了" : "編集"}
-              </SectionAction>
-            ) : undefined
-          }
-        >
-          {editingId ? (
-            <>
-              <div className="flex items-center gap-2">
-                <Input
-                  value={app.loginId ?? ""}
-                  onChange={(e) => {
-                    setEditId(true);
-                    updateApplication(app.id, { loginId: e.target.value });
-                  }}
-                  type={showId ? "text" : "password"}
-                  placeholder="例: 会員番号 / ログインID"
-                  className="h-9 flex-1 text-sm"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0 border border-input text-muted-foreground hover:bg-accent"
-                  title={showId ? "隠す" : "表示する"}
-                  onClick={() => setShowId((v) => !v)}
-                >
-                  {showId ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              {hasLoginId && (
-                <div className="mt-3 space-y-1">
-                  <ToggleRow
-                    label="一覧カードにピン留めする"
-                    checked={!!app.loginIdPinned}
-                    onClick={() =>
-                      updateApplication(app.id, {
-                        loginIdPinned: !app.loginIdPinned,
-                      })
-                    }
-                  />
-                  <ToggleRow
-                    label="IDを隠して表示"
-                    hint="（カードで••••・タップでコピー）"
-                    checked={!!app.loginIdMasked}
-                    onClick={() =>
-                      updateApplication(app.id, {
-                        loginIdMasked: !app.loginIdMasked,
-                      })
-                    }
-                  />
-                </div>
-              )}
-            </>
-          ) : (
-            <button
-              type="button"
-              title="タップでIDをコピー"
-              onClick={() => {
-                navigator.clipboard
-                  ?.writeText((app.loginId ?? "").trim())
-                  .then(() => {
-                    toast.success("IDをコピーしました");
-                    setCopiedId("loginId");
-                    window.setTimeout(
-                      () => setCopiedId((c) => (c === "loginId" ? null : c)),
-                      1300,
-                    );
-                  })
-                  .catch(() => {});
-              }}
-              className={cn(
-                "inline-flex max-w-full items-center gap-1.5 rounded-lg border px-3 py-2 text-[13px] font-medium hover:bg-accent/50",
-                copiedId === "loginId"
-                  ? "border-[hsl(var(--success)/0.5)] bg-[hsl(var(--success)/0.1)] text-success"
-                  : "bg-card text-primary",
-              )}
-            >
-              {copiedId === "loginId" ? (
-                <>
-                  <Check className="animate-evo-flip h-3.5 w-3.5" />
-                  コピーしました
-                </>
-              ) : (
-                <>
-                  <KeyRound className="h-3.5 w-3.5" />
-                  <span className="max-w-[12rem] truncate">
-                    {app.loginIdMasked ? "ID ••••••••" : app.loginId}
-                  </span>
-                  {app.loginIdPinned && (
-                    <Pin className="h-3 w-3 text-muted-foreground/70" />
-                  )}
-                  <Copy className="h-3.5 w-3.5 opacity-60" />
-                </>
-              )}
-            </button>
-          )}
-        </Section>
-
-        {/* 関連リンク: 飛ぶボタン表示 / ✎全体編集(飛ぶと編集を分離) */}
-        <Section
-          icon={<Link2 className="h-4 w-4" />}
-          title="関連リンク"
-          action={
-            <div className="flex items-center gap-1.5">
-              {app.links.length > 0 && (
-                <SectionAction
-                  active={editLinks}
-                  icon={
-                    editLinks ? (
-                      <Check className="h-3.5 w-3.5" />
-                    ) : (
-                      <Pencil className="h-3.5 w-3.5" />
-                    )
-                  }
-                  onClick={() => {
-                    if (editLinks) toast.success("保存しました");
-                    setEditLinks((v) => !v);
-                  }}
-                >
-                  {editLinks ? "完了" : "編集"}
-                </SectionAction>
-              )}
-              <SectionAction
-                icon={<Plus className="h-3.5 w-3.5" />}
-                onClick={() => {
-                  addLink(app.id);
-                  setEditLinks(true);
-                }}
-              >
-                追加
-              </SectionAction>
-            </div>
-          }
-        >
-          {app.links.length === 0 ? (
-            <EmptyAdd
-              onClick={() => {
-                addLink(app.id);
-                setEditLinks(true);
-              }}
-            >
-              マイページ等のURLを登録する
-            </EmptyAdd>
-          ) : editLinks ? (
-            <div className="space-y-2">
-              {app.links.map((link) => (
-                <div key={link.id} className="flex items-center gap-2">
-                  <Input
-                    value={link.label}
-                    onChange={(e) =>
-                      updateLink(app.id, link.id, { label: e.target.value })
-                    }
-                    placeholder="ラベル"
-                    className="h-9 w-[34%] text-sm"
-                  />
-                  <Input
-                    value={link.url}
-                    onChange={(e) =>
-                      updateLink(app.id, link.id, { url: e.target.value })
-                    }
-                    placeholder="https://..."
-                    className="h-9 flex-1 text-sm"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-9 w-9 shrink-0 transition-all",
-                      link.pin
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                        : "border border-input text-muted-foreground hover:bg-accent",
-                    )}
-                    disabled={!link.pin && pinnedCount >= 2}
-                    title={
-                      link.pin
-                        ? "ピン留め中（カードに表示）・タップで解除"
-                        : pinnedCount >= 2
-                          ? "ピンは最大2つまで"
-                          : "カードにピン留め"
-                    }
-                    onClick={() => updateLink(app.id, link.id, { pin: !link.pin })}
-                  >
-                    <Pin
-                      key={link.pin ? "on" : "off"}
-                      className={cn(
-                        "h-4 w-4",
-                        link.pin && "animate-evo-drop fill-current",
-                      )}
-                    />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 shrink-0 text-muted-foreground hover:text-danger"
-                    onClick={() => deleteLink(app.id, link.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {app.links.map((link) => (
-                <a
-                  key={link.id}
-                  href={safeHref(link.url)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 text-[13px] font-medium text-primary",
-                    !link.url && "pointer-events-none opacity-40",
-                  )}
-                >
-                  {link.pin && <Pin className="h-3.5 w-3.5" />}
-                  <span className="max-w-[12rem] truncate">
-                    {link.label || "リンク"}
-                  </span>
-                  <ExternalLink className="h-3.5 w-3.5 opacity-60" />
-                </a>
-              ))}
-            </div>
-          )}
-        </Section>
-
         {/* 全体メモ: 表示 / ✎編集 */}
         <Section
           icon={<StickyNote className="h-4 w-4" />}
@@ -990,43 +1028,18 @@ function SectionAction({
   );
 }
 
-function InfoBadge({
-  children,
-  tone = "default",
-}: {
-  children: React.ReactNode;
-  tone?: "default" | "success" | "danger" | "accent";
-}) {
-  // 印(メタ情報)は「押せる物」と顔が被らないよう、枠を持たせず静かに塗るだけにする
-  const cls =
-    tone === "success"
-      ? "bg-[hsl(var(--success)/0.13)] text-success"
-      : tone === "danger"
-        ? "bg-[hsl(var(--danger)/0.1)] text-danger"
-        : tone === "accent"
-          ? "bg-accent text-accent-foreground"
-          : "bg-secondary text-muted-foreground";
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11.5px] font-medium",
-        cls,
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
 function Section({
   icon,
   title,
+  titleAccessory,
   action,
   children,
   dataTour,
 }: {
   icon: React.ReactNode;
   title: string;
+  /** 見出しのすぐ右に置く小さな物(使い方の？など) */
+  titleAccessory?: React.ReactNode;
   action?: React.ReactNode;
   children: React.ReactNode;
   dataTour?: string;
@@ -1034,10 +1047,13 @@ function Section({
   return (
     <section className="mt-5" data-tour={dataTour}>
       <div className="mb-2.5 flex items-center justify-between">
-        <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground [&_svg]:text-muted-foreground">
-          {icon}
-          {title}
-        </h3>
+        <div className="flex items-center gap-0.5">
+          <h3 className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground [&_svg]:text-muted-foreground">
+            {icon}
+            {title}
+          </h3>
+          {titleAccessory}
+        </div>
         {action}
       </div>
       {children}

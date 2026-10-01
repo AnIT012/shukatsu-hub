@@ -359,11 +359,6 @@ export function Dashboard() {
           body: "企業ごとのカードを締切が近い順に一覧。左の日付が次の締切で、1週間以内は赤。開くと進捗バー（緑＝通過／黄＝完了待ち／灰＝未／赤＝不合格）。",
         },
         {
-          tour: "banner",
-          title: "直近の予定",
-          body: "この先の締切・予定をここに固定表示。毎朝ここだけ見ればOK。",
-        },
-        {
           tour: "sort",
           title: "並べ替え",
           body: "締切順・優先度順・企業名順から選択。左の矢印で昇順／降順を切り替え（締切順なら近い順⇄遠い順）。",
@@ -468,12 +463,19 @@ export function Dashboard() {
       {/* ヘッダー(白) */}
       <header className="shrink-0 border-b bg-card pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-2.5">
-          <span className="text-[20px] font-bold tracking-tight text-foreground">
-            {now.getMonth() + 1}月{now.getDate()}日
-            <span className="ml-1 text-[13px] font-semibold text-muted-foreground">
-              {WD_JP[now.getDay()]}
+          {view === "settings" ? (
+            // 設定タブでは日付は意味を持たない。何の画面かを見出しにする
+            <span className="text-[20px] font-bold tracking-tight text-foreground">
+              設定
             </span>
-          </span>
+          ) : (
+            <span className="text-[20px] font-bold tracking-tight text-foreground">
+              {now.getMonth() + 1}月{now.getDate()}日
+              <span className="ml-1 text-[13px] font-semibold text-muted-foreground">
+                {WD_JP[now.getDay()]}
+              </span>
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-1">
             <SaveIndicator />
             <Button
@@ -566,9 +568,7 @@ export function Dashboard() {
                 />
               ) : (
                 <>
-                  <AnnouncementBanner applications={applications} />
-
-                  <div className="mt-3">
+                  <div>
                     <ControlsBar
                       sort={sort}
                       onSortChange={setSort}
@@ -835,100 +835,6 @@ function SaveIndicator() {
     );
   }
   return null;
-}
-
-// 直近1週間(今日〜+7日、超過分も含む)の各社の次の予定を、日付順に固定表示。
-function AnnouncementBanner({ applications }: { applications: Application[] }) {
-  const items = useMemo(() => {
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const ymd = (d: Date) =>
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    const limit = new Date();
-    limit.setDate(limit.getDate() + 7);
-    const limitKey = ymd(limit);
-
-    return applications
-      .flatMap((app) => {
-        const na = getStageNextAction(app);
-        if (na.type !== "step" || !na.focusDate) return [];
-        const day = na.focusDate.slice(0, 10);
-        if (day > limitKey) return []; // 1週間より先は出さない(超過分は含む)
-        const inst = dueInstant(na.focusDate);
-        if (inst == null) return [];
-        return [
-          {
-            app,
-            kind: na.tasks[0]?.kind,
-            dueAt: na.focusDate,
-            inst,
-            urgent: ["overdue", "soon", "near"].includes(
-              urgencyOf(na.focusDate),
-            ),
-          },
-        ];
-      })
-      .sort((a, b) => a.inst - b.inst);
-  }, [applications]);
-
-  const hasUrgent = items.some((x) => x.urgent);
-  const shown = items.slice(0, 6);
-  const rest = items.length - shown.length;
-
-  return (
-    <div
-      data-tour="banner"
-      className={cn(
-        "rounded-2xl bg-card p-3 elevate-sm ring-1",
-        items.length === 0
-          ? "ring-border"
-          : hasUrgent
-            ? "ring-[hsl(var(--danger)/0.45)]"
-            : "ring-[hsl(var(--primary)/0.4)]",
-      )}
-    >
-      {items.length > 0 ? (
-        <div className="space-y-1">
-          {shown.map((x) => {
-            const d = dueToDate(x.dueAt);
-            return (
-              <div
-                key={x.app.id}
-                className="flex items-center gap-2.5 text-[12.5px]"
-              >
-                <span
-                  className={cn(
-                    "w-14 shrink-0 font-medium",
-                    x.urgent ? "text-danger" : "text-primary",
-                  )}
-                >
-                  {d
-                    ? `${d.getMonth() + 1}/${d.getDate()}(${WD_JP[d.getDay()]})`
-                    : "未定"}
-                </span>
-                <span className="min-w-0 flex-1 truncate">
-                  <span className="font-medium">
-                    {x.app.company || "(未設定)"}
-                  </span>
-                  <span className="text-muted-foreground">
-                    ・{x.kind ? STEP_KIND_LABEL[x.kind] : "予定"}
-                  </span>
-                </span>
-              </div>
-            );
-          })}
-          {rest > 0 && (
-            <div className="pl-[2.875rem] text-[11px] text-muted-foreground">
-              ほか{rest}件
-            </div>
-          )}
-        </div>
-      ) : (
-        <p className="text-[12.5px] text-muted-foreground">
-          近く予定はありません
-        </p>
-      )}
-    </div>
-  );
 }
 
 function EmptyState({

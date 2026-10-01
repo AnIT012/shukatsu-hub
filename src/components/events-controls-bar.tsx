@@ -6,8 +6,6 @@ import {
   ArrowUp,
   Check,
   ChevronDown,
-  LayoutList,
-  Rows3,
   RotateCcw,
   SlidersHorizontal,
 } from "lucide-react";
@@ -18,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { ViewModeSeg } from "@/components/controls-bar";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import type {
@@ -152,40 +151,13 @@ export function EventsControlsBar({
         )}
       </Button>
 
-      {/* 表示モード = iOSセグメント(選考画面と統一) */}
-      <div
-        role="group"
-        aria-label="表示モード"
-        className="flex h-9 shrink-0 items-center rounded-full bg-secondary p-0.5"
-      >
-        {([
-          ["compact", LayoutList, "コンパクト表示"],
-          ["detail", Rows3, "詳細表示"],
-        ] as const).map(([m, Icon, label]) => (
-          <button
-            key={m}
-            type="button"
-            aria-label={label}
-            aria-pressed={viewMode === m}
-            onClick={() => onViewModeChange(m)}
-            className={cn(
-              "flex h-8 w-9 items-center justify-center rounded-full transition-all active:scale-95",
-              viewMode === m
-                ? "bg-card text-primary shadow-[0_1px_2px_hsl(var(--foreground)/0.14)]"
-                : "text-muted-foreground",
-            )}
-          >
-            <Icon className="h-4 w-4" />
-          </button>
-        ))}
-      </div>
-
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl px-5 pb-7 pt-4">
           <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
-          <SheetTitle className="mb-4 text-base">絞り込み</SheetTitle>
+          <SheetTitle className="mb-4 text-base">表示・絞り込み</SheetTitle>
 
           <div className="space-y-4">
+            <ViewModeSeg viewMode={viewMode} onChange={onViewModeChange} />
             <div>
               <div className="mb-2 text-xs text-muted-foreground">
                 状態（複数選択OK）

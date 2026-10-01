@@ -91,7 +91,7 @@ export function EventCard({
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/50" />
         </div>
         {pinned.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="ml-16 mt-1.5 flex flex-wrap gap-2">
             {pinned.map((l) => (
               <a
                 key={l.id}
@@ -99,7 +99,7 @@ export function EventCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
+                className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
               >
                 <span className="max-w-[8rem] truncate">
                   {l.label || "リンク"}
@@ -171,7 +171,7 @@ export function EventCard({
       </div>
 
       {pinned.length > 0 && (
-        <div className="mt-2.5 flex flex-wrap gap-2">
+        <div className="ml-16 mt-2 flex flex-wrap gap-2">
           {pinned.map((l) => (
             <a
               key={l.id}
@@ -179,7 +179,7 @@ export function EventCard({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
+              className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
             >
               <span className="max-w-[8rem] truncate">{l.label || "リンク"}</span>
             </a>

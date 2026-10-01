@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CalendarClock,
   CalendarDays,
@@ -11,7 +11,6 @@ import {
   CircleSlash,
   CircleX,
   GitBranch,
-  HelpCircle,
   Hourglass,
   LayoutTemplate,
   ListPlus,
@@ -110,7 +109,21 @@ function DoneDot({
   );
 }
 
-export function StageTimeline({ app }: { app: Application }) {
+export function StageTimeline({
+  app,
+  helpOpen: helpOpenProp,
+  onHelpOpenChange,
+  editMode: editModeProp,
+  onEditModeChange,
+}: {
+  app: Application;
+  /** 使い方ダイアログの開閉(呼び出し側の見出しに？を置く時に渡す) */
+  helpOpen?: boolean;
+  onHelpOpenChange?: (open: boolean) => void;
+  /** 編集モード(呼び出し側の見出しに「編集」を置く時に渡す。渡すと自前のボタンは出さない) */
+  editMode?: boolean;
+  onEditModeChange?: (on: boolean) => void;
+}) {
   const {
     addStage,
     deleteStage,
@@ -124,9 +137,23 @@ export function StageTimeline({ app }: { app: Application }) {
     replaceStages,
   } = useStore();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const [helpOpenLocal, setHelpOpenLocal] = useState(false);
+  const helpOpen = helpOpenProp ?? helpOpenLocal;
+  const setHelpOpen = onHelpOpenChange ?? setHelpOpenLocal;
+  const [editModeLocal, setEditModeLocal] = useState(false);
+  const controlled = editModeProp !== undefined;
+  const editMode = editModeProp ?? editModeLocal;
+  const setEditMode = (v: boolean | ((p: boolean) => boolean)) => {
+    const next = typeof v === "function" ? v(editMode) : v;
+    if (onEditModeChange) onEditModeChange(next);
+    else setEditModeLocal(next);
+  };
   const curId = currentStage(app)?.id ?? null;
+
+  // 外から編集モードが閉じられたら、開いていたタスク編集も閉じる
+  useEffect(() => {
+    if (!editMode) setEditingId(null);
+  }, [editMode]);
 
   // 全段階が完全に手付かずならテンプレは置換、着手後は追加
   const pristine =
@@ -147,16 +174,8 @@ export function StageTimeline({ app }: { app: Application }) {
 
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => setHelpOpen(true)}
-          className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <HelpCircle className="h-3.5 w-3.5" />
-          使い方
-        </button>
-        {app.stages.length > 0 ? (
+      {!controlled && app.stages.length > 0 && (
+      <div className="mb-2 flex items-center justify-end">
           <button
             type="button"
             onClick={() => {
@@ -182,10 +201,8 @@ export function StageTimeline({ app }: { app: Application }) {
               </>
             )}
           </button>
-        ) : (
-          <span />
-        )}
       </div>
+      )}
       <HelpDialog open={helpOpen} onOpenChange={setHelpOpen} />
 
       {app.stages.length === 0 ? (
@@ -386,14 +403,65 @@ function StageBlock({
     stage.result === "failed" ||
     stage.result === "declined";
   const meta = stage.result !== "pending" ? RESULT_META[stage.result] : null;
+  // 見るモードでは「今の段階」以外を1行に畳む(終わった段階に画面の上を取らせない)。タップで開閉
+  const [open, setOpen] = useState(false);
+  const collapsible = !editMode && !isCurrent;
+  const collapsed = collapsible && !open;
+  const summaryLabel =
+    stage.label.trim() ||
+    stage.tasks.map((t) => STEP_KIND_LABEL[t.kind]).join("・");
+
+  const spine = (
+    <div className="flex flex-col items-center">
+      <StageSpineDot result={stage.result} isCurrent={isCurrent} />
+      {!isLast && <div className="mt-1 w-px flex-1 bg-border" />}
+    </div>
+  );
+
+  if (collapsed) {
+    return (
+      <div className="flex gap-3">
+        {spine}
+        <div className={cn("min-w-0 flex-1", isLast ? "pb-1" : "pb-3.5")}>
+          <button
+            type="button"
+            aria-expanded={false}
+            onClick={() => setOpen(true)}
+            className="-my-1.5 flex min-h-[18px] w-full items-center gap-1.5 py-1.5 text-left"
+          >
+            <span className="shrink-0 text-[11px] font-semibold text-muted-foreground">
+              段階 {index + 1}
+            </span>
+            <span className="shrink-0 text-[11px] text-muted-foreground/60">·</span>
+            <span className="min-w-0 truncate text-[13px] text-foreground">
+              {summaryLabel || "（未設定）"}
+            </span>
+            {meta && (
+              <span
+                className={cn(
+                  "ml-auto shrink-0 text-[12px] font-medium",
+                  stage.result === "waiting" ? "text-muted-foreground" : meta.cls,
+                )}
+              >
+                {meta.label}
+              </span>
+            )}
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 text-muted-foreground/60",
+                !meta && "ml-auto",
+              )}
+            />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-3">
       {/* 縦のスパイン: 段階の状態印 + つなぎ線(囲いをやめて動線を1本に) */}
-      <div className="flex flex-col items-center">
-        <StageSpineDot result={stage.result} isCurrent={isCurrent} />
-        {!isLast && <div className="mt-1 w-px flex-1 bg-border" />}
-      </div>
+      {spine}
 
       {/* 中身 */}
       <div
@@ -403,8 +471,28 @@ function StageBlock({
           settled && "opacity-80",
         )}
       >
-      {/* 段階ヘッダー: 並行バッジ / 段階名(任意) / 現在地 */}
-      <div className="flex items-center gap-1.5">
+      {/* 段階ヘッダー: 並行バッジ / 段階名(任意) / 現在地。
+          畳める段階(見るモード・今の段階以外)を開いた時は、ヘッダーのタップで畳み直す */}
+      <div
+        className={cn(
+          "flex items-center gap-1.5",
+          collapsible && "-my-1.5 cursor-pointer py-1.5",
+        )}
+        role={collapsible ? "button" : undefined}
+        tabIndex={collapsible ? 0 : undefined}
+        aria-expanded={collapsible ? true : undefined}
+        onClick={collapsible ? () => setOpen(false) : undefined}
+        onKeyDown={
+          collapsible
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setOpen(false);
+                }
+              }
+            : undefined
+        }
+      >
         <span className="text-[11px] font-semibold text-muted-foreground">
           段階 {index + 1}
         </span>
@@ -430,6 +518,14 @@ function StageBlock({
             <meta.icon className="h-3.5 w-3.5" />
             {meta.label}
           </span>
+        )}
+        {collapsible && (
+          <ChevronUp
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 text-muted-foreground/60",
+              !meta && "ml-auto",
+            )}
+          />
         )}
         {editMode && (
           <div className={cn("flex items-center", meta ? "" : "ml-auto")}>

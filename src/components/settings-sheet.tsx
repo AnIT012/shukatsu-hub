@@ -357,7 +357,7 @@ function SettingsBody({
         )}
         {mode === "cloud" && user?.email && (
           <Section title="アカウント">
-            <div className="rounded-2xl border border-border p-3">
+            <div className="rounded-2xl border border-border bg-card p-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-[15px] font-medium text-accent-foreground">
                   {user.email[0]?.toUpperCase()}
@@ -388,7 +388,7 @@ function SettingsBody({
 
         {/* 通知(行→右スライドのサブページ) */}
         <Section title="通知">
-          <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card elevate-sm">
             <Row
               icon={<Bell className="h-4 w-4" />}
               label="締切・予定を通知"
@@ -404,7 +404,7 @@ function SettingsBody({
           onClose={() => setNotifyPage(false)}
           title="通知"
         >
-          <div className="space-y-3 rounded-2xl border border-border elevate-sm p-3">
+          <div className="space-y-3 rounded-2xl border border-border bg-card elevate-sm p-3">
             <div className="flex items-center">
               <span className="text-sm">締切・予定を通知</span>
               <button
@@ -516,7 +516,7 @@ function SettingsBody({
 
         {/* 見た目(テーマ・フォントは行→ピッカーで畳む=場所を取らない) */}
         <Section title="見た目">
-          <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card elevate-sm">
             <Row
               icon={<Palette className="h-4 w-4" />}
               label="テーマ"
@@ -626,7 +626,7 @@ function SettingsBody({
 
         {/* リンク */}
         <Section title="リンク">
-          <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card elevate-sm">
             <Row
               icon={<Globe className="h-4 w-4" />}
               label="よく使うサイト"
@@ -649,7 +649,7 @@ function SettingsBody({
 
         {/* データ */}
         <Section title="データ">
-          <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card elevate-sm">
             <Row
               icon={<Upload className="h-4 w-4" />}
               label="取り込み（JSON / AI）"
@@ -706,44 +706,12 @@ function SettingsBody({
               label="復元ポイント（自動バックアップ）"
               onClick={openSnapshots}
             />
-            {confirmClear ? (
-              <div className="flex items-center gap-2 border-t border-border bg-danger/5 px-3 py-2.5">
-                <span className="flex-1 text-[13px]">
-                  全{totalCount}件を完全に削除しますか？
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setConfirmClear(false)}
-                >
-                  やめる
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    clearAll();
-                    setConfirmClear(false);
-                    toast.success("全データを削除しました");
-                  }}
-                >
-                  削除する
-                </Button>
-              </div>
-            ) : (
-              <Row
-                icon={<Trash2 className="h-4 w-4" />}
-                label="全データを削除"
-                danger
-                onClick={() => setConfirmClear(true)}
-              />
-            )}
           </div>
         </Section>
 
         {mode === "cloud" && user && (
           <Section title="フィードバック">
-            <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card elevate-sm">
               <Row
                 icon={<MessageSquare className="h-4 w-4" />}
                 label="感想・要望を送る"
@@ -755,7 +723,7 @@ function SettingsBody({
 
         {/* その他 */}
         <Section title="その他">
-          <div className="overflow-hidden rounded-2xl border border-border elevate-sm">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card elevate-sm">
             <Row
               icon={<HelpCircle className="h-4 w-4" />}
               label="使い方ガイド"
@@ -777,6 +745,42 @@ function SettingsBody({
           </div>
         </Section>
 
+        {/* 取り返しのつかない操作は、日常の操作と枠を分けて最下段に単独で置く */}
+        <div className="overflow-hidden rounded-2xl border border-border bg-card elevate-sm">
+          {confirmClear ? (
+            <div className="flex items-center gap-2 bg-danger/5 px-3 py-2.5">
+              <span className="flex-1 text-[13px]">
+                全{totalCount}件を完全に削除しますか？
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmClear(false)}
+              >
+                やめる
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  clearAll();
+                  setConfirmClear(false);
+                  toast.success("全データを削除しました");
+                }}
+              >
+                削除する
+              </Button>
+            </div>
+          ) : (
+            <Row
+              icon={<Trash2 className="h-4 w-4" />}
+              label="全データを削除"
+              danger
+              onClick={() => setConfirmClear(true)}
+            />
+          )}
+        </div>
+
         {/* 復元ポイント(サブページ本体) */}
         <SettingsSubPage
           open={showSnapshots}
@@ -789,7 +793,7 @@ function SettingsBody({
           <p className="mb-3 text-[12px] leading-relaxed text-muted-foreground">
             保存のたびに、この端末へ自動でバックアップ（新しい順）。タップすると、その時点に戻せます。
           </p>
-          <div className="overflow-hidden rounded-2xl border border-border">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
             {snapshots.length === 0 ? (
               <p className="px-3 py-4 text-[13px] text-muted-foreground">
                 まだ復元ポイントがありません（保存のたびに自動で作られます）
@@ -892,7 +896,7 @@ function FontSizePanel({
       </p>
 
       {/* スライダー + 微調整 */}
-      <div className="rounded-2xl border border-border elevate-sm p-4">
+      <div className="rounded-2xl border border-border bg-card elevate-sm p-4">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-[13px] font-semibold text-foreground">
             文字サイズ
@@ -1139,7 +1143,7 @@ function FeedbackForm({ userId }: { userId: string }) {
   };
 
   return (
-    <div className="space-y-2.5 rounded-2xl border border-border p-3">
+    <div className="space-y-2.5 rounded-2xl border border-border bg-card p-3">
       <div className="flex flex-wrap gap-1.5">
         {KINDS.map((k) => (
           <button

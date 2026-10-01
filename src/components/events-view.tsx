@@ -11,20 +11,13 @@ import type {
 } from "@/lib/types";
 import { useStore } from "@/lib/store";
 import { focusOf, isEventDone } from "@/lib/next-action";
-import {
-  dueInstant,
-  dueToDate,
-  isDueThisWeekOrOverdue,
-  urgencyOf,
-} from "@/lib/date";
+import { dueInstant, isDueThisWeekOrOverdue } from "@/lib/date";
 import { EventCard } from "@/components/event-card";
 import { EventsControlsBar } from "@/components/events-controls-bar";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 const TERMINAL = Number.POSITIVE_INFINITY;
 const NO_DATE = Number.MAX_SAFE_INTEGER;
-const WD_JP = ["日", "月", "火", "水", "木", "金", "土"];
 
 const DEFAULT_FILTERS: EventFilters = { statuses: [], onlyThisWeek: false };
 
@@ -50,36 +43,6 @@ export function EventsView({
   const [sort, setSort] = useState<EventSortKey>("apply");
   const [dir, setDir] = useState<SortDir>("asc");
   const [filters, setFilters] = useState<EventFilters>(DEFAULT_FILTERS);
-
-  // 直近1週間(今日〜+7日、超過分も含む)の未完了イベントを日付順に
-  const weekItems = useMemo(() => {
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const ymd = (d: Date) =>
-      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    const lim = new Date();
-    lim.setDate(lim.getDate() + 7);
-    const limitKey = ymd(lim);
-
-    return events
-      .flatMap((ev) => {
-        if (isEventDone(ev)) return [];
-        const f = focusOf(ev.applyBy, ev.heldAt, ev.applyDone);
-        if (!f.date) return [];
-        if (f.date.slice(0, 10) > limitKey) return [];
-        const inst = dueInstant(f.date);
-        if (inst == null) return [];
-        return [
-          {
-            ev,
-            date: f.date,
-            inst,
-            kind: f.kind === "held" ? "開催" : "締切",
-            urgent: ["overdue", "soon", "near"].includes(urgencyOf(f.date)),
-          },
-        ];
-      })
-      .sort((a, b) => a.inst - b.inst);
-  }, [events]);
 
   const visible = useMemo(() => {
     const list = events.filter((ev) => {
@@ -131,67 +94,9 @@ export function EventsView({
     );
   }
 
-  const hasUrgent = weekItems.some((x) => x.urgent);
-  const shown = weekItems.slice(0, 6);
-  const rest = weekItems.length - shown.length;
-
   return (
     <>
-      {/* 直近の予定(固定枠・選考画面と同じ処方) */}
-      <div
-        className={cn(
-          "rounded-2xl bg-card p-3 elevate-sm ring-1",
-          weekItems.length === 0
-            ? "ring-border"
-            : hasUrgent
-              ? "ring-[hsl(var(--danger)/0.45)]"
-              : "ring-[hsl(var(--primary)/0.4)]",
-        )}
-      >
-        {weekItems.length > 0 ? (
-          <div className="space-y-1">
-            {shown.map((x) => {
-              const d = dueToDate(x.date);
-              return (
-                <div
-                  key={x.ev.id}
-                  className="flex items-center gap-2.5 text-[12.5px]"
-                >
-                  <span
-                    className={cn(
-                      "w-14 shrink-0 font-medium",
-                      x.urgent ? "text-danger" : "text-primary",
-                    )}
-                  >
-                    {d
-                      ? `${d.getMonth() + 1}/${d.getDate()}(${WD_JP[d.getDay()]})`
-                      : "未定"}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate">
-                    <span className="font-medium">
-                      {x.ev.company || x.ev.title || "(未設定)"}
-                    </span>
-                    <span className="text-muted-foreground">
-                      ・{x.ev.title || "イベント"}
-                    </span>
-                  </span>
-                </div>
-              );
-            })}
-            {rest > 0 && (
-              <div className="pl-[2.875rem] text-[11px] text-muted-foreground">
-                ほか{rest}件
-              </div>
-            )}
-          </div>
-        ) : (
-          <p className="text-[12.5px] text-muted-foreground">
-            近く予定はありません
-          </p>
-        )}
-      </div>
-
-      <div className="mt-3">
+      <div>
         <EventsControlsBar
           sort={sort}
           onSortChange={setSort}
