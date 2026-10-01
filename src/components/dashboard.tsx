@@ -61,6 +61,7 @@ import { SettingsPage } from "@/components/settings-sheet";
 import { ImportDialog } from "@/components/import-dialog";
 import { QuickLinksLauncher } from "@/components/quick-links";
 import { ListGroup } from "@/components/list-group";
+import { WeekStrip, weekMonthLabel } from "@/components/week-strip";
 import { FeedbackPrompt } from "@/components/feedback-prompt";
 import { VersionNotice } from "@/components/version-notice";
 import { WhatsNew } from "@/components/whats-new";
@@ -383,6 +384,11 @@ export function Dashboard() {
           body: "進捗・選考・イベント・設定を下タブで移動（左右スワイプでも可）。左端の「進捗」は努力が花畑に育つご褒美ページ。",
         },
         {
+          tour: "week",
+          title: "今週の帯",
+          body: "今週の締切は赤い点、面接や説明会の予定は輪で出る。日を押すと、その日の締切と予定が並ぶ。",
+        },
+        {
           tour: "card",
           title: "応募先の一覧",
           body: "進行中・結果待ち・合格・選考終了に分けて、それぞれ締切が近い順に並ぶ。左の日付が次の締切で、1週間以内は赤。選考終了は畳んであり、見出しのタップで開く。",
@@ -498,11 +504,9 @@ export function Dashboard() {
               設定
             </span>
           ) : (
+            // 今日は下の週の帯が示すので、見出しは月(TODOと同じ)
             <span className="text-[20px] font-bold tracking-tight text-foreground">
-              {now.getMonth() + 1}月{now.getDate()}日
-              <span className="ml-1 text-[13px] font-semibold text-muted-foreground">
-                {WD_JP[now.getDay()]}
-              </span>
+              {weekMonthLabel(now)}
             </span>
           )}
           <div className="ml-auto flex items-center gap-1">
@@ -548,6 +552,15 @@ export function Dashboard() {
             </Button>
           </div>
         </div>
+        {/* 今週の帯(設定以外)。日を押すとその日の締切・予定 */}
+        {view !== "settings" && (
+          <div className="mx-auto max-w-3xl px-3">
+            <WeekStrip
+              onOpenApp={(id) => setSelectedId(id)}
+              onOpenEvent={(id) => setSelectedEventId(id)}
+            />
+          </div>
+        )}
       </header>
 
       <main className="relative flex-1 overflow-hidden bg-background">

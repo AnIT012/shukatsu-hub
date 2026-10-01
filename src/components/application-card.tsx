@@ -133,11 +133,16 @@ export function ApplicationCard({
                 {app.role}
               </div>
             )}
-            <NextLine app={app} next={next} />
+            {/* 次の行の右端にピン留め(ID・リンク)を置く。3行目を作らないので行の高さがそろう */}
+            <div className="mt-1 flex h-6 items-center gap-1.5">
+              <div className="min-w-[4.5em] flex-1">
+                <NextLine app={app} next={next} flush />
+              </div>
+              <PinnedChips app={app} inline />
+            </div>
           </div>
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/40" />
         </div>
-        <PinnedChips app={app} className="ml-16 mt-1.5" />
       </div>
     );
   }
@@ -312,12 +317,22 @@ function DateBlock({
   );
 }
 
-function NextLine({ app, next }: { app: Application; next: StageNextAction }) {
+function NextLine({
+  app,
+  next,
+  flush = false,
+}: {
+  app: Application;
+  next: StageNextAction;
+  /** 親が行の余白を持つとき(チップと横並び)は上の余白を付けない */
+  flush?: boolean;
+}) {
+  const top = flush ? "" : "mt-1 ";
   if (next.type === "step") {
     // 種別(選考ステップ名)を表示。サブタイトル(name)ではなく kind を主役に
     const names = next.tasks.map((t) => STEP_KIND_LABEL[t.kind]).slice(0, 3);
     return (
-      <div className="mt-1 truncate text-[12px]">
+      <div className={`${top}truncate text-[12px]`}>
         <span className="text-muted-foreground">次: </span>
         <span className="font-medium">{names.join("・")}</span>
       </div>
@@ -326,14 +341,14 @@ function NextLine({ app, next }: { app: Application; next: StageNextAction }) {
   if (next.type === "waiting") {
     const label = currentStageLabel(app);
     return (
-      <div className="mt-1 truncate text-[12px] text-muted-foreground">
+      <div className={`${top}truncate text-[12px] text-muted-foreground`}>
         {label ? `${label} の結果待ち` : "結果待ち"}
       </div>
     );
   }
   if (next.type === "empty") {
     return (
-      <div className="mt-1 truncate text-[12px] text-muted-foreground">
+      <div className={`${top}truncate text-[12px] text-muted-foreground`}>
         選考ステップ未登録
       </div>
     );
@@ -341,7 +356,7 @@ function NextLine({ app, next }: { app: Application; next: StageNextAction }) {
   return (
     <div
       className={cn(
-        "mt-1 truncate text-[12px]",
+        `${top}truncate text-[12px]`,
         app.result === "passed"
           ? "font-semibold text-success"
           : "text-muted-foreground",
@@ -360,9 +375,12 @@ function NextLine({ app, next }: { app: Application; next: StageNextAction }) {
 function PinnedChips({
   app,
   className,
+  inline = false,
 }: {
   app: Application;
   className?: string;
+  /** 行の右端に置く小さい版(IDは鍵アイコンだけ・リンクは短く切る・折り返さない) */
+  inline?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const pinned = app.links.filter((l) => l.pin && l.url).slice(0, 2);
@@ -370,7 +388,12 @@ function PinnedChips({
   const hasId = !!app.loginIdPinned && id.length > 0;
   if (pinned.length === 0 && !hasId) return null;
   return (
-    <div className={cn("flex flex-wrap gap-2", className)}>
+    <div
+      className={cn(
+        inline ? "flex shrink-0 items-center gap-1" : "flex flex-wrap gap-2",
+        className,
+      )}
+    >
       {hasId && (
         <button
           type="button"
@@ -386,14 +409,22 @@ function PinnedChips({
               })
               .catch(() => {});
           }}
+          aria-label={inline ? "IDをコピー" : undefined}
           className={cn(
-            "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
+            "inline-flex items-center gap-1 rounded-md border text-[11px] font-medium transition-colors",
+            inline ? "h-6 w-6 justify-center" : "px-2 py-0.5",
             copied
               ? "border-[hsl(var(--success)/0.6)] bg-[hsl(var(--success)/0.12)] text-success"
               : "border-dashed border-[hsl(var(--primary)/0.45)] bg-accent text-accent-foreground hover:opacity-80",
           )}
         >
-          {copied ? (
+          {inline ? (
+            copied ? (
+              <Check className="animate-evo-flip h-3.5 w-3.5" />
+            ) : (
+              <KeyRound className="h-3.5 w-3.5" />
+            )
+          ) : copied ? (
             <>
               <Check className="animate-evo-flip h-3 w-3" />
               コピーしました
@@ -416,9 +447,11 @@ function PinnedChips({
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
+          className="inline-flex h-6 items-center gap-1 rounded-md bg-accent px-2 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
         >
-          <span className="max-w-[8rem] truncate">{l.label || "リンク"}</span>
+          <span className={cn("truncate", inline ? "max-w-[4.5em]" : "max-w-[8rem]")}>
+            {l.label || "リンク"}
+          </span>
         </a>
       ))}
     </div>

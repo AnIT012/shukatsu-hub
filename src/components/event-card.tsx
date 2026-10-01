@@ -78,9 +78,28 @@ export function EventCard({
             <div className="truncate text-[17px] font-bold leading-tight tracking-tight text-foreground">
               {ev.title || "(イベント名未設定)"}
             </div>
-            <div className="truncate text-[11px] text-muted-foreground">
-              {ev.company || "(企業未設定)"}
-              {venue ? ` · ${venue}` : ""}
+            {/* 企業・会場の行の右端にピン留めリンク。3行目を作らないので行の高さがそろう */}
+            <div className="flex h-6 items-center gap-1.5">
+              <div className="min-w-[4.5em] flex-1 truncate text-[11px] text-muted-foreground">
+                {ev.company || "(企業未設定)"}
+                {venue ? ` · ${venue}` : ""}
+              </div>
+              {pinned.length > 0 && (
+                <div className="flex shrink-0 items-center gap-1">
+                  {pinned.map((l) => (
+                    <a
+                      key={l.id}
+                      href={safeHref(l.url)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex h-6 items-center rounded-md bg-accent px-2 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
+                    >
+                      <span className="max-w-[4.5em] truncate">{l.label || "リンク"}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
             {statusLabel && (
               <div
@@ -97,24 +116,6 @@ export function EventCard({
           </div>
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/50" />
         </div>
-        {pinned.length > 0 && (
-          <div className="ml-16 mt-1.5 flex flex-wrap gap-2">
-            {pinned.map((l) => (
-              <a
-                key={l.id}
-                href={safeHref(l.url)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground transition-opacity hover:opacity-80"
-              >
-                <span className="max-w-[8rem] truncate">
-                  {l.label || "リンク"}
-                </span>
-              </a>
-            ))}
-          </div>
-        )}
       </div>
     );
   }
