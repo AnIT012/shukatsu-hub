@@ -140,6 +140,7 @@ export function Dashboard() {
   const [legalConsentMode, setLegalConsentMode] = useState(false);
   /** 同意の画面や更新のお知らせから、全文だけを開く */
   const [legalFullOpen, setLegalFullOpen] = useState(false);
+  const [newsOpen, setNewsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -566,7 +567,9 @@ export function Dashboard() {
       {/* overflow-hidden だと、入力欄にフォーカスした時にブラウザが main を横へスクロールして
           ペインが半分ずれる(サイト画面で実際に起きた)。clip はスクロールさせない。古い端末向けに onScroll でも戻す */}
       <main
-        className="relative flex-1 overflow-clip bg-background"
+        // ⚠ min-h-0 を外さない。overflow-clip は hidden と違ってスクロール容器にならないので、
+        //   縦の flex の中では中身の高さまで伸びる → 各ページが画面より高くなりスクロールできなくなる(本番で一度踏んだ)
+        className="relative min-h-0 flex-1 overflow-clip bg-background"
         onScroll={(e) => {
           if (e.currentTarget.scrollLeft !== 0) e.currentTarget.scrollLeft = 0;
         }}
@@ -816,7 +819,8 @@ export function Dashboard() {
 
       {mode === "cloud" && user && (
         <FeedbackPrompt
-          open={feedbackOpen && !vaultBusy}
+          // お知らせ・同意・鍵の画面と重ねない(2枚同時に開閉すると画面のロックが外れ残ることがある)
+          open={feedbackOpen && !vaultBusy && !newsOpen && !legalOpen}
           userId={user.id}
           onClose={closeFeedback}
         />
@@ -827,6 +831,7 @@ export function Dashboard() {
       <WhatsNew
         enabled={applications.length > 0 && !vaultBusy && !legalOpen}
         onOpenLegal={() => setLegalFullOpen(true)}
+        onVisibleChange={setNewsOpen}
       />
       {/* 暗号化の鍵を開く/作る(鍵が無い端末・まだ平文のアカウント) */}
       <VaultGate />

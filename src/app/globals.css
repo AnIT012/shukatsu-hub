@@ -822,3 +822,15 @@ html[data-launch="full"] .launch-tag {
 html[data-launch] [class*="animate-row-in"] {
   animation-play-state: paused;
 }
+
+/* ⚠ ダイアログのスクロール止め(react-remove-scroll)が body に position: relative !important を当てる。
+   このアプリは body を fixed で画面に留め、各ページが自分でスクロールする作り。relative にされると body が中身の高さまで伸び、
+   どのページもスクロールできなくなる(本番で踏んだ。2枚のダイアログが同時に開閉すると止めの数が戻らず、閉じた後も残る)。
+   詳細度を1つ上げて fixed を守る。 */
+html body[data-scroll-locked] {
+  position: fixed !important;
+  inset: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}

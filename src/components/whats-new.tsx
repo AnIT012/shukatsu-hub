@@ -39,8 +39,11 @@ function dateLabel(ymd: string): string {
 export function WhatsNew({
   enabled,
   onOpenLegal,
+  onVisibleChange,
 }: {
   enabled: boolean;
+  /** 出ている間は true。閉じた後は少し待ってから false(次のお知らせと同じ瞬間に開閉させない) */
+  onVisibleChange?: (open: boolean) => void;
   /** 添え書きの「詳しく」からプライバシーの全文を開く */
   onOpenLegal?: () => void;
 }) {
@@ -48,12 +51,18 @@ export function WhatsNew({
 
   useEffect(() => {
     if (!enabled) return;
+    let seen = true;
     try {
-      if (localStorage.getItem(NEWS_KEY) === NEWS_VERSION) return;
-      setOpen(true);
+      seen = localStorage.getItem(NEWS_KEY) === NEWS_VERSION;
     } catch {
       // ignore
     }
+    if (seen) return;
+    // 前の画面(同意・鍵)が閉じた直後は、少し間を置いて開く(同じ瞬間に開閉させない)
+    onVisibleChange?.(true);
+    const t = window.setTimeout(() => setOpen(true), 450);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
   const close = () => {
@@ -63,6 +72,7 @@ export function WhatsNew({
       // ignore
     }
     setOpen(false);
+    window.setTimeout(() => onVisibleChange?.(false), 450);
   };
 
   const note = LATEST_CHANGELOG.note;
