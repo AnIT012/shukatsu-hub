@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Check, Copy, ExternalLink, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import type { Application, QuickLink, RelatedLink } from "@/lib/types";
@@ -40,12 +40,15 @@ const isEnded = (a: Application) => {
  * 下=よく使うサイト(この画面で開く・足す・直す)。パスワードは扱わない。
  */
 export function SitesIdsPage({
+  visible,
   applications,
   onOpenApp,
   links,
   onLinksChange,
   editSignal,
 }: {
+  /** この画面が前に出ているか。外れたら、見せていたIDを伏せ字に戻す */
+  visible: boolean;
   applications: Application[];
   /** 行の本体を押した時、その企業の詳細を開く */
   onOpenApp: (id: string) => void;
@@ -77,6 +80,7 @@ export function SitesIdsPage({
       key={app.id}
       app={app}
       showRole={dupCompanies.has(app.company.trim())}
+      visible={visible}
       onOpen={() => onOpenApp(app.id)}
     />
   );
@@ -140,17 +144,22 @@ export function SitesIdsPage({
 function MypageRow({
   app,
   showRole,
+  visible,
   onOpen,
 }: {
   app: Application;
   showRole: boolean;
+  visible: boolean;
   onOpen: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  // 「隠す」にしたIDは伏せ字。目のアイコンで、この画面にいる間だけ見せられる
+  // IDは常に伏せ字。目のアイコンで、この画面にいる間だけ見せられる(離れたら戻る)
   const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    if (!visible) setRevealed(false);
+  }, [visible]);
   const id = app.loginId?.trim() ?? "";
-  const hidden = !!app.loginIdMasked && !revealed;
+  const hidden = !revealed;
   const link = mypageLinkOf(app);
   const name = app.company.trim() || "（企業名なし）";
   const initial = Array.from(name)[0] ?? "";
@@ -203,7 +212,7 @@ function MypageRow({
               <span className="truncate font-mono tabular-nums tracking-wide text-foreground/80">
                 {hidden ? "••••••" : id}
               </span>
-              {app.loginIdMasked && (
+              {(
                 <button
                   type="button"
                   onClick={(e) => {

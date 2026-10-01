@@ -3,6 +3,7 @@
 import { Children, useEffect, useRef, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isLaunching } from "@/components/launch-screen";
 
 // 動きは全体で1つの緩急 cubic-bezier(.2,.8,.2,1) と 280ms に揃える。
 // Tailwind はクラス名を文字列のまま拾うので、緩急はクラスに直書きする。
@@ -111,8 +112,20 @@ export function ListGroup({
   const [intro, setIntro] = useState(true);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setIntro(false), INTRO_MS);
-    return () => window.clearTimeout(t);
+    let t = 0;
+    const start = () => {
+      t = window.setTimeout(() => setIntro(false), INTRO_MS);
+    };
+    // 起動の膜が出ている間は、行は止めて待つ(globals.css)。膜が開き始めたら浮き上がり、そこから数える
+    if (isLaunching()) {
+      window.addEventListener("launch:reveal", start, { once: true });
+    } else {
+      start();
+    }
+    return () => {
+      window.removeEventListener("launch:reveal", start);
+      window.clearTimeout(t);
+    };
   }, []);
 
   useEffect(() => {

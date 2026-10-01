@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { launchReady } from "@/components/launch-screen";
 import {
   Bell,
   CalendarDays,
@@ -28,6 +29,11 @@ export function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // ログイン画面が出せる状態になったら、起動の膜を退かせる
+  useEffect(() => {
+    launchReady();
+  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

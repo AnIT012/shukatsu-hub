@@ -435,7 +435,8 @@ function PinnedChips({
             <>
               <KeyRound className="h-3 w-3" />
               <span className="max-w-[8rem] truncate">
-                ID {app.loginIdMasked ? "••••••" : id}
+                {/* 一覧ではIDを出さない(のぞき見対策)。押すと本物がコピーされる。見るのは詳細とサイト・IDの目から */}
+                ID ••••••
               </span>
               <Copy className="h-3 w-3 opacity-70" />
             </>

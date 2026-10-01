@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { LATEST_CHANGELOG } from "@/lib/changelog";
+import { cn } from "@/lib/utils";
 
 const NEWS_KEY = "shukatsu-dashboard:newsSeen";
 // 最新の更新日。これと既読版が違えば全ユーザーに1回だけ表示される。
@@ -29,8 +30,20 @@ export function skipNewsForFirstVisit() {
   }
 }
 
+function dateLabel(ymd: string): string {
+  const [, m, d] = ymd.split("-").map(Number);
+  return m && d ? `${m}月${d}日` : ymd;
+}
+
 /** 既存ユーザーに「更新のお知らせ」を版ごとに1回だけ表示する。 */
-export function WhatsNew({ enabled }: { enabled: boolean }) {
+export function WhatsNew({
+  enabled,
+  onOpenLegal,
+}: {
+  enabled: boolean;
+  /** 添え書きの「詳しく」からプライバシーの全文を開く */
+  onOpenLegal?: () => void;
+}) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -52,26 +65,31 @@ export function WhatsNew({ enabled }: { enabled: boolean }) {
     setOpen(false);
   };
 
+  const note = LATEST_CHANGELOG.note;
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && close()}>
-      <DialogContent className="max-w-sm">
-        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-accent text-primary">
-          <Sparkles className="h-5 w-5" />
+      <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-sm gap-3.5 overflow-y-auto p-5">
+        <div className="text-center">
+          <DialogTitle className="text-[17px]">更新のお知らせ</DialogTitle>
+          <DialogDescription className="mt-0.5 text-[12.5px]">
+            {dateLabel(LATEST_CHANGELOG.date)}
+          </DialogDescription>
         </div>
-        <DialogTitle className="text-center text-base">更新のお知らせ</DialogTitle>
-        <DialogDescription className="text-center text-[13px] leading-relaxed">
-          就活Hubがいくつかアップデートされました。
-        </DialogDescription>
 
-        <div className="mt-1 space-y-2.5">
-          {LATEST_CHANGELOG.items.map((it) => (
+        <div className="overflow-hidden rounded-xl bg-card ring-1 ring-border">
+          {LATEST_CHANGELOG.items.map((it, i) => (
             <div
               key={it.title}
-              className="flex items-start gap-2.5 rounded-lg bg-muted/60 p-3"
+              className={cn(
+                "relative flex gap-3 px-3.5 py-2.5",
+                i > 0 &&
+                  "before:absolute before:left-[50px] before:right-0 before:top-0 before:h-px before:bg-border",
+              )}
             >
-              <it.icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <div>
-                <div className="text-[13px] font-medium">{it.title}</div>
+              <it.icon className="mt-0.5 h-[18px] w-[18px] shrink-0 text-primary" />
+              <div className="min-w-0">
+                <div className="text-[13.5px] font-semibold leading-snug">{it.title}</div>
                 <div className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
                   {it.body}
                 </div>
@@ -80,7 +98,26 @@ export function WhatsNew({ enabled }: { enabled: boolean }) {
           ))}
         </div>
 
-        <Button type="button" className="mt-1 w-full" onClick={close}>
+        {note && (
+          <div className="flex gap-2.5 rounded-xl bg-accent/60 px-3.5 py-3">
+            <ShieldCheck className="mt-0.5 h-[18px] w-[18px] shrink-0 text-primary" />
+            <div className="min-w-0 text-[12px] leading-relaxed text-muted-foreground">
+              <div className="text-[13px] font-semibold text-foreground">{note.title}</div>
+              {note.body}
+              {onOpenLegal && (
+                <button
+                  type="button"
+                  onClick={onOpenLegal}
+                  className="ml-1 font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  詳しく
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <Button type="button" className="h-11 w-full text-[15px]" onClick={close}>
           確認しました
         </Button>
       </DialogContent>

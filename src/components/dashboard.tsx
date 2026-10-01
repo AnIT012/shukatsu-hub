@@ -54,6 +54,8 @@ import { AddApplicationDialog } from "@/components/add-application-dialog";
 import { AddEventDialog } from "@/components/add-event-dialog";
 import { Tutorial, type TourStep } from "@/components/tutorial";
 import { LegalDialog } from "@/components/legal-dialog";
+import { ConsentDialog } from "@/components/consent-dialog";
+import { launchReady } from "@/components/launch-screen";
 import { EventsView } from "@/components/events-view";
 import { EventDetail } from "@/components/event-detail";
 import { SettingsPage } from "@/components/settings-sheet";
@@ -136,6 +138,8 @@ export function Dashboard() {
   const [tourIndex, setTourIndex] = useState(-1);
   const [legalOpen, setLegalOpen] = useState(false);
   const [legalConsentMode, setLegalConsentMode] = useState(false);
+  /** 同意の画面や更新のお知らせから、全文だけを開く */
+  const [legalFullOpen, setLegalFullOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -232,6 +236,11 @@ export function Dashboard() {
       el.removeEventListener("touchend", onEnd);
       el.removeEventListener("touchcancel", onEnd);
     };
+  }, [loaded]);
+
+  // 読み込みが済んだら、起動の膜を退かせる(最短の演出時間は膜の側が守る)
+  useEffect(() => {
+    if (loaded) launchReady();
   }, [loaded]);
 
   useEffect(() => {
@@ -700,6 +709,8 @@ export function Dashboard() {
           >
             <div className="mx-auto max-w-3xl px-4 pt-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))]">
               <SitesIdsPage
+                // 別のタブへ移る・企業の詳細を開くと、見せていたIDは伏せ字に戻る
+                visible={view === "sites" && !selectedId}
                 applications={applications}
                 onOpenApp={(id) => setSelectedId(id)}
                 links={quickLinks}
@@ -788,13 +799,19 @@ export function Dashboard() {
         }}
       />
 
-      <LegalDialog
-        open={legalOpen}
-        onOpenChange={(o) => {
-          if (!legalConsentMode) setLegalOpen(o);
-        }}
-        requireConsent={legalConsentMode}
+      {/* 初めての同意は「誰が読めるか」の1枚。全文は下のシートで読む */}
+      <ConsentDialog
+        open={legalOpen && legalConsentMode}
         onAgree={acceptLegal}
+        onOpenFull={() => setLegalFullOpen(true)}
+      />
+      <LegalDialog
+        open={(legalOpen && !legalConsentMode) || legalFullOpen}
+        onOpenChange={(o) => {
+          if (o) return;
+          setLegalFullOpen(false);
+          if (!legalConsentMode) setLegalOpen(false);
+        }}
       />
 
       {mode === "cloud" && user && (
@@ -807,7 +824,10 @@ export function Dashboard() {
 
       {/* 選考フロー(段階＞タスク)移行の通告(移行ユーザーに1回だけ) */}
       <VersionNotice />
-      <WhatsNew enabled={applications.length > 0 && !vaultBusy && !legalOpen} />
+      <WhatsNew
+        enabled={applications.length > 0 && !vaultBusy && !legalOpen}
+        onOpenLegal={() => setLegalFullOpen(true)}
+      />
       {/* 暗号化の鍵を開く/作る(鍵が無い端末・まだ平文のアカウント) */}
       <VaultGate />
 

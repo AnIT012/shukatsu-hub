@@ -145,6 +145,7 @@ export function ApplicationDetail({
       >
         {app ? (
           <DetailBody
+            key={app.id}
             app={app}
             onClose={() => onOpenChange(false)}
             onDeleted={onDeleted}
@@ -470,16 +471,6 @@ function DetailBody({
                         })
                       }
                     />
-                    <ToggleRow
-                      label="IDを隠して表示"
-                      hint="（カードで••••・タップでコピー）"
-                      checked={!!app.loginIdMasked}
-                      onClick={() =>
-                        updateApplication(app.id, {
-                          loginIdMasked: !app.loginIdMasked,
-                        })
-                      }
-                    />
                   </div>
                 )}
               </div>
@@ -591,12 +582,24 @@ function DetailBody({
                   ) : (
                     <>
                       <KeyRound className="h-3.5 w-3.5" />
-                      <span className="max-w-[12rem] truncate">
-                        {app.loginIdMasked ? "ID ••••••••" : app.loginId}
+                      <span className="max-w-[12rem] truncate font-mono tracking-wide">
+                        {showId ? app.loginId : "ID ••••••••"}
                       </span>
                       <Copy className="h-3.5 w-3.5 opacity-60" />
                     </>
                   )}
+                </button>
+              )}
+              {/* IDは常に伏せ字。目で、この画面にいる間だけ見せる(閉じて開き直すと伏せ字に戻る) */}
+              {hasLoginId && (
+                <button
+                  type="button"
+                  onClick={() => setShowId((v) => !v)}
+                  aria-label={showId ? "IDを隠す" : "IDを表示"}
+                  title={showId ? "IDを隠す" : "IDを表示"}
+                  className="inline-flex h-[38px] w-[38px] items-center justify-center rounded-lg border bg-card text-muted-foreground transition-colors hover:text-foreground active:scale-95"
+                >
+                  {showId ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               )}
               {app.links.map((link) => (

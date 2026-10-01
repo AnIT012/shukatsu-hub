@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { SwRegister } from "@/components/sw-register";
+import { LAUNCH_SCRIPT } from "@/components/launch-screen";
 
 const SITE_URL = "https://shukatsu-dashboard-sable.vercel.app";
 const OG_TITLE = "就活Hub — 就活の「次にやること」が、毎朝ひと目で。";
@@ -36,7 +37,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   // 地ならし#5: 上部バーの色は上端fixed/sticky(=ヘッダー card)の色から導かれる。
   // 紙の地に合わせる(白のままだと status bar だけ浮く)。地の色は globals の html/body で別途指定済み。
-  themeColor: "#fdfbf8",
+  // 上端=ヘッダー(card)の色。ブルー(標準)の card = hsl(214 60% 99.6%)
+  themeColor: "#fdfeff",
   width: "device-width",
   initialScale: 1,
   // ⚠ 地ならし#1: maximumScale/userScalable は付けない(拡大を奪う)。
@@ -50,6 +52,8 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <head>
+        {/* 起動の台本(テーマを先に当て、起動の膜をいつ退かせるかを決める)。描画より前に走らせる */}
+        <script dangerouslySetInnerHTML={{ __html: LAUNCH_SCRIPT }} />
         {/* 地ならし#7: standalone(ホーム画面から起動)かどうかの旗を、描画前に root へ立てる。
             後から判定すると画面が1回ちらつく。書き方はこの1本だけ(増やすと install 導線が壊れる)。 */}
         <script
