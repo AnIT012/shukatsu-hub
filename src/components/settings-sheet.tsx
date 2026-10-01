@@ -997,7 +997,7 @@ function FontSizePanel({
             onClick={() => onChange(FONT_SCALE_DEFAULT)}
             className="mt-3 w-full rounded-lg border border-border py-2 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-muted active:scale-[0.99]"
           >
-            標準（100%）に戻す
+            標準（{Math.round(FONT_SCALE_DEFAULT * 100)}%）に戻す
           </button>
         )}
       </div>

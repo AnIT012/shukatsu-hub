@@ -30,6 +30,7 @@ import type {
 import {
   DEFAULT_NOTIFY,
   FONT_OPTIONS,
+  FONT_DEFAULT,
   FONT_SCALE_DEFAULT,
   FONT_SCALE_MAX,
   FONT_SCALE_MIN,
@@ -123,7 +124,7 @@ interface StoreValue {
   /** よく使うサイト(端末ローカル)。 */
   quickLinks: QuickLink[];
   setQuickLinks: (next: QuickLink[]) => void;
-  /** 文字サイズ倍率(端末ローカル・1.0=標準)。 */
+  /** 文字サイズ倍率(端末ローカル・既定は FONT_SCALE_DEFAULT)。 */
   fontScale: number;
   setFontScale: (scale: number) => void;
   pushSubscriptions: PushSubscriptionJSON[];
@@ -409,7 +410,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [theme, setThemeState] = useState<Theme>("indigo");
-  const [font, setFontState] = useState<FontChoice>("system");
+  const [font, setFontState] = useState<FontChoice>(FONT_DEFAULT);
   const [notify, setNotifyState] = useState<NotifySettings>(DEFAULT_NOTIFY);
   const [quickLinks, setQuickLinksState] = useState<QuickLink[]>([]);
   const [fontScale, setFontScaleState] = useState<number>(FONT_SCALE_DEFAULT);
@@ -744,7 +745,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               notify: r.ntf,
               pushSubscriptions: r.subs,
               theme: r.theme ?? cached.theme ?? "indigo",
-              font: r.font ?? cached.font ?? "system",
+              font: r.font ?? cached.font ?? FONT_DEFAULT,
               savedAt: baseUpdatedAtRef.current || newUpdatedAt,
             },
             false,
@@ -767,7 +768,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           notify: cached.notify,
           pushSubscriptions: cached.pushSubscriptions,
           theme: cached.theme ?? "indigo",
-          font: cached.font ?? "system",
+          font: cached.font ?? FONT_DEFAULT,
           savedAt: baseUpdatedAtRef.current || newUpdatedAt,
         },
         false,
@@ -948,7 +949,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               notify: ntf,
               pushSubscriptions: subs,
               theme: decoded.theme ?? cached?.theme ?? "indigo",
-              font: decoded.font ?? cached?.font ?? "system",
+              font: decoded.font ?? cached?.font ?? FONT_DEFAULT,
               savedAt: remoteUpdatedAt || nowISO(),
               quickLinks: decoded.ql ?? cached?.quickLinks ?? [],
             },
@@ -978,7 +979,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
                 notify: legacy.notify,
                 pushSubscriptions: legacy.pushSubscriptions,
                 theme: legacy.theme ?? "indigo",
-                font: legacy.font ?? "system",
+                font: legacy.font ?? FONT_DEFAULT,
                 savedAt: nowISO(),
                 quickLinks: readGuestQuickLinks(),
               },

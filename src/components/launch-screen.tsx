@@ -51,7 +51,8 @@ export function LaunchScreen() {
 
 /**
  * head に置く起動の台本(描画より前に走る)。
- *  - テーマを先に当てる(最初の1枚目から選んだ色で出す)
+ *  - テーマと文字サイズを先に当てる(最初の1枚目から選んだ色・大きさで出す。途中で縮まない)
+ *    ⚠ 文字サイズの既定 0.9 と範囲 0.9〜1.25 は lib/constants.ts の FONT_SCALE_* と同じ値。片方だけ変えない
  *  - 初回/開き直し/視差効果を減らす を決めて html[data-launch] に書く
  *  - window.__launchReady() が呼ばれ、最短の時間を過ぎたら退く。6秒で必ず退く(JSが止まっても CSS が8秒で消す)
  */
@@ -59,6 +60,8 @@ export const LAUNCH_SCRIPT = `(function(){try{
 var d=document.documentElement;
 if(location.pathname!=='/')return;
 try{var t=localStorage.getItem('shukatsu-dashboard:theme');if(t)d.dataset.theme=t;}catch(e){}
+try{var ff=localStorage.getItem('shukatsu-dashboard:font');if(!ff||ff==='zenKaku')d.style.setProperty('--app-font','"Zen Kaku Gothic New", sans-serif');}catch(e){}
+try{var fs=parseFloat(localStorage.getItem('shukatsu-dashboard:fontscale'));if(!(fs>=0.9&&fs<=1.25))fs=0.9;if(fs!==1)d.style.zoom=String(fs);d.style.setProperty('--app-zoom',String(fs));}catch(e){}
 var rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
 var seen=null;try{seen=sessionStorage.getItem('shukatsu-dashboard:launched');sessionStorage.setItem('shukatsu-dashboard:launched','1');}catch(e){}
 var mode=rm?'still':(seen?'short':'full');

@@ -65,6 +65,16 @@ export default function RootLayout({
       <head>
         {/* 起動の台本(テーマを先に当て、起動の膜をいつ退かせるかを決める)。描画より前に走らせる */}
         <script dangerouslySetInnerHTML={{ __html: LAUNCH_SCRIPT }} />
+        {/* 既定のフォント(端正ゴシック)は最初の1枚目から出したいので、先に読み込む。
+            id は store の applyFont と同じ(二重に読み込まない) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          id="gf-zenKaku"
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap"
+        />
         {/* iOS で入力欄に触れた時の自動拡大を止める(上の viewport のコメント) */}
         <script dangerouslySetInnerHTML={{ __html: IOS_NO_FOCUS_ZOOM }} />
         {/* 地ならし#7: standalone(ホーム画面から起動)かどうかの旗を、描画前に root へ立てる。
