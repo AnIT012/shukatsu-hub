@@ -206,7 +206,7 @@ export const FONT_OPTIONS: {
   },
 ];
 
-/** 既定のフォント(しょー指定 2026-10-02: 端正ゴシック)。起動の台本(launch-screen.tsx)も同じ値を前提にしている */
+/** 既定のフォント(本人指定 2026-10-02: 端正ゴシック)。起動の台本(launch-screen.tsx)も同じ値を前提にしている */
 export const FONT_DEFAULT: FontChoice = "zenKaku";
 
 // ---------------- localStorage キー ----------------
@@ -216,7 +216,7 @@ export const LS_THEME_KEY = "shukatsu-dashboard:theme";
 export const LS_FONT_KEY = "shukatsu-dashboard:font";
 /** よく使うサイト(外部就活サイトへの動線)。端末ごとに記憶 */
 export const LS_QUICKLINKS_KEY = "shukatsu-dashboard:quicklinks";
-/** 文字サイズ倍率(端末ごと)。既定は 0.9(しょー指定 2026-10-02)。 */
+/** 文字サイズ倍率(端末ごと)。既定は 0.9(本人指定 2026-10-02)。 */
 export const LS_FONTSCALE_KEY = "shukatsu-dashboard:fontscale";
 export const FONT_SCALE_MIN = 0.9;
 export const FONT_SCALE_MAX = 1.25;
