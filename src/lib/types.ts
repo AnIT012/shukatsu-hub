@@ -214,6 +214,8 @@ export interface BackupFile {
   applications: Application[];
   /** 旧バックアップには無い(後方互換のため任意) */
   events?: EventItem[];
+  /** よく使うサイト。iPhone 版の「サイト」に取り込む(旧バックアップには無い) */
+  quickLinks?: QuickLink[];
 }
 
 // ------- UI 用の補助型 -------

@@ -14,6 +14,7 @@ import type {
   StepStatus,
   VenueMode,
   EventItem,
+  QuickLink,
   EventStatus,
 } from "./types";
 import { newId } from "./utils";
@@ -328,12 +329,14 @@ function pad(n: number) {
 export function exportApplications(
   applications: Application[],
   events: EventItem[] = [],
+  quickLinks: QuickLink[] = [],
 ) {
   const backup: BackupFile = {
     version: 1,
     savedAt: new Date().toISOString(),
     applications,
     events,
+    quickLinks,
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], {
     type: "application/json",
