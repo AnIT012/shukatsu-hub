@@ -475,11 +475,11 @@ export function Dashboard() {
   const handleAddEvent = () => setAddEventOpen(true);
 
   const handleExport = () => {
-    if (applications.length === 0) {
+    if (applications.length === 0 && events.length === 0) {
       toast.info("エクスポートするデータがありません");
       return;
     }
-    exportApplications(applications);
+    exportApplications(applications, events);
     toast.success("バックアップを書き出しました");
   };
 

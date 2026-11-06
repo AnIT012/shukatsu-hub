@@ -325,11 +325,15 @@ function pad(n: number) {
 }
 
 /** 現在のデータを JSON ファイルとしてダウンロード */
-export function exportApplications(applications: Application[]) {
+export function exportApplications(
+  applications: Application[],
+  events: EventItem[] = [],
+) {
   const backup: BackupFile = {
     version: 1,
     savedAt: new Date().toISOString(),
     applications,
+    events,
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], {
     type: "application/json",
