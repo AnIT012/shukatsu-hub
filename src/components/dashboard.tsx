@@ -479,7 +479,7 @@ export function Dashboard() {
       toast.info("エクスポートするデータがありません");
       return;
     }
-    exportApplications(applications, events);
+    exportApplications(applications, events, quickLinks);
     toast.success("バックアップを書き出しました");
   };
 
