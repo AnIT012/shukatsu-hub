@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>就活Hub（iPhone アプリ）｜開いた瞬間に、次にやることが分かる</title>
+<meta name="description" content="就活の締切・面接・説明会を、日付順の予定表で見る iPhone アプリ。無料・ログインなし。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="就活Hub（iPhone アプリ）">
+<meta property="og:description" content="就活の締切・面接・説明会を、日付順の予定表で。無料・ログインなし。">
+<meta property="og:url" content="https://shukatsu-dashboard-sable.vercel.app/ios/">
+<meta property="og:image" content="https://shukatsu-dashboard-sable.vercel.app/ios/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<!-- 画面はすべて iPhone 版の実物の撮影（見本データ・架空の会社名）。アプリの画面を変えたら撮り直す -->
+<style>
+:root{--ink:#1d1d1f;--sub:#55555c;--teal:#0f7b72;--teal-text:#0d736b;--line:#e3e3e8;--soft:#f5f5f7}
+*{box-sizing:border-box;margin:0;padding:0}
+html{color-scheme:light;-webkit-text-size-adjust:100%}
+body{background:#fff;color:var(--ink);font:17px/1.8 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
+main{max-width:440px;margin:0 auto;padding:0 20px}
+section{padding:56px 0;border-top:1px solid var(--line)}
+section:first-child{border-top:0;padding-top:48px}
+.k{font-size:15px;font-weight:600;color:var(--teal-text)}
+h1{font-size:34px;line-height:1.4;font-weight:700;margin-top:10px;letter-spacing:-.01em}
+h2{font-size:26px;line-height:1.45;font-weight:700;margin-top:8px}
+p{margin-top:14px;color:var(--sub)}
+.phone{margin:32px auto 0;width:min(280px,78%);border-radius:44px;background:#111;padding:9px}
+.phone img{display:block;width:100%;height:auto;border-radius:36px}
+.pair{display:flex;gap:12px;margin-top:32px}
+.pair .phone{margin:0;width:50%;border-radius:30px;padding:6px}
+.pair .phone img{border-radius:25px}
+.cta{display:block;margin-top:28px;padding:15px 20px;border-radius:999px;background:var(--teal);color:#fff;text-align:center;font-weight:600;text-decoration:none}
+.note{font-size:14px;margin-top:10px;text-align:center}
+ul.pain{list-style:none;margin-top:20px}
+ul.pain li{padding:14px 0;border-top:1px solid var(--line)}
+ul.pain li:first-child{border-top:0}
+ul.pain b{display:block;font-weight:600;color:var(--ink)}
+ul.pain span{display:block;color:var(--sub);font-size:16px;margin-top:2px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
+.grid div{background:var(--soft);border-radius:12px;padding:16px}
+.grid b{display:block;font-size:16px}
+.grid span{display:block;font-size:14px;color:var(--sub);margin-top:4px;line-height:1.6}
+footer{max-width:440px;margin:0 auto;padding:32px 20px 48px;border-top:1px solid var(--line);font-size:14px;color:var(--sub)}
+footer a{color:var(--teal-text);margin-right:20px}
+</style>
+</head>
+<body>
+<main>
+<section>
+  <div class="k">就活Hub　iPhone アプリ</div>
+  <h1>開いた瞬間に、<br>次にやることが分かる。</h1>
+  <p>就活の締切・面接・説明会を、日付順の予定表で見るアプリです。</p>
+  <!-- 公開後に App Store の URL を入れる -->
+  <a class="cta" href="#appstore">App Store で入手</a>
+  <p class="note">無料・ログインなし・iOS 26 以上</p>
+  <div class="phone"><img src="img/01_home.jpg" width="598" height="1300" alt="予定表の画面。今日と明日の面接と締切が日付順に並んでいる"></div>
+</section>
+
+<section>
+  <h2>こんな時に</h2>
+  <ul class="pain">
+    <li><b>締切がメールとマイページに散らばっている</b><span>予定表に、締切・面接・説明会がまとめて並びます。</span></li>
+    <li><b>どの会社がどこまで進んだか分からない</b><span>会社ごとのページに、選考の流れが線で並びます。</span></li>
+    <li><b>面接の反省を次に生かせない</b><span>振り返りに残した「次に直すこと」が、次の準備の画面に出ます。</span></li>
+    <li><b>過ぎた締切に気づかない</b><span>まだ済んでいない締切は、予定表の一番上に出ます。</span></li>
+  </ul>
+</section>
+
+<section>
+  <div class="k">予定表</div>
+  <h2>今日と明日の予定が、<br>上から並びます。</h2>
+  <p>面接や説明会など出向く予定は緑、締切は紺で出ます。締切は右の ○ を押すと済みにできます。左上のカレンダーから、月の予定も開けます。</p>
+  <div class="phone"><img src="img/06_month.jpg" width="598" height="1300" alt="月のカレンダーと、選んだ日の予定" loading="lazy"></div>
+</section>
+
+<section>
+  <div class="k">会社のページ</div>
+  <h2>選考の流れと、<br>次の日時が1枚に。</h2>
+  <p>いちばん上に次の面接の日時と参加リンク、その下に ES 提出から最終面接までの流れが並びます。</p>
+  <div class="phone"><img src="img/11_company.jpg" width="598" height="1300" alt="会社のページ。次の一次面接と、選考の流れ" loading="lazy"></div>
+</section>
+
+<section>
+  <div class="k">振り返りと準備</div>
+  <h2>面接の後に残すと、<br>次の準備に出ます。</h2>
+  <p>面接が終わったら、手応えと「次に直すこと」を残せます。次の面接の前に開く準備の画面に、その内容が出ます。</p>
+  <div class="pair">
+    <div class="phone"><img src="img/18_company_today.jpg" width="598" height="1300" alt="会社のページの振り返りを追加するボタン" loading="lazy"></div>
+    <div class="phone"><img src="img/30_prep.jpg" width="598" height="1300" alt="面接の準備の画面" loading="lazy"></div>
+  </div>
+</section>
+
+<section>
+  <div class="k">予定の追加</div>
+  <h2>募集ページから、<br>メールから。</h2>
+  <p>募集ページを Safari から共有すると、会社名と日程を読み取ります。面接の案内メールは、貼り付けると日時と参加リンクを読み取ります。</p>
+  <div class="phone"><img src="img/05_add.jpg" width="598" height="1300" alt="追加のメニュー。選考の予定・タスク・イベント・会社" loading="lazy"></div>
+</section>
+
+<section>
+  <h2>安心して使えるように</h2>
+  <div class="grid">
+    <div><b>ログインなし</b><span>データは自分の iCloud に保存し、同じ Apple Account の iPhone 同士で同期します。</span></div>
+    <div><b>無料</b><span>いまの版は、すべての機能を無料で使えます。広告もありません。</span></div>
+    <div><b>iPhone で読み取り</b><span>貼り付けたメールの読み取りは、iPhone の中で行います。</span></div>
+    <div><b>Web版から移れます</b><span>Web版の「エクスポート（JSON）」を、アプリの取り込みで選びます。</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>就活の予定を、<br>1つの予定表に。</h2>
+  <a class="cta" href="#appstore">App Store で入手</a>
+  <p class="note">無料・ログインなし・iOS 26 以上</p>
+</section>
+</main>
+<footer>
+  <a href="support.html">サポート</a><a href="privacy.html">プライバシーポリシー</a>
+  <p style="margin-top:12px">提供者：AnIT</p>
+</footer>
+</body>
+</html>
