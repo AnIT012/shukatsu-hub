@@ -13,90 +13,145 @@
 <meta property="og:url" content="https://shukatsu-dashboard-sable.vercel.app/ios/">
 <meta property="og:image" content="https://shukatsu-dashboard-sable.vercel.app/ios/img/og.png">
 <meta name="twitter:card" content="summary_large_image">
-<!-- 画面はすべて iPhone 版の実物の撮影（見本データ・架空の会社名）。アプリの画面を変えたら撮り直す -->
+<!--
+  画面の画像は iPhone 版の実物の撮影（見本データ・架空の会社名）。アプリの画面を変えたら撮り直す。
+  予定の行（.row）はアプリの予定表を大きくした見せ方。色は App/ThemeColor.swift（teal）と App/Theme.swift（deadline・red）の値。
+  動きは最初の画面だけ：行が日付順に降りる・今の赤い線が走る。動きを減らす設定では止める。
+-->
 <style>
-:root{--ink:#1d1d1f;--sub:#55555c;--teal:#0f7b72;--teal-text:#0d736b;--line:#e3e3e8;--soft:#f5f5f7}
+:root{--ink:#1d1d1f;--sub:#55555c;--teal:#0f7b72;--teal-text:#0d736b;--navy:#2e3a59;--red:#d7264f;--line:#e3e3e8;--soft:#f5f5f7}
 *{box-sizing:border-box;margin:0;padding:0}
 html{color-scheme:light;-webkit-text-size-adjust:100%}
 body{background:#fff;color:var(--ink);font:17px/1.8 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
-main{max-width:440px;margin:0 auto;padding:0 20px}
-section{padding:56px 0;border-top:1px solid var(--line)}
-section:first-child{border-top:0;padding-top:48px}
+main{max-width:480px;margin:0 auto;padding:0 20px;overflow:hidden}
+section{padding:64px 0}
 .k{font-size:15px;font-weight:600;color:var(--teal-text)}
-h1{font-size:34px;line-height:1.4;font-weight:700;margin-top:10px;letter-spacing:-.01em}
-h2{font-size:26px;line-height:1.45;font-weight:700;margin-top:8px}
+h1,h2{font-weight:800;letter-spacing:-.02em;line-height:1.35}
+h1{font-size:30px}
+h2{font-size:30px;margin-top:8px}
+h2 b,h1 b{color:var(--teal-text)}
 p{margin-top:14px;color:var(--sub)}
-.phone{margin:32px auto 0;width:min(280px,78%);border-radius:44px;background:#111;padding:9px}
+
+/* 予定表の行（アプリの予定表を大きくした見せ方） */
+.agenda{display:grid;grid-template-columns:56px 1fr;column-gap:12px;margin-top:28px}
+.date{font-weight:700;font-size:20px;line-height:1;padding-top:6px}  /* 日付の数字は置かない（開いた日と食い違うため） */
+.rows{display:grid;gap:12px}
+.row{border-radius:12px;color:#fff;display:flex;align-items:center;padding:16px 18px;text-decoration:none}
+.row .tt{font-weight:700;font-size:20px;line-height:1.35}
+.row .ss{font-size:14px;opacity:.92;margin-top:2px}
+.row .ring{margin-left:auto;width:30px;height:30px;border:3px solid currentColor;border-radius:50%;flex:none}
+.teal{background:var(--teal)} .navy{background:var(--navy)}
+.task{background:#fff;color:var(--ink);border:2px solid var(--teal)}
+.task .ring{color:var(--teal)}
+.task .tt{color:var(--teal-text)}
+.now{position:relative;height:3px;background:var(--red);margin:2px 0 2px 6px;transform-origin:left}
+.now:before{content:"";position:absolute;left:-7px;top:-5px;width:13px;height:13px;border-radius:50%;background:var(--red)}
+@media (prefers-reduced-motion:no-preference){
+  .drop{animation:drop .5s cubic-bezier(.3,.35,.25,1) both}
+  .now{animation:sweep .8s cubic-bezier(.3,.35,.25,1) 1.3s both}
+  @keyframes drop{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:none}}
+  @keyframes sweep{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+}
+.lead{margin-top:28px;font-size:15px}
+.lead b{color:var(--teal-text)}
+
+/* 散らかり */
+.scatter{position:relative;height:310px;margin-top:24px}
+.bit{position:absolute;font-size:14px;padding:9px 13px;border-radius:9px;white-space:nowrap;color:var(--sub)}
+.mail{background:#fff;border:1.5px solid #d4d4d9} .memo{background:#fff6c9} .cal{background:#eef0f5}
+.arrow{text-align:center;font-size:36px;font-weight:700;color:var(--teal-text);line-height:1;margin:8px 0}
+
+/* 残り1時間 */
+.big{display:flex;align-items:flex-end;color:var(--navy);font-weight:800;line-height:1;letter-spacing:-.04em;margin-top:28px}
+.big .a{font-size:44px;margin-bottom:14px}
+.big .b{font-size:170px;margin:0 6px -8px}
+.big .c{font-size:54px;margin-bottom:10px}
+.s{margin-top:22px;font-weight:600;font-size:18px;color:var(--ink)}
+
+/* 端末 */
+.phone{margin:32px auto 0;width:min(280px,76%);border-radius:44px;background:#111;padding:9px}
 .phone img{display:block;width:100%;height:auto;border-radius:36px}
-.pair{display:flex;gap:12px;margin-top:32px}
+.pair{display:flex;gap:12px;margin-top:32px;align-items:flex-start}
 .pair .phone{margin:0;width:50%;border-radius:30px;padding:6px}
 .pair .phone img{border-radius:25px}
-.cta{display:block;margin-top:28px;padding:15px 20px;border-radius:999px;background:var(--teal);color:#fff;text-align:center;font-weight:600;text-decoration:none}
-.note{font-size:14px;margin-top:10px;text-align:center}
-ul.pain{list-style:none;margin-top:20px}
-ul.pain li{padding:14px 0;border-top:1px solid var(--line)}
-ul.pain li:first-child{border-top:0}
-ul.pain b{display:block;font-weight:600;color:var(--ink)}
-ul.pain span{display:block;color:var(--sub);font-size:16px;margin-top:2px}
+.pair .phone:last-child{margin-top:28px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{font-size:14px;font-weight:600;color:var(--ink);background:var(--soft);border-radius:999px;padding:5px 12px}
+
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
 .grid div{background:var(--soft);border-radius:12px;padding:16px}
 .grid b{display:block;font-size:16px}
 .grid span{display:block;font-size:14px;color:var(--sub);margin-top:4px;line-height:1.6}
-footer{max-width:440px;margin:0 auto;padding:32px 20px 48px;border-top:1px solid var(--line);font-size:14px;color:var(--sub)}
+.note{font-size:14px;margin-top:12px;text-align:center}
+footer{max-width:480px;margin:0 auto;padding:32px 20px 48px;border-top:1px solid var(--line);font-size:14px;color:var(--sub)}
 footer a{color:var(--teal-text);margin-right:20px}
 </style>
 </head>
 <body>
 <main>
+
 <section>
   <div class="k">就活Hub　iPhone アプリ</div>
   <h1>開いた瞬間に、<br>次にやることが分かる。</h1>
-  <p>就活の締切・面接・説明会を、日付順の予定表で見るアプリです。</p>
-  <!-- 公開後に App Store の URL を入れる -->
-  <a class="cta" href="#appstore">App Store で入手</a>
-  <p class="note">無料・ログインなし・iOS 26 以上</p>
-  <div class="phone"><img src="img/01_home.jpg" width="598" height="1300" alt="予定表の画面。今日と明日の面接と締切が日付順に並んでいる"></div>
+  <div class="agenda" aria-label="予定表の例">
+    <div class="date">今日</div>
+    <div class="rows">
+      <div class="row teal drop" style="animation-delay:.2s"><div><div class="tt">一次面接</div><div class="ss">14:00・港テック・オンライン</div></div><span class="ring"></span></div>
+      <div class="now" aria-hidden="true"></div>
+      <div class="row navy drop" style="animation-delay:.5s"><div><div class="tt">ES 提出の締切</div><div class="ss">23:59（残り1時間）・星野ソフト</div></div><span class="ring"></span></div>
+      <!-- 公開後に App Store の URL を入れる -->
+      <a class="row task drop" style="animation-delay:.8s" href="#appstore"><div><div class="tt">就活Hub を入れる</div><div class="ss">今日まで・App Store・無料</div></div><span class="ring"></span></a>
+    </div>
+  </div>
+  <p class="lead">就活の締切・面接・説明会を、<b>日付順の予定表</b>で。<br>無料・ログインなし・iOS 26 以上</p>
 </section>
 
 <section>
-  <h2>こんな時に</h2>
-  <ul class="pain">
-    <li><b>締切がメールとマイページに散らばっている</b><span>予定表に、締切・面接・説明会がまとめて並びます。</span></li>
-    <li><b>どの会社がどこまで進んだか分からない</b><span>会社ごとのページに、選考の流れが線で並びます。</span></li>
-    <li><b>面接の反省を次に生かせない</b><span>振り返りに残した「次に直すこと」が、次の準備の画面に出ます。</span></li>
-    <li><b>過ぎた締切に気づかない</b><span>まだ済んでいない締切は、予定表の一番上に出ます。</span></li>
-  </ul>
+  <h2>散らばった予定を、<br><b>1つの予定表</b>に。</h2>
+  <div class="scatter" aria-hidden="true">
+    <div class="bit mail" style="left:0;top:8px;transform:rotate(-4deg)">件名：一次面接のご案内（11/7 10:00）</div>
+    <div class="bit memo" style="right:4px;top:66px;transform:rotate(6deg)">ES 23:59 まで？</div>
+    <div class="bit memo" style="left:10px;top:112px;transform:rotate(3deg)">マイページの ID どこ…</div>
+    <div class="bit cal" style="right:10px;top:160px;transform:rotate(-5deg)">説明会 19:00 渋谷</div>
+    <div class="bit mail" style="left:0;top:212px;transform:rotate(2deg)">件名：【適性検査】受検期限のお知らせ</div>
+    <div class="bit memo" style="right:20px;top:262px;transform:rotate(-3deg)">OB にお礼のメール</div>
+  </div>
+  <div class="arrow" aria-hidden="true">↓</div>
+  <div class="phone"><img src="img/01_home.jpg" width="598" height="1300" alt="予定表の画面。今日と明日の面接と締切が日付順に並んでいる" loading="lazy"></div>
+  <p>面接や説明会は緑、締切は紺で並びます。過ぎた締切は、一番上に赤い1行で出ます。</p>
 </section>
 
 <section>
-  <div class="k">予定表</div>
-  <h2>今日と明日の予定が、<br>上から並びます。</h2>
-  <p>面接や説明会など出向く予定は緑、締切は紺で出ます。締切は右の ○ を押すと済みにできます。左上のカレンダーから、月の予定も開けます。</p>
-  <div class="phone"><img src="img/06_month.jpg" width="598" height="1300" alt="月のカレンダーと、選んだ日の予定" loading="lazy"></div>
+  <div class="k">締切</div>
+  <h2>締切が近いと、<br>残りの時間が出る。</h2>
+  <div class="big" role="img" aria-label="残り1時間"><span class="a">残り</span><span class="b">1</span><span class="c">時間</span></div>
+  <p class="s">ES 提出の締切　23:59・星野ソフト</p>
+  <p>締切まで24時間を切ると、予定表に残りの時間が出ます。締切は右の ○ を押すと済みにできます。</p>
 </section>
 
 <section>
   <div class="k">会社のページ</div>
-  <h2>選考の流れと、<br>次の日時が1枚に。</h2>
-  <p>いちばん上に次の面接の日時と参加リンク、その下に ES 提出から最終面接までの流れが並びます。</p>
-  <div class="phone"><img src="img/11_company.jpg" width="598" height="1300" alt="会社のページ。次の一次面接と、選考の流れ" loading="lazy"></div>
+  <h2>会社ごとに、<br>選考の流れと次の予定。</h2>
+  <div class="chips"><span class="chip">1タップで参加リンク</span><span class="chip">1タップでマイページ</span><span class="chip">ES・企業研究</span></div>
+  <div class="phone"><img src="img/18_company_today.jpg" width="598" height="1300" alt="会社のページ。次の一次面接と参加リンクを開くボタン、選考の流れ" loading="lazy"></div>
+  <p>いちばん上に次の予定と「参加リンクを開く」、その下に ES 提出から最終面接までの流れが並びます。</p>
 </section>
 
 <section>
-  <div class="k">振り返りと準備</div>
-  <h2>面接の後に残すと、<br>次の準備に出ます。</h2>
-  <p>面接が終わったら、手応えと「次に直すこと」を残せます。次の面接の前に開く準備の画面に、その内容が出ます。</p>
+  <div class="k">質問の棚</div>
+  <h2>聞かれた質問を、<br>会社をまたいでためる。</h2>
+  <div class="phone"><img src="img/27_question.jpg" width="598" height="1300" alt="質問「挫折した経験」に、2社分の答えが並んでいる" loading="lazy"></div>
+  <p>1つの質問に、会社ごとの答えが並びます。面接の後に残した「次に直すこと」は、次の面接の準備の画面に出ます。</p>
+</section>
+
+<section>
+  <div class="k">メモとサイト</div>
+  <h2>メモも、<br>マイページの ID も。</h2>
   <div class="pair">
-    <div class="phone"><img src="img/18_company_today.jpg" width="598" height="1300" alt="会社のページの振り返りを追加するボタン" loading="lazy"></div>
-    <div class="phone"><img src="img/30_prep.jpg" width="598" height="1300" alt="面接の準備の画面" loading="lazy"></div>
+    <div class="phone"><img src="img/08_notes.jpg" width="598" height="1300" alt="メモの一覧" loading="lazy"></div>
+    <div class="phone"><img src="img/09_sites.jpg" width="598" height="1300" alt="各社のマイページと ID の一覧" loading="lazy"></div>
   </div>
-</section>
-
-<section>
-  <div class="k">予定の追加</div>
-  <h2>募集ページから、<br>メールから。</h2>
-  <p>募集ページを Safari から共有すると、会社名と日程を読み取ります。面接の案内メールは、貼り付けると日時と参加リンクを読み取ります。</p>
-  <div class="phone"><img src="img/05_add.jpg" width="598" height="1300" alt="追加のメニュー。選考の予定・タスク・イベント・会社" loading="lazy"></div>
+  <p>企業研究や自己分析のメモと、各社のマイページを1か所に。マイページは1タップで開けます。</p>
 </section>
 
 <section>
@@ -110,8 +165,13 @@ footer a{color:var(--teal-text);margin-right:20px}
 </section>
 
 <section>
-  <h2>就活の予定を、<br>1つの予定表に。</h2>
-  <a class="cta" href="#appstore">App Store で入手</a>
+  <h2>今日やることに、<br>1つ足してください。</h2>
+  <div class="agenda">
+    <div class="date">今日</div>
+    <div class="rows">
+      <a class="row task" href="#appstore"><div><div class="tt">就活Hub を入れる</div><div class="ss">今日まで・App Store・無料</div></div><span class="ring"></span></a>
+    </div>
+  </div>
   <p class="note">無料・ログインなし・iOS 26 以上</p>
 </section>
 </main>
