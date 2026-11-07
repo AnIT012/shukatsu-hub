@@ -17,6 +17,10 @@ const securityHeaders = [
 const nextConfig = {
   // 個人用ローカルツール。型チェックは有効、ESLint はビルドを止めない。
   eslint: { ignoreDuringBuilds: true },
+  // iPhone版の紹介ページ（public/ios/index.html）。/ios/ は末尾の / を外して /ios へ飛ぶので、/ios でも開けるようにする
+  async rewrites() {
+    return [{ source: "/ios", destination: "/ios/index.html" }];
+  },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
