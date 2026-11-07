@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'">
 <title>就活Hub（iPhone アプリ）｜散らばってた予定が、1画面に。</title>
@@ -16,144 +16,148 @@
 <script src="/ios/lp.js"></script>
 <!--
   このファイルは ~/Projects/shukatsu-hub-ios/qa/promo/make_lp.py で書き出す（手で直さない）。
-  画面の画像は iPhone 版の実物をシミュレーターで撮った物（見本データ・架空の会社名）。自己分析・メモ・ES・振り返りは実際に文字を入れて1コマずつ撮った。
-  参加ページ（join）とログイン（login）だけは作ったイメージで、ページにもそう書く。色は App/ThemeColor.swift（teal）と Theme.swift（deadline）の値。
+  画面の画像は iPhone 版の実物をシミュレーターで撮った物（見本データ・架空の会社名）の切り出し。
+  自己分析・メモ・ES・振り返りは実際に文字を入れて1コマずつ撮った。参加ページ（join）とログイン（login）だけは作ったイメージで、ページにもそう書く。
+  色は App/ThemeColor.swift（teal）と Theme.swift（deadline）の値。
 -->
 <style>
-:root{--ink:#1d1d1f;--sub:#55555c;--teal:#0f7b72;--teal-text:#0d736b;--navy:#2e3a59;--red:#d7264f;--line:#e3e3e8;--soft:#f5f5f7;--e:cubic-bezier(.3,.35,.25,1)}
+:root{--ink:#1d1d1f;--sub:#55555c;--teal:#0f7b72;--teal-text:#0d736b;--navy:#2e3a59;--line:#e3e3e8;--soft:#f5f5f7;--e:cubic-bezier(.3,.35,.25,1)}
 *{box-sizing:border-box;margin:0;padding:0}
 html{color-scheme:light;-webkit-text-size-adjust:100%}
-body{background:#fff;color:var(--ink);font:17px/1.8 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;font-feature-settings:"palt";-webkit-font-smoothing:antialiased;overflow-x:hidden}
-.wrap{max-width:480px;margin:0 auto;padding:0 20px}
+body{background:#fff;color:var(--ink);font:17px/1.7 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
+main{max-width:480px;margin:0 auto;padding:0 20px;overflow:hidden}
+section{padding:64px 0}
+.k{font-size:14px;font-weight:600;color:var(--teal-text)}
 h1,h2{font-weight:800;letter-spacing:-.02em;line-height:1.3}
-h1{font-size:36px} h2{font-size:30px}
+h1{font-size:34px;margin-top:6px} h2{font-size:28px}
 h1 b,h2 b{color:var(--teal-text)}
-p{color:var(--sub)}
-.k{font-size:15px;font-weight:600;color:var(--teal-text)}
-.say{margin-top:12px;font-size:28px;font-weight:800;letter-spacing:-.02em;color:var(--teal-text)}
-.lead{margin-top:10px;font-size:16px;line-height:1.7}
-.lead b{color:var(--teal-text)}
-.phone{position:relative;border-radius:44px;background:#111;padding:9px;width:min(280px,76%);margin:24px auto 0}
-.scr{position:relative;border-radius:36px;overflow:hidden;background:#fff;aspect-ratio:598/1300}
-.scr img{position:absolute;inset:0;width:100%;height:100%;display:block}
+p{color:var(--sub);font-size:15px;line-height:1.7}
+.say{margin-top:20px;font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--teal-text)}
+.step{margin-top:16px;color:var(--ink);font-weight:700;font-size:16px}
+.img-note{font-size:12px;margin-top:8px}
 
-/* ── 1 一番上：画面全体のかけら → 予定表の行 */
-.hero{position:relative;min-height:100svh;padding:72px 0 40px;overflow:hidden}
-.hero .bits{position:absolute;inset:0;pointer-events:none}
-.bit{position:absolute;font-size:14px;padding:9px 13px;border-radius:9px;white-space:nowrap;color:var(--sub);transform:rotate(var(--r));box-shadow:0 2px 10px rgba(0,0,0,.05)}
+/* 切り出し：撮影の一部を大きく。地から少し浮かせる */
+.crop{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.12);background:#fff;margin-top:20px}
+.crop img{display:block;width:100%;height:auto}
+.tap{position:absolute;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;border:3px solid var(--teal);background:rgba(15,123,114,.18);pointer-events:none}
+.open{display:flex;gap:14px;margin-top:12px;align-items:flex-start}
+.phone{flex:none;width:150px;border-radius:26px;background:#111;padding:5px}
+.phone img{display:block;width:100%;height:auto;border-radius:21px}
+.open p{padding-top:4px}
+
+/* 1 最初の画面：予定表の行 */
+.bits{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:22px}
+.bit{font-size:13px;padding:7px 11px;border-radius:8px;color:var(--sub)}
 .mail{background:#fff;border:1.5px solid #d4d4d9} .memo{background:#fff6c9} .cal{background:#eef0f5}
-.agenda{display:grid;grid-template-columns:44px 1fr;column-gap:10px;row-gap:14px;margin-top:28px;position:relative}
-.day{font-weight:700;font-size:15px;padding-top:12px}
-.col{display:grid;gap:10px}
-.row{border-radius:12px;color:#fff;display:flex;align-items:center;padding:13px 16px}
-.row .tt{font-weight:700;font-size:18px;line-height:1.35}
-.row .ss{font-size:13px;opacity:.92}
-.row .ring{margin-left:auto;width:26px;height:26px;border:3px solid currentColor;border-radius:50%;flex:none}
+.bits em{font-style:normal;font-size:14px;color:var(--sub)}
+.agenda{display:grid;grid-template-columns:40px 1fr;column-gap:10px;row-gap:12px;margin-top:18px}
+.day{font-weight:700;font-size:14px;padding-top:11px}
+.col{display:grid;gap:9px}
+.row{border-radius:12px;color:#fff;display:flex;align-items:center;padding:12px 15px;text-decoration:none}
+.row .tt{font-weight:700;font-size:17px;line-height:1.35}
+.row .ss{font-size:12px;opacity:.92}
+.row .ring{margin-left:auto;width:24px;height:24px;border:3px solid currentColor;border-radius:50%;flex:none}
 .teal{background:var(--teal)} .navy{background:var(--navy)}
-.task{background:#fff;color:var(--ink);border:2px solid #c9c9ce} .task .ring{color:#9a9aa0}
-.now{position:relative;height:3px;background:var(--red);margin:0 0 0 6px;transform-origin:left}
-.now:before{content:"";position:absolute;left:-7px;top:-5px;width:13px;height:13px;border-radius:50%;background:var(--red)}
-.h1b{display:inline-block}
-.dl{display:flex;align-items:center;justify-content:center;height:56px;margin-top:28px;border-radius:28px;background:var(--ink);color:#fff;font-weight:700;font-size:17px;text-decoration:none}
-.dlnote{font-size:14px;text-align:center;margin-top:10px}
-.cue{text-align:center;margin-top:22px;font-size:13px;color:var(--sub)}
-html:not(.js) .bit{display:none}
+.task{background:#fff;color:var(--ink);border:2px solid var(--teal)} .task .ring{color:var(--teal)} .task .tt{color:var(--teal-text)}
+.dl{display:flex;align-items:center;justify-content:center;height:52px;margin-top:26px;border-radius:26px;background:var(--ink);color:#fff;font-weight:700;font-size:16px;text-decoration:none}
+.dlnote{font-size:13px;text-align:center;margin-top:8px}
 
-/* ── 2〜4 スクロールで進む場面（iPhone は止めたまま） */
-.story{position:relative}
-.stage{position:sticky;top:0;height:100svh;display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 28px) 20px 20px;max-width:480px;margin:0 auto}
-.caps{display:grid;width:100%;min-height:150px}
-.cp{grid-area:1/1;opacity:0;transform:translateY(10px);transition:opacity .3s,transform .4s var(--e)}
-.cp.vis{opacity:1;transform:none}
-.cp .big{font-size:40px;color:var(--teal-text)}
-.words{font-size:26px} .words span{display:inline-block;color:#c4c4c9;transition:color .3s}
-.words span.on,.words span.done{color:var(--ink)}
-.stage .phone{margin:12px auto 0;height:calc(100svh - 230px);width:auto;aspect-ratio:616/1318;max-width:300px}
-.stage .scr{height:100%;width:auto}
-.L{opacity:0;transition:opacity .35s,transform .45s var(--e)}
-.L.push{transform:translateX(35%)} .L.rise{transform:translateY(35%)}
-.L.vis{opacity:1;transform:none}
-.wf{opacity:0} .wf.vis{opacity:1}
-.rip{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:var(--teal);opacity:0;pointer-events:none}
-.rip.go{animation:tap .7s ease-out}
-@keyframes tap{0%{opacity:.55;transform:scale(.2)}100%{opacity:0;transform:scale(1.6)}}
-.bar{position:absolute;left:20px;right:20px;bottom:12px;height:3px;border-radius:2px;background:var(--line);overflow:hidden}
-.bar i{display:block;height:100%;background:var(--teal);transform-origin:left;transform:scaleX(var(--p,0))}
-.img-note{position:absolute;left:0;right:0;bottom:22px;font-size:12px;text-align:center;color:var(--sub);opacity:0;transition:opacity .3s}
-.img-note.vis{opacity:1}
-html:not(.js) .story{display:none}
-.flats{display:none}
-html:not(.js) .flats{display:block}
-.flat{padding:56px 0 0}
+/* 5 書く画面 */
+.wb{margin-top:28px}
+.wh b{font-size:18px;margin-right:10px}
+.wh span{font-size:14px;color:var(--sub)}
+.tw{margin-top:10px}
+.tw img + img{position:absolute;inset:0}
 
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
 .grid div{background:var(--soft);border-radius:12px;padding:16px}
 .grid b{display:block;font-size:16px}
 .grid span{display:block;font-size:14px;color:var(--sub);margin-top:4px;line-height:1.6}
-section{padding:72px 0}
-.end .agenda{margin-top:32px}
-.end a.row{text-decoration:none;border-color:var(--teal)}
-.end a.row .tt{color:var(--teal-text)} .end a.row .ring{color:var(--teal)}
 footer{max-width:480px;margin:0 auto;padding:32px 20px 48px;border-top:1px solid var(--line);font-size:14px;color:var(--sub)}
 footer a{color:var(--teal-text);margin-right:20px}
 
-/* ── 動き（.js の時だけ） */
-@keyframes pop{from{opacity:0;transform:scale(.8) rotate(var(--r))}to{opacity:1;transform:rotate(var(--r))}}
-@keyframes fly{to{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.5)}}
-@keyframes drop{from{opacity:0;transform:translateY(-18px) scale(.97)}to{opacity:1;transform:none}}
-@keyframes sweep{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
-@keyframes show{from{opacity:0}to{opacity:1}}
-.js .hero .bit{animation:pop .45s var(--e) calc(.15s + var(--n) * .08s) both}
-.js .hero.go .bit{animation:fly .75s cubic-bezier(.6,0,.4,1) calc(var(--n) * .04s) forwards}
-.js .hero .row{opacity:0}
-.js .hero.go .row{animation:drop .5s var(--e) calc(.55s + var(--i) * .12s) both}
-.js .hero .now{transform:scaleX(0)}
-.js .hero.go .now{animation:sweep .8s var(--e) 1.3s both}
-.js .hero .h1b, .js .hero .after{opacity:0}
-.js .hero.go .h1b{animation:up .5s var(--e) .9s both}
-.js .hero.go .after{animation:show .5s ease 1.6s both}
+/* ── 動き（lp.js が html に .js を付けた時だけ。段が画面に入ると .on） */
+@keyframes up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes drop{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+@keyframes tap{0%{opacity:0;transform:scale(.4)}30%{opacity:1;transform:scale(1)}100%{opacity:1;transform:scale(1)}}
+@keyframes show{to{opacity:1}}
 .js .rv{opacity:0}
-.js .rv.on{animation:up .6s var(--e) var(--d,0s) both}
-.js .end .row{opacity:0}
-.js .end .rv.on .row{animation:drop .6s var(--e) .3s both}
+.js .rv.on{animation:up .55s var(--e) var(--d,0s) both}
+/* 最初：かけら → 行が日付順に降りる */
+.js .hero .bit,.js .hero .bits em{opacity:0;animation:pop .4s var(--e) calc(.1s + var(--n,0) * .12s) both}
+.js .hero .row{opacity:0;animation:drop .45s var(--e) calc(.75s + var(--i) * .15s) both}
+/* 押す所 → 開いた先 */
+.js .tap{opacity:0}
+.js .on .tap{animation:tap .5s var(--e) .5s both}
+.js .on .phone{animation:up .5s var(--e) 1.0s both}
+.js .phone{opacity:0}
+/* 書く：コマを上に重ねていく（前のコマは消さない） */
+.js .tw img + img{opacity:0}
+.js .wb.on .tw img + img{animation:show .01s linear calc(.6s + var(--j) * .7s) forwards}
 @media (prefers-reduced-motion:reduce){
-  .cp,.L,.words span{transition:none}
-  .rip.go{animation:none}
+  .js .rv,.js .hero .bit,.js .hero .bits em,.js .hero .row,.js .tap,.js .phone{opacity:1;animation:none}
+  .js .tw img + img{opacity:1;animation:none}
 }
 </style>
 </head>
 <body>
+<main>
 
-<header class="hero" id="hero">
-  <div class="bits" aria-hidden="true"><div class="bit mail" data-to="row0" style="left:4%;top:22%;--r:-4deg">件名：一次面接のご案内（14:00）</div><div class="bit memo" data-to="row0" style="left:56%;top:30%;--r:5deg">港テック 参加URL どこ…</div><div class="bit memo" data-to="row1" style="left:8%;top:40%;--r:6deg">ES 23:59 まで？</div><div class="bit cal" data-to="row1" style="left:52%;top:47%;--r:-3deg">星野ソフト マイページ</div><div class="bit mail" data-to="row2" style="left:2%;top:58%;--r:3deg">件名：一次面接の日程確定</div><div class="bit cal" data-to="row2" style="left:50%;top:64%;--r:-5deg">明日 10:00 青葉商事</div><div class="bit cal" data-to="row3" style="left:6%;top:74%;--r:2deg">GD 16:45 銀河通信</div><div class="bit memo" data-to="row3" style="left:54%;top:80%;--r:4deg">グルディス 持ち物？</div><div class="bit memo" data-to="row4" style="left:10%;top:88%;--r:-3deg">OB にお礼のメール</div><div class="bit memo" data-to="row4" style="left:52%;top:93%;--r:3deg">お礼は 20時までに</div></div>
-  <div class="wrap">
-    <div class="k">就活Hub　iPhone アプリ</div>
-    <h1>散らばってた予定が、<br><b class="h1b">1画面に。</b></h1>
-    <div class="agenda" aria-label="予定表の例"><div class="day">今日</div><div class="col"><div class="row teal" id="row0" style="--i:0"><div><div class="tt">一次面接</div><div class="ss">14:00・港テック・オンライン</div></div><span class="ring"></span></div><div class="now" aria-hidden="true"></div><div class="row navy" id="row1" style="--i:1"><div><div class="tt">ES 提出の締切</div><div class="ss">23:59・星野ソフト</div></div><span class="ring"></span></div></div><div class="day">明日</div><div class="col"><div class="row teal" id="row2" style="--i:2"><div><div class="tt">一次面接</div><div class="ss">10:00・青葉商事・オンライン</div></div><span class="ring"></span></div><div class="row teal" id="row3" style="--i:3"><div><div class="tt">グループディスカッション</div><div class="ss">16:45・銀河通信</div></div><span class="ring"></span></div><div class="row task" id="row4" style="--i:4"><div><div class="tt">OB 訪問のお礼を送る</div><div class="ss">20:00まで</div></div><span class="ring"></span></div></div></div>
-    <div class="after">
-      <!-- 公開後に App Store の URL を入れる -->
-      <a class="dl" href="#appstore">App Store で無料ダウンロード</a>
-      <p class="dlnote">無料・ログインなし・広告なし・iOS 26 以上</p>
-      <p class="cue">スクロールすると、アプリの中を見られます ↓</p>
+<section class="hero">
+  <div class="k">就活Hub　iPhone アプリ</div>
+  <h1>散らばってた予定が、<br><b>1画面に。</b></h1>
+  <div class="bits"><span class="bit mail" style="--n:0">メール</span><span class="bit memo" style="--n:1">メモ</span><span class="bit cal" style="--n:2">マイページ</span><em style="--n:3">にあった予定が ↓</em></div>
+  <div class="agenda" aria-label="予定表の例">
+    <div class="day">今日</div>
+    <div class="col">
+      <div class="row teal" style="--i:0"><div><div class="tt">一次面接</div><div class="ss">14:00・港テック・オンライン</div></div><span class="ring"></span></div>
+      <div class="row navy" style="--i:1"><div><div class="tt">ES 提出の締切</div><div class="ss">23:59・星野ソフト</div></div><span class="ring"></span></div>
+    </div>
+    <div class="day">明日</div>
+    <div class="col">
+      <div class="row teal" style="--i:2"><div><div class="tt">一次面接</div><div class="ss">10:00・青葉商事・オンライン</div></div><span class="ring"></span></div>
     </div>
   </div>
-</header>
+  <!-- 公開後に App Store の URL を入れる -->
+  <a class="dl" href="#appstore">App Store で無料ダウンロード</a>
+  <p class="dlnote">無料・ログインなし・広告なし・iOS 26 以上</p>
+</section>
 
-<div class="story" id="story" style="height:870svh" data-steps='{"steps": [{"layer": "home", "cap": 0}, {"layer": "company", "rip": "row", "cap": 1}, {"layer": "home", "cap": 2}, {"layer": "join", "rip": "join", "cap": 3}, {"layer": "company", "cap": 4}, {"layer": "login", "rip": "mypage", "cap": 5}, {"layer": "login", "cap": 6}, {"type": 0, "cap": 7}, {"type": 1, "cap": 8}, {"type": 2, "cap": 9}, {"type": 3, "cap": 10}], "type": [4, 4, 3, 3]}'>
-  <div class="stage">
-    <div class="caps"><div class="cp" data-c="0"><h2>次なんの選考？<br>進捗は？</h2></div><div class="cp" data-c="1"><h2>次なんの選考？<br>進捗は？</h2><p class="say">すべて見れます。</p></div><div class="cp" data-c="2"><h2>参加リンク、<br>どこだっけ。</h2></div><div class="cp" data-c="3"><h2>参加リンク、<br>どこだっけ。</h2><p class="lead">予定表の<b>「参加」</b>から、そのまま参加ページへ。</p></div><div class="cp" data-c="4"><h2>マイページ、<br>どこだっけ。</h2></div><div class="cp" data-c="5"><h2>マイページ、<br>どこだっけ。</h2><p class="lead">会社のページの<b>「マイページ」</b>から。ID も控えておけます。</p></div><div class="cp" data-c="6"><h2 class="big">もう<br>迷わせません。</h2></div><div class="cp" data-c="7"><h2 class="words"><span class="on">自己分析、</span><span class="">メモ、</span><span class="">ES、</span><span class="">振り返り</span></h2><p class="lead">強みや経験を、書きためておく。</p></div><div class="cp" data-c="8"><h2 class="words"><span class="done">自己分析、</span><span class="on">メモ、</span><span class="">ES、</span><span class="">振り返り</span></h2><p class="lead">説明会で聞いたことを、その場で。</p></div><div class="cp" data-c="9"><h2 class="words"><span class="done">自己分析、</span><span class="done">メモ、</span><span class="on">ES、</span><span class="">振り返り</span></h2><p class="lead">字数を見ながら、設問ごとに。</p></div><div class="cp" data-c="10"><h2 class="words"><span class="done">自己分析、</span><span class="done">メモ、</span><span class="done">ES、</span><span class="on">振り返り</span></h2><p class="say">すべてできます。</p></div></div>
-    <div class="phone"><div class="scr">
-      <img class="base" src="/ios/img/home.jpg" width="598" height="1300" alt="就活Hub の予定表">
-      <img class="L push" data-l="company" src="/ios/img/company.jpg" width="598" height="1300" alt=""><img class="L rise" data-l="join" src="/ios/img/join.jpg" width="598" height="1300" alt=""><img class="L rise" data-l="login" src="/ios/img/login.jpg" width="598" height="1300" alt=""><img class="wf" data-t="0" data-j="0" src="/ios/img/note_00.jpg" width="598" height="1300" alt=""><img class="wf" data-t="0" data-j="1" src="/ios/img/note_01.jpg" width="598" height="1300" alt=""><img class="wf" data-t="0" data-j="2" src="/ios/img/note_02.jpg" width="598" height="1300" alt=""><img class="wf" data-t="0" data-j="3" src="/ios/img/note_03.jpg" width="598" height="1300" alt=""><img class="wf" data-t="1" data-j="0" src="/ios/img/memo_00.jpg" width="598" height="1300" alt=""><img class="wf" data-t="1" data-j="1" src="/ios/img/memo_01.jpg" width="598" height="1300" alt=""><img class="wf" data-t="1" data-j="2" src="/ios/img/memo_02.jpg" width="598" height="1300" alt=""><img class="wf" data-t="1" data-j="3" src="/ios/img/memo_03.jpg" width="598" height="1300" alt=""><img class="wf" data-t="2" data-j="0" src="/ios/img/es_00.jpg" width="598" height="1300" alt=""><img class="wf" data-t="2" data-j="1" src="/ios/img/es_01.jpg" width="598" height="1300" alt=""><img class="wf" data-t="2" data-j="2" src="/ios/img/es_02.jpg" width="598" height="1300" alt=""><img class="wf" data-t="3" data-j="0" src="/ios/img/review_00.jpg" width="598" height="1300" alt=""><img class="wf" data-t="3" data-j="1" src="/ios/img/review_01.jpg" width="598" height="1300" alt=""><img class="wf" data-t="3" data-j="2" src="/ios/img/review_02.jpg" width="598" height="1300" alt=""><span class="rip" data-r="row" style="left:40%;top:38.3%"></span><span class="rip" data-r="join" style="left:85.7%;top:38.3%"></span><span class="rip" data-r="mypage" style="left:15.5%;top:32.6%"></span>
-    </div></div>
-    <p class="img-note">参加ページとマイページの画面はイメージです</p>
-    <div class="bar"><i></i></div>
+<section class="rv">
+  <h2>次なんの選考？<br>進捗は？</h2>
+  <div class="crop"><img src="/ios/img/c-company.jpg" width="706" height="1116" alt="港テックの会社のページ。次の一次面接と参加リンク、ES 提出から最終面接までの選考の流れ" loading="lazy"></div>
+  <p class="say">すべて見れます。</p>
+  <p>会社のページを開くと、いちばん上に次の予定。その下に、ES 提出から最終面接までの流れが並びます。</p>
+</section>
+
+<section class="rv">
+  <h2>参加リンク、<br>どこだっけ。</h2>
+  <div class="crop"><img src="/ios/img/c-home-join.jpg" width="706" height="103" alt="予定表の一次面接の行。右に「参加」のボタン" loading="lazy"><span class="tap" style="left:85.3%;top:47.7%"></span></div>
+  <p class="step">予定表の「参加」を押すと</p>
+  <div class="open">
+    <div class="phone"><img src="/ios/img/join.jpg" width="598" height="1300" alt="オンライン面接の参加ページ（イメージ）" loading="lazy"></div>
+    <p>そのまま参加ページが開きます。<br>メールを探さなくていい。<br><span class="img-note">参加ページの画面はイメージです</span></p>
   </div>
-</div>
-<div class="wrap flats"><div class="flat"><h2>次なんの選考？<br>進捗は？</h2><div class="phone"><div class="scr"><img src="/ios/img/home.jpg" width="598" height="1300" alt="" loading="lazy"></div></div></div><div class="flat"><p class="say">すべて見れます。</p><div class="phone"><div class="scr"><img src="/ios/img/company.jpg" width="598" height="1300" alt="" loading="lazy"></div></div></div><div class="flat"><h2>参加リンク、<br>どこだっけ。</h2><p class="lead">予定表の<b>「参加」</b>から、そのまま参加ページへ。</p><div class="phone"><div class="scr"><img src="/ios/img/join.jpg" width="598" height="1300" alt="" loading="lazy"></div></div></div><div class="flat"><h2>マイページ、<br>どこだっけ。</h2><p class="lead">会社のページの<b>「マイページ」</b>から。ID も控えておけます。</p><p class="say">もう迷わせません。</p><div class="phone"><div class="scr"><img src="/ios/img/login.jpg" width="598" height="1300" alt="" loading="lazy"></div></div></div><div class="flat"><h2 class="words"><span class="on">自己分析、</span><span class="">メモ、</span><span class="">ES、</span><span class="">振り返り</span></h2><p class="lead">強みや経験を、書きためておく。</p><div class="phone"><div class="scr"><img src="/ios/img/note_03.jpg" width="598" height="1300" alt="" loading="lazy"></div></div></div><div class="flat"><h2 class="words"><span class="done">自己分析、</span><span class="on">メモ、</span><span class="">ES、</span><span class="">振り返り</span></h2><p class="lead">説明会で聞いたことを、その場で。</p><div class="phone"><div class="scr"><img src="/ios/img/memo_03.jpg" width="598" height="1300" alt="" loading="lazy"></div></div></div><div class="flat"><h2 class="words"><span class="done">自己分析、</span><span class="done">メモ、</span><span class="on">ES、</span><span class="">振り返り</span></h2><p class="lead">字数を見ながら、設問ごとに。</p><div class="phone"><div class="scr"><img src="/ios/img/es_02.jpg" width="598" height="1300" alt="" loading="lazy"></div></div></div><div class="flat"><h2 class="words"><span class="done">自己分析、</span><span class="done">メモ、</span><span class="done">ES、</span><span class="on">振り返り</span></h2><p class="say">すべてできます。</p><div class="phone"><div class="scr"><img src="/ios/img/review_02.jpg" width="598" height="1300" alt="" loading="lazy"></div></div></div><p class="lead" style="margin-top:16px">参加ページとマイページの画面はイメージです。</p></div>
+</section>
 
-<div class="wrap">
+<section class="rv">
+  <h2>マイページ、<br>どこだっけ。</h2>
+  <div class="crop"><img src="/ios/img/c-sites.jpg" width="706" height="407" alt="各社のマイページの一覧。港テック・星野ソフト・青葉商事と、それぞれの ID" loading="lazy"><span class="tap" style="left:90%;top:30%"></span></div>
+  <p class="step">各社のマイページを押すと</p>
+  <div class="open">
+    <div class="phone"><img src="/ios/img/login.jpg" width="598" height="1300" alt="採用マイページのログイン画面（イメージ）" loading="lazy"></div>
+    <p>ログインの画面が開きます。<br>ID も一緒に控えておけます。<br><span class="img-note">ログインの画面はイメージです</span></p>
+  </div>
+  <p class="say">もう迷わせません。</p>
+</section>
+
+<section>
+  <h2 class="rv">自己分析、メモ、<br>ES、振り返り。</h2>
+  <div class="wb rv"><div class="wh"><b>自己分析</b><span>強みや経験を、書きためておく。</span></div><div class="crop tw" role="img" aria-label="自己分析を書いている画面"><img src="/ios/img/c-note_00.jpg" width="706" height="246" alt="" style="--j:0"><img src="/ios/img/c-note_01.jpg" width="706" height="246" alt="" style="--j:1"><img src="/ios/img/c-note_02.jpg" width="706" height="246" alt="" style="--j:2"><img src="/ios/img/c-note_03.jpg" width="706" height="246" alt="" style="--j:3"></div></div><div class="wb rv"><div class="wh"><b>メモ</b><span>説明会で聞いたことを、その場で。</span></div><div class="crop tw" role="img" aria-label="メモを書いている画面"><img src="/ios/img/c-memo_00.jpg" width="706" height="271" alt="" style="--j:0"><img src="/ios/img/c-memo_01.jpg" width="706" height="271" alt="" style="--j:1"><img src="/ios/img/c-memo_02.jpg" width="706" height="271" alt="" style="--j:2"><img src="/ios/img/c-memo_03.jpg" width="706" height="271" alt="" style="--j:3"></div></div><div class="wb rv"><div class="wh"><b>ES</b><span>字数を見ながら、設問ごとに。</span></div><div class="crop tw" role="img" aria-label="ESを書いている画面"><img src="/ios/img/c-es_00.jpg" width="706" height="604" alt="" style="--j:0"><img src="/ios/img/c-es_01.jpg" width="706" height="604" alt="" style="--j:1"><img src="/ios/img/c-es_02.jpg" width="706" height="604" alt="" style="--j:2"></div></div><div class="wb rv"><div class="wh"><b>振り返り</b><span>次に直すことは、次の面接の準備に出ます。</span></div><div class="crop tw" role="img" aria-label="振り返りを書いている画面"><img src="/ios/img/c-review_00.jpg" width="706" height="499" alt="" style="--j:0"><img src="/ios/img/c-review_01.jpg" width="706" height="499" alt="" style="--j:1"><img src="/ios/img/c-review_02.jpg" width="706" height="499" alt="" style="--j:2"></div></div>
+  <p class="say rv">すべてできます。</p>
+</section>
+
 <section>
   <h2 class="rv">安心して使えるように</h2>
   <div class="grid">
@@ -164,7 +168,7 @@ footer a{color:var(--teal-text);margin-right:20px}
   </div>
 </section>
 
-<section class="end">
+<section>
   <h2 class="rv">あなたの就活を、<br><b>もっとスムーズに。</b></h2>
   <div class="agenda rv" style="--d:.2s">
     <div class="day">今日</div>
@@ -175,7 +179,7 @@ footer a{color:var(--teal-text);margin-right:20px}
   </div>
   <p class="dlnote">無料・ログインなし・広告なし・iOS 26 以上</p>
 </section>
-</div>
+</main>
 <footer>
   <a href="/ios/support.html">サポート</a><a href="/ios/privacy.html">プライバシーポリシー</a>
   <p style="margin-top:12px">提供者：AnIT</p>
