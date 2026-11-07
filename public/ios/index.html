@@ -5,21 +5,24 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
-<title>就活Hub（iPhone アプリ）｜開いた瞬間に、次にやることが分かる</title>
-<meta name="description" content="就活の締切・面接・説明会を、日付順の予定表で見る iPhone アプリ。無料・ログインなし。">
+<title>就活Hub（iPhone アプリ）｜散らばってた予定が、1画面に。</title>
+<meta name="description" content="就活の締切・面接・説明会を1つの予定表に。参加リンクもマイページも1タップ。自己分析・メモ・ES・振り返りも。無料・ログインなし。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="就活Hub（iPhone アプリ）">
-<meta property="og:description" content="就活の締切・面接・説明会を、日付順の予定表で。無料・ログインなし。">
+<meta property="og:description" content="散らばってた予定が、1画面に。参加リンクもマイページも1タップ。無料・ログインなし。">
 <meta property="og:url" content="https://shukatsu-dashboard-sable.vercel.app/ios/">
 <meta property="og:image" content="https://shukatsu-dashboard-sable.vercel.app/ios/img/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <!--
-  画面の画像は iPhone 版の実物の撮影（見本データ・架空の会社名）。アプリの画面を変えたら撮り直す。
-  予定の行（.row）はアプリの予定表を大きくした見せ方。色は App/ThemeColor.swift（teal）と App/Theme.swift（deadline・red）の値。
-  動きは最初の画面だけ：行が日付順に降りる・今の赤い線が走る。動きを減らす設定では止める。
+  流れは紹介動画 v007 と同じ（しょーの台本 2026-11-07）：
+    散らばってた予定が1画面に → 次なんの選考？進捗は？ → 参加リンク・マイページどこだっけ → 自己分析・メモ・ES・振り返り → あなたの就活を、もっとスムーズに。
+  画面の画像は iPhone 版の実物をシミュレーターで撮った物（見本データ・架空の会社名）。自己分析・メモ・ES・振り返りは実際に文字を入れて撮った。
+  参加ページ（join.jpg）とマイページのログイン（login.jpg）だけはアプリの外の画面なので作ったイメージ。ページにもそう書く。
+  作り直し：~/Projects/shukatsu-hub-ios/qa/promo/make_mocks.py と qa/promo/type/。
+  色は App/ThemeColor.swift（teal）の値。動きは最初の画面だけ。動きを減らす設定では止める。
 -->
 <style>
-:root{--ink:#1d1d1f;--sub:#55555c;--teal:#0f7b72;--teal-text:#0d736b;--navy:#2e3a59;--red:#d7264f;--line:#e3e3e8;--soft:#f5f5f7}
+:root{--ink:#1d1d1f;--sub:#55555c;--teal:#0f7b72;--teal-text:#0d736b;--line:#e3e3e8;--soft:#f5f5f7}
 *{box-sizing:border-box;margin:0;padding:0}
 html{color-scheme:light;-webkit-text-size-adjust:100%}
 body{background:#fff;color:var(--ink);font:17px/1.8 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;font-feature-settings:"palt";-webkit-font-smoothing:antialiased}
@@ -27,62 +30,61 @@ main{max-width:480px;margin:0 auto;padding:0 20px;overflow:hidden}
 section{padding:64px 0}
 .k{font-size:15px;font-weight:600;color:var(--teal-text)}
 h1,h2{font-weight:800;letter-spacing:-.02em;line-height:1.35}
-h1{font-size:30px}
-h2{font-size:30px;margin-top:8px}
-h2 b,h1 b{color:var(--teal-text)}
+h1{font-size:34px;margin-top:8px}
+h2{font-size:30px}
+h1 b,h2 b{color:var(--teal-text)}
 p{margin-top:14px;color:var(--sub)}
+.say{margin-top:24px;font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--teal-text);text-align:center}
 
-/* 予定表の行（アプリの予定表を大きくした見せ方） */
-.agenda{display:grid;grid-template-columns:56px 1fr;column-gap:12px;margin-top:28px}
-.date{font-weight:700;font-size:20px;line-height:1;padding-top:6px}  /* 日付の数字は置かない（開いた日と食い違うため） */
-.rows{display:grid;gap:12px}
-.row{border-radius:12px;color:#fff;display:flex;align-items:center;padding:16px 18px;text-decoration:none}
-.row .tt{font-weight:700;font-size:20px;line-height:1.35}
-.row .ss{font-size:14px;opacity:.92;margin-top:2px}
-.row .ring{margin-left:auto;width:30px;height:30px;border:3px solid currentColor;border-radius:50%;flex:none}
-.teal{background:var(--teal)} .navy{background:var(--navy)}
-.task{background:#fff;color:var(--ink);border:2px solid var(--teal)}
-.task .ring{color:var(--teal)}
-.task .tt{color:var(--teal-text)}
-.now{position:relative;height:3px;background:var(--red);margin:2px 0 2px 6px;transform-origin:left}
-.now:before{content:"";position:absolute;left:-7px;top:-5px;width:13px;height:13px;border-radius:50%;background:var(--red)}
-@media (prefers-reduced-motion:no-preference){
-  .drop{animation:drop .5s cubic-bezier(.3,.35,.25,1) both}
-  .now{animation:sweep .8s cubic-bezier(.3,.35,.25,1) 1.3s both}
-  @keyframes drop{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:none}}
-  @keyframes sweep{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-}
-.lead{margin-top:28px;font-size:15px}
-.lead b{color:var(--teal-text)}
+/* 端末（撮影は 1206×2622。枠は動画と同じ比） */
+.phone{position:relative;margin:28px auto 0;width:min(280px,76%);border-radius:44px;background:#111;padding:9px}
+.phone img{display:block;width:100%;height:auto;border-radius:36px}
 
-/* 散らかり */
-.scatter{position:relative;height:310px;margin-top:24px}
+/* 1 散らかり → 1画面 */
+.hero{position:relative;margin-top:20px}
+.bits{position:relative;height:200px}
 .bit{position:absolute;font-size:14px;padding:9px 13px;border-radius:9px;white-space:nowrap;color:var(--sub)}
 .mail{background:#fff;border:1.5px solid #d4d4d9} .memo{background:#fff6c9} .cal{background:#eef0f5}
-.arrow{text-align:center;font-size:36px;font-weight:700;color:var(--teal-text);line-height:1;margin:8px 0}
+.hero .phone{margin-top:8px}
+.scr{background:#fff;border-radius:36px;overflow:hidden}  /* 画面が入る前は白（黒い板に見えないように） */
+@media (prefers-reduced-motion:no-preference){
+  .bit{animation:pop .45s cubic-bezier(.3,.35,.25,1) both,gather .8s cubic-bezier(.6,0,.4,1) 1.9s forwards}
+  .hero .phone img{animation:show .5s ease 2.5s both}
+  @keyframes pop{from{opacity:0;transform:scale(.85) rotate(var(--r))}to{opacity:1;transform:rotate(var(--r))}}
+  /* かけらは下の端末へ吸い込まれる */
+  @keyframes gather{to{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.4)}}
+  @keyframes show{from{opacity:0}to{opacity:1}}
+}
+@media (prefers-reduced-motion:reduce){ .bit{transform:rotate(var(--r))} }
+.dl{display:flex;align-items:center;justify-content:center;height:56px;margin-top:28px;border-radius:28px;background:var(--ink);color:#fff;font-weight:700;font-size:17px;text-decoration:none}
+.dlnote{font-size:14px;text-align:center;margin-top:10px}
 
-/* 残り1時間 */
-.big{display:flex;align-items:flex-end;color:var(--navy);font-weight:800;line-height:1;letter-spacing:-.04em;margin-top:28px}
-.big .a{font-size:44px;margin-bottom:14px}
-.big .b{font-size:170px;margin:0 6px -8px}
-.big .c{font-size:54px;margin-bottom:10px}
-.s{margin-top:22px;font-weight:600;font-size:18px;color:var(--ink)}
+/* 3 押す場所 → 開く先 */
+.flow{display:grid;grid-template-columns:1fr 24px 1fr;align-items:center;margin-top:28px}
+.flow .phone{margin:0;width:100%;border-radius:28px;padding:6px}
+.flow .phone img{border-radius:23px}
+.flow .to{text-align:center;font-weight:800;color:var(--teal-text);font-size:22px}
+.tap{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:3px solid var(--teal);background:rgba(15,123,114,.18)}
+.cap{font-size:15px;margin-top:12px;color:var(--ink)}
+.cap b{color:var(--teal-text)}
+.img-note{font-size:13px;text-align:center;margin-top:16px}
 
-/* 端末 */
-.phone{margin:32px auto 0;width:min(280px,76%);border-radius:44px;background:#111;padding:9px}
-.phone img{display:block;width:100%;height:auto;border-radius:36px}
-.pair{display:flex;gap:12px;margin-top:32px;align-items:flex-start}
-.pair .phone{margin:0;width:50%;border-radius:30px;padding:6px}
-.pair .phone img{border-radius:25px}
-.pair .phone:last-child{margin-top:28px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
-.chip{font-size:14px;font-weight:600;color:var(--ink);background:var(--soft);border-radius:999px;padding:5px 12px}
+/* 4 書く画面（横にスワイプ） */
+.shelf{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;margin:28px -20px 0;padding:0 20px 8px;scrollbar-width:none}
+.shelf::-webkit-scrollbar{display:none}
+.shelf figure{flex:0 0 62%;scroll-snap-align:center}
+.shelf .phone{margin:10px 0 0;width:100%;border-radius:34px;padding:7px}
+.shelf .phone img{border-radius:28px}
+.shelf b{font-size:18px}
+.shelf figcaption span{display:block;font-size:14px;color:var(--sub);line-height:1.6}
+.hint{font-size:13px;text-align:center;margin-top:6px}
 
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
 .grid div{background:var(--soft);border-radius:12px;padding:16px}
 .grid b{display:block;font-size:16px}
 .grid span{display:block;font-size:14px;color:var(--sub);margin-top:4px;line-height:1.6}
-.note{font-size:14px;margin-top:12px;text-align:center}
+.end{text-align:center}
+.end .name{font-size:44px;font-weight:800;letter-spacing:-.03em;margin-top:28px}
 footer{max-width:480px;margin:0 auto;padding:32px 20px 48px;border-top:1px solid var(--line);font-size:14px;color:var(--sub)}
 footer a{color:var(--teal-text);margin-right:20px}
 </style>
@@ -92,66 +94,61 @@ footer a{color:var(--teal-text);margin-right:20px}
 
 <section>
   <div class="k">就活Hub　iPhone アプリ</div>
-  <h1>開いた瞬間に、<br>次にやることが分かる。</h1>
-  <div class="agenda" aria-label="予定表の例">
-    <div class="date">今日</div>
-    <div class="rows">
-      <div class="row teal drop" style="animation-delay:.2s"><div><div class="tt">一次面接</div><div class="ss">14:00・港テック・オンライン</div></div><span class="ring"></span></div>
-      <div class="now" aria-hidden="true"></div>
-      <div class="row navy drop" style="animation-delay:.5s"><div><div class="tt">ES 提出の締切</div><div class="ss">23:59（残り1時間）・星野ソフト</div></div><span class="ring"></span></div>
-      <!-- 公開後に App Store の URL を入れる -->
-      <a class="row task drop" style="animation-delay:.8s" href="#appstore"><div><div class="tt">就活Hub を入れる</div><div class="ss">今日まで・App Store・無料</div></div><span class="ring"></span></a>
+  <h1>散らばってた予定が、<br><b>1画面に。</b></h1>
+  <div class="hero">
+    <div class="bits" aria-hidden="true">
+      <div class="bit mail" style="left:0;top:4px;--r:-4deg;--dx:60px;--dy:260px;animation-delay:.1s,1.9s">件名：一次面接のご案内（14:00）</div>
+      <div class="bit memo" style="right:0;top:52px;--r:6deg;--dx:-90px;--dy:240px;animation-delay:.25s,1.95s">ES 23:59 まで？</div>
+      <div class="bit memo" style="left:8px;top:96px;--r:3deg;--dx:90px;--dy:210px;animation-delay:.4s,2s">逆質問を考える</div>
+      <div class="bit cal" style="right:6px;top:118px;--r:-5deg;--dx:-80px;--dy:190px;animation-delay:.55s,2.05s">明日 10:00 青葉商事</div>
+      <div class="bit cal" style="left:20px;top:156px;--r:2deg;--dx:80px;--dy:150px;animation-delay:.7s,2.1s">GD 16:45 銀河通信</div>
     </div>
+    <div class="phone"><div class="scr"><img src="img/home.jpg" width="598" height="1300" alt="予定表の画面。今日と明日の面接・締切・タスクが日付順に並んでいる"></div></div>
   </div>
-  <p class="lead">就活の締切・面接・説明会を、<b>日付順の予定表</b>で。<br>無料・ログインなし・iOS 26 以上</p>
+  <p>メール・マイページ・メモに散らばった締切と面接を、日付順の予定表にまとめます。</p>
+  <!-- 公開後に App Store の URL を入れる -->
+  <a class="dl" href="#appstore">App Store で無料ダウンロード</a>
+  <p class="dlnote">無料・ログインなし・広告なし・iOS 26 以上</p>
 </section>
 
 <section>
-  <h2>散らばった予定を、<br><b>1つの予定表</b>に。</h2>
-  <div class="scatter" aria-hidden="true">
-    <div class="bit mail" style="left:0;top:8px;transform:rotate(-4deg)">件名：一次面接のご案内（11/7 10:00）</div>
-    <div class="bit memo" style="right:4px;top:66px;transform:rotate(6deg)">ES 23:59 まで？</div>
-    <div class="bit memo" style="left:10px;top:112px;transform:rotate(3deg)">マイページの ID どこ…</div>
-    <div class="bit cal" style="right:10px;top:160px;transform:rotate(-5deg)">説明会 19:00 渋谷</div>
-    <div class="bit mail" style="left:0;top:212px;transform:rotate(2deg)">件名：【適性検査】受検期限のお知らせ</div>
-    <div class="bit memo" style="right:20px;top:262px;transform:rotate(-3deg)">OB にお礼のメール</div>
+  <h2>次なんの選考？<br>進捗は？</h2>
+  <div class="phone"><img src="img/company.jpg" width="598" height="1300" alt="港テックの会社のページ。次の一次面接、参加リンクを開くボタン、ES 提出から最終面接までの流れ" loading="lazy"></div>
+  <p class="say">すべて見れます。</p>
+  <p>会社のページを開くと、いちばん上に次の予定。その下に、ES 提出から最終面接までの流れが並びます。</p>
+</section>
+
+<section>
+  <h2>参加リンク、どこだっけ。<br>マイページ、どこだっけ。</h2>
+  <div class="flow">
+    <div class="phone"><img src="img/home.jpg" width="598" height="1300" alt="予定表。一次面接の行に「参加」のボタン" loading="lazy"><span class="tap" style="left:85.7%;top:38.3%" aria-hidden="true"></span></div>
+    <div class="to" aria-hidden="true">→</div>
+    <div class="phone"><img src="img/join.jpg" width="598" height="1300" alt="オンライン面接の参加ページ（イメージ）" loading="lazy"></div>
   </div>
-  <div class="arrow" aria-hidden="true">↓</div>
-  <div class="phone"><img src="img/01_home.jpg" width="598" height="1300" alt="予定表の画面。今日と明日の面接と締切が日付順に並んでいる" loading="lazy"></div>
-  <p>面接や説明会は緑、締切は紺で並びます。過ぎた締切は、一番上に赤い1行で出ます。</p>
-</section>
-
-<section>
-  <div class="k">締切</div>
-  <h2>締切が近いと、<br>残りの時間が出る。</h2>
-  <div class="big" role="img" aria-label="残り1時間"><span class="a">残り</span><span class="b">1</span><span class="c">時間</span></div>
-  <p class="s">ES 提出の締切　23:59・星野ソフト</p>
-  <p>締切まで24時間を切ると、予定表に残りの時間が出ます。締切は右の ○ を押すと済みにできます。</p>
-</section>
-
-<section>
-  <div class="k">会社のページ</div>
-  <h2>会社ごとに、<br>選考の流れと次の予定。</h2>
-  <div class="chips"><span class="chip">1タップで参加リンク</span><span class="chip">1タップでマイページ</span><span class="chip">ES・企業研究</span></div>
-  <div class="phone"><img src="img/18_company_today.jpg" width="598" height="1300" alt="会社のページ。次の一次面接と参加リンクを開くボタン、選考の流れ" loading="lazy"></div>
-  <p>いちばん上に次の予定と「参加リンクを開く」、その下に ES 提出から最終面接までの流れが並びます。</p>
-</section>
-
-<section>
-  <div class="k">質問の棚</div>
-  <h2>聞かれた質問を、<br>会社をまたいでためる。</h2>
-  <div class="phone"><img src="img/27_question.jpg" width="598" height="1300" alt="質問「挫折した経験」に、2社分の答えが並んでいる" loading="lazy"></div>
-  <p>1つの質問に、会社ごとの答えが並びます。面接の後に残した「次に直すこと」は、次の面接の準備の画面に出ます。</p>
-</section>
-
-<section>
-  <div class="k">メモとサイト</div>
-  <h2>メモも、<br>マイページの ID も。</h2>
-  <div class="pair">
-    <div class="phone"><img src="img/08_notes.jpg" width="598" height="1300" alt="メモの一覧" loading="lazy"></div>
-    <div class="phone"><img src="img/09_sites.jpg" width="598" height="1300" alt="各社のマイページと ID の一覧" loading="lazy"></div>
+  <p class="cap">予定表の<b>「参加」</b>から、そのまま参加ページへ。</p>
+  <div class="flow">
+    <div class="phone"><img src="img/company.jpg" width="598" height="1300" alt="会社のページ。左上に「マイページ」" loading="lazy"><span class="tap" style="left:15.5%;top:32.6%" aria-hidden="true"></span></div>
+    <div class="to" aria-hidden="true">→</div>
+    <div class="phone"><img src="img/login.jpg" width="598" height="1300" alt="採用マイページのログイン画面（イメージ）" loading="lazy"></div>
   </div>
-  <p>企業研究や自己分析のメモと、各社のマイページを1か所に。マイページは1タップで開けます。</p>
+  <p class="cap">会社のページの<b>「マイページ」</b>から、ログインへ。ID も控えておけます。</p>
+  <p class="say">もう迷わせません。</p>
+  <p class="img-note">参加ページとマイページの画面はイメージです。</p>
+</section>
+
+<section>
+  <h2>自己分析、メモ、ES、振り返り。<br><b>すべてできます。</b></h2>
+  <div class="shelf">
+    <figure><figcaption><b>自己分析</b><span>強みや経験を、書きためておく。</span></figcaption>
+      <div class="phone"><img src="img/note_03.jpg" width="598" height="1300" alt="自己分析のメモを書いている画面" loading="lazy"></div></figure>
+    <figure><figcaption><b>メモ</b><span>説明会で聞いたことを、その場で。</span></figcaption>
+      <div class="phone"><img src="img/memo_03.jpg" width="598" height="1300" alt="説明会のメモを書いている画面" loading="lazy"></div></figure>
+    <figure><figcaption><b>ES</b><span>字数を見ながら、設問ごとに。</span></figcaption>
+      <div class="phone"><img src="img/es_02.jpg" width="598" height="1300" alt="ES の回答を書いている画面。58 / 400字" loading="lazy"></div></figure>
+    <figure><figcaption><b>振り返り</b><span>次に直すことは、次の面接の準備に出ます。</span></figcaption>
+      <div class="phone"><img src="img/review_02.jpg" width="598" height="1300" alt="一次面接の振り返り。次に直すことを書いている画面" loading="lazy"></div></figure>
+  </div>
+  <p class="hint">横にスワイプ</p>
 </section>
 
 <section>
@@ -164,15 +161,12 @@ footer a{color:var(--teal-text);margin-right:20px}
   </div>
 </section>
 
-<section>
-  <h2>今日やることに、<br>1つ足してください。</h2>
-  <div class="agenda">
-    <div class="date">今日</div>
-    <div class="rows">
-      <a class="row task" href="#appstore"><div><div class="tt">就活Hub を入れる</div><div class="ss">今日まで・App Store・無料</div></div><span class="ring"></span></a>
-    </div>
-  </div>
-  <p class="note">無料・ログインなし・iOS 26 以上</p>
+<section class="end">
+  <h2>あなたの就活を、<br><b>もっとスムーズに。</b></h2>
+  <div class="name">就活Hub</div>
+  <!-- 公開後に App Store の URL を入れる -->
+  <a class="dl" href="#appstore">App Store で無料ダウンロード</a>
+  <p class="dlnote">無料・ログインなし・広告なし・iOS 26 以上</p>
 </section>
 </main>
 <footer>
