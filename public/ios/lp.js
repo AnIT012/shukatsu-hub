@@ -8,5 +8,15 @@
       es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("on"); io.unobserve(e.target); } });
     }, { threshold: 0.35 });
     document.querySelectorAll(".rv").forEach(function (el) { io.observe(el); });
+    // 録画：画面に入ったら頭から流す（押す所から見えるように）。出たら止める
+    var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var vo = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        var v = e.target;
+        if (e.isIntersecting) { if (!reduce) { v.currentTime = 0; var p = v.play(); if (p && p.catch) p.catch(function () {}); } }
+        else { v.pause(); }
+      });
+    }, { threshold: 0.6 });
+    document.querySelectorAll("video").forEach(function (v) { vo.observe(v); });
   });
 })();

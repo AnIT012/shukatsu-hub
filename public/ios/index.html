@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'">
 <title>就活Hub（iPhone アプリ）｜散らばってた予定が、1画面に。</title>
 <meta name="description" content="就活の締切・面接・説明会を1つの予定表に。参加リンクもマイページも1タップ。自己分析・メモ・ES・振り返りも。無料・ログインなし。">
 <meta property="og:type" content="website">
@@ -36,14 +36,10 @@ p{color:var(--sub);font-size:15px;line-height:1.7}
 .step{margin-top:16px;color:var(--ink);font-weight:700;font-size:16px}
 .img-note{font-size:12px;margin-top:8px}
 
-/* 切り出し：撮影の一部を大きく。地から少し浮かせる */
-.crop{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.12);background:#fff;margin-top:20px}
-.crop img{display:block;width:100%;height:auto}
-.tap{position:absolute;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;border:3px solid var(--teal);background:rgba(15,123,114,.18);pointer-events:none}
-.open{display:flex;gap:14px;margin-top:12px;align-items:flex-start}
-.phone{flex:none;width:150px;border-radius:26px;background:#111;padding:5px}
-.phone img{display:block;width:100%;height:auto;border-radius:21px}
-.open p{padding-top:4px}
+/* 端末：本物のアプリを操作した録画を流す（590×1282） */
+.phone{position:relative;margin:22px auto 0;width:min(270px,72%);border-radius:42px;background:#111;padding:8px}
+.phone video{display:block;width:100%;height:auto;border-radius:34px;background:#fff}
+.img-note{font-size:12px;text-align:center;margin-top:8px}
 
 /* 1 最初の画面：予定表の行 */
 .bits{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:22px}
@@ -62,12 +58,12 @@ p{color:var(--sub);font-size:15px;line-height:1.7}
 .dl{display:flex;align-items:center;justify-content:center;height:52px;margin-top:26px;border-radius:26px;background:var(--ink);color:#fff;font-weight:700;font-size:16px;text-decoration:none}
 .dlnote{font-size:13px;text-align:center;margin-top:8px}
 
-/* 5 書く画面 */
-.wb{margin-top:28px}
-.wh b{font-size:18px;margin-right:10px}
-.wh span{font-size:14px;color:var(--sub)}
-.tw{margin-top:10px}
-.tw img + img{position:absolute;inset:0}
+/* 5 書く画面：2×2 */
+.wgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px 12px;margin-top:24px}
+.wb figcaption b{display:block;font-size:17px}
+.wb figcaption span{display:block;font-size:13px;color:var(--sub);line-height:1.5}
+.wb .phone{width:100%;margin-top:8px;border-radius:26px;padding:5px}
+.wb .phone video{border-radius:21px}
 
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
 .grid div{background:var(--soft);border-radius:12px;padding:16px}
@@ -87,17 +83,8 @@ footer a{color:var(--teal-text);margin-right:20px}
 /* 最初：かけら → 行が日付順に降りる */
 .js .hero .bit,.js .hero .bits em{opacity:0;animation:pop .4s var(--e) calc(.1s + var(--n,0) * .12s) both}
 .js .hero .row{opacity:0;animation:drop .45s var(--e) calc(.75s + var(--i) * .15s) both}
-/* 押す所 → 開いた先 */
-.js .tap{opacity:0}
-.js .on .tap{animation:tap .5s var(--e) .5s both}
-.js .on .phone{animation:up .5s var(--e) 1.0s both}
-.js .phone{opacity:0}
-/* 書く：コマを上に重ねていく（前のコマは消さない） */
-.js .tw img + img{opacity:0}
-.js .wb.on .tw img + img{animation:show .01s linear calc(.6s + var(--j) * .7s) forwards}
 @media (prefers-reduced-motion:reduce){
-  .js .rv,.js .hero .bit,.js .hero .bits em,.js .hero .row,.js .tap,.js .phone{opacity:1;animation:none}
-  .js .tw img + img{opacity:1;animation:none}
+  .js .rv,.js .hero .bit,.js .hero .bits em,.js .hero .row{opacity:1;animation:none}
 }
 </style>
 </head>
@@ -126,35 +113,30 @@ footer a{color:var(--teal-text);margin-right:20px}
 
 <section class="rv">
   <h2>次なんの選考？<br>進捗は？</h2>
-  <div class="crop"><img src="/ios/img/c-company.jpg" width="706" height="1116" alt="港テックの会社のページ。次の一次面接と参加リンク、ES 提出から最終面接までの選考の流れ" loading="lazy"></div>
+  <div class="phone"><video src="/ios/v/company.mp4" poster="/ios/v/company.jpg" muted loop playsinline preload="metadata" width="590" height="1282" aria-label="予定表の一次面接の行を押すと、港テックの会社のページが開く録画"></video></div>
   <p class="say">すべて見れます。</p>
-  <p>会社のページを開くと、いちばん上に次の予定。その下に、ES 提出から最終面接までの流れが並びます。</p>
+  <p>予定の行を押すと、会社のページ。いちばん上に次の予定、その下に ES 提出から最終面接までの流れが並びます。</p>
 </section>
 
 <section class="rv">
   <h2>参加リンク、<br>どこだっけ。</h2>
-  <div class="crop"><img src="/ios/img/c-home-join.jpg" width="706" height="103" alt="予定表の一次面接の行。右に「参加」のボタン" loading="lazy"><span class="tap" style="left:85.3%;top:47.7%"></span></div>
-  <p class="step">予定表の「参加」を押すと</p>
-  <div class="open">
-    <div class="phone"><img src="/ios/img/join.jpg" width="598" height="1300" alt="オンライン面接の参加ページ（イメージ）" loading="lazy"></div>
-    <p>そのまま参加ページが開きます。<br>メールを探さなくていい。<br><span class="img-note">参加ページの画面はイメージです</span></p>
-  </div>
+  <div class="phone"><video src="/ios/v/join.mp4" poster="/ios/v/join.jpg" muted loop playsinline preload="metadata" width="590" height="1282" aria-label="予定表の「参加」を押すと、オンライン面接の参加ページが開く録画"></video></div>
+  <p class="img-note">開いた先の参加ページの画面はイメージです</p>
+  <p class="say">「参加」から、そのまま。</p>
+  <p>予定表の面接の行に「参加」が出ます。押すと、案内のメールを探さずに参加ページが開きます。</p>
 </section>
 
 <section class="rv">
   <h2>マイページ、<br>どこだっけ。</h2>
-  <div class="crop"><img src="/ios/img/c-sites.jpg" width="706" height="407" alt="各社のマイページの一覧。港テック・星野ソフト・青葉商事と、それぞれの ID" loading="lazy"><span class="tap" style="left:90%;top:30%"></span></div>
-  <p class="step">各社のマイページを押すと</p>
-  <div class="open">
-    <div class="phone"><img src="/ios/img/login.jpg" width="598" height="1300" alt="採用マイページのログイン画面（イメージ）" loading="lazy"></div>
-    <p>ログインの画面が開きます。<br>ID も一緒に控えておけます。<br><span class="img-note">ログインの画面はイメージです</span></p>
-  </div>
+  <div class="phone"><video src="/ios/v/mypage.mp4" poster="/ios/v/mypage.jpg" muted loop playsinline preload="metadata" width="590" height="1282" aria-label="サイトの画面で港テックのマイページを押すと、ログインの画面が開く録画"></video></div>
+  <p class="img-note">開いた先のログインの画面はイメージです</p>
   <p class="say">もう迷わせません。</p>
+  <p>各社のマイページを ID と一緒に控えておけます。押すと、そのままログインの画面へ。</p>
 </section>
 
 <section>
   <h2 class="rv">自己分析、メモ、<br>ES、振り返り。</h2>
-  <div class="wb rv"><div class="wh"><b>自己分析</b><span>強みや経験を、書きためておく。</span></div><div class="crop tw" role="img" aria-label="自己分析を書いている画面"><img src="/ios/img/c-note_00.jpg" width="706" height="246" alt="" style="--j:0"><img src="/ios/img/c-note_01.jpg" width="706" height="246" alt="" style="--j:1"><img src="/ios/img/c-note_02.jpg" width="706" height="246" alt="" style="--j:2"><img src="/ios/img/c-note_03.jpg" width="706" height="246" alt="" style="--j:3"></div></div><div class="wb rv"><div class="wh"><b>メモ</b><span>説明会で聞いたことを、その場で。</span></div><div class="crop tw" role="img" aria-label="メモを書いている画面"><img src="/ios/img/c-memo_00.jpg" width="706" height="271" alt="" style="--j:0"><img src="/ios/img/c-memo_01.jpg" width="706" height="271" alt="" style="--j:1"><img src="/ios/img/c-memo_02.jpg" width="706" height="271" alt="" style="--j:2"><img src="/ios/img/c-memo_03.jpg" width="706" height="271" alt="" style="--j:3"></div></div><div class="wb rv"><div class="wh"><b>ES</b><span>字数を見ながら、設問ごとに。</span></div><div class="crop tw" role="img" aria-label="ESを書いている画面"><img src="/ios/img/c-es_00.jpg" width="706" height="604" alt="" style="--j:0"><img src="/ios/img/c-es_01.jpg" width="706" height="604" alt="" style="--j:1"><img src="/ios/img/c-es_02.jpg" width="706" height="604" alt="" style="--j:2"></div></div><div class="wb rv"><div class="wh"><b>振り返り</b><span>次に直すことは、次の面接の準備に出ます。</span></div><div class="crop tw" role="img" aria-label="振り返りを書いている画面"><img src="/ios/img/c-review_00.jpg" width="706" height="499" alt="" style="--j:0"><img src="/ios/img/c-review_01.jpg" width="706" height="499" alt="" style="--j:1"><img src="/ios/img/c-review_02.jpg" width="706" height="499" alt="" style="--j:2"></div></div>
+  <div class="wgrid"><figure class="wb rv"><figcaption><b>自己分析</b><span>強みや経験を書きためる</span></figcaption><div class="phone"><video src="/ios/v/w-note.mp4" poster="/ios/v/w-note.jpg" muted loop playsinline preload="metadata" width="590" height="1282" aria-label="自己分析を書いている画面の録画"></video></div></figure><figure class="wb rv"><figcaption><b>メモ</b><span>説明会で聞いたことを</span></figcaption><div class="phone"><video src="/ios/v/w-memo.mp4" poster="/ios/v/w-memo.jpg" muted loop playsinline preload="metadata" width="590" height="1282" aria-label="メモを書いている画面の録画"></video></div></figure><figure class="wb rv"><figcaption><b>ES</b><span>字数を見ながら</span></figcaption><div class="phone"><video src="/ios/v/w-es.mp4" poster="/ios/v/w-es.jpg" muted loop playsinline preload="metadata" width="590" height="1282" aria-label="ESを書いている画面の録画"></video></div></figure><figure class="wb rv"><figcaption><b>振り返り</b><span>次に直すことは次の準備に</span></figcaption><div class="phone"><video src="/ios/v/w-review.mp4" poster="/ios/v/w-review.jpg" muted loop playsinline preload="metadata" width="590" height="1282" aria-label="振り返りを書いている画面の録画"></video></div></figure></div>
   <p class="say rv">すべてできます。</p>
 </section>
 
